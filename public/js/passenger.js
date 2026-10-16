@@ -306,9 +306,12 @@ class PassengerController {
       }
       
       if (!busId && this.selectedRouteId && this.selectedRouteId !== 'all') {
-        const buses = window.appState.getBusesForRoute(this.selectedRouteId).filter(b => b.isTripActive);
-        if (buses.length > 0) {
-          busId = buses[0].id;
+        const activeBuses = window.appState.getBusesForRoute(this.selectedRouteId).filter(b => b.isTripActive);
+        if (activeBuses.length > 0) {
+          busId = activeBuses[0].id;
+        } else {
+          const allBuses = window.appState.getBusesForRoute(this.selectedRouteId);
+          if (allBuses.length > 0) busId = allBuses[0].id;
         }
       }
     } else {

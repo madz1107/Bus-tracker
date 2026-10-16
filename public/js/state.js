@@ -55,31 +55,41 @@ class StateManager {
         const freshBuses = await res.json();
 
         let hasChange = false;
+        const changedBusIds = [];
         freshBuses.forEach((freshBus) => {
           const local = this.getBusById(freshBus.id);
           if (local) {
-            // Only update if the position or status actually changed
-            if (
+            // Check if any position, telemetry, crowd, or status attribute changed
+            const hasBusChanged = (
               local.lat !== freshBus.lat ||
               local.lng !== freshBus.lng ||
               local.speed !== freshBus.speed ||
+              local.bearing !== freshBus.bearing ||
               local.status !== freshBus.status ||
               local.crowdLevel !== freshBus.crowdLevel ||
-              local.nextStopName !== freshBus.nextStopName
-            ) {
+              local.nextStopName !== freshBus.nextStopName ||
+              local.isTripActive !== freshBus.isTripActive ||
+              local.etaMinutes !== freshBus.etaMinutes ||
+              local.distanceToNextKm !== freshBus.distanceToNextKm ||
+              local.routeProgress !== freshBus.routeProgress ||
+              local.lastUpdated !== freshBus.lastUpdated
+            );
+
+            if (hasBusChanged) {
               Object.assign(local, freshBus);
+              changedBusIds.push(freshBus.id);
               hasChange = true;
             }
           }
         });
 
         if (hasChange) {
-          this.notify({ type: 'BUS_LOCATION_UPDATE', source: 'poll' });
+          this.notify({ type: 'BUS_LOCATION_UPDATE', source: 'poll', changedBusIds });
         }
       } catch (e) {
         // Silently ignore polling errors (offline, server restart, etc.)
       }
-    }, 3000); // Poll every 3 seconds for smooth real-time accuracy
+    }, 2000); // Poll every 2 seconds for smooth real-time cross-device accuracy
   }
 
   subscribe(callback) {

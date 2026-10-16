@@ -8,13 +8,10 @@ class WhereIsMyBusController {
     this.isFollowing = true;
     this.freshnessInterval = null;
 
-    // Subscribe to state updates
+    // Subscribe to state updates (GPS polling, BroadcastChannel, and fleet updates)
     window.appState.subscribe((state, event) => {
-      if (event && event.type === 'BUS_LOCATION_UPDATE' && event.busId === this.currentBusId) {
-        this.renderBusUpdate(event.locationData);
-      } else {
-        this.render();
-      }
+      this.syncLiveBusPositions();
+      this.render();
     });
   }
 
@@ -25,6 +22,13 @@ class WhereIsMyBusController {
 
     this.populateBusSelector();
     this.loadBus(window.appState.selectedBusId || 'BUS-101');
+
+    // Ensure map container renders properly after DOM display transitions
+    setTimeout(() => {
+      if (this.mapManager) {
+        this.mapManager.invalidateSize();
+      }
+    }, 200);
 
     // Freshness timer tick
     if (this.freshnessInterval) clearInterval(this.freshnessInterval);
@@ -66,9 +70,9 @@ class WhereIsMyBusController {
     if (routeTitle) routeTitle.textContent = route.name;
     if (busReg) {
       if (bus.isTripActive) {
-        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName} • Crowd: ${bus.crowdLevel || 'Moderate'}`;
+        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber} • Crowd: ${bus.crowdLevel || 'Moderate'}`;
       } else {
-        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName}`;
+        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber}`;
       }
     }
     if (busSelector) busSelector.value = busId;
@@ -103,6 +107,9 @@ class WhereIsMyBusController {
         this.mapManager.fitBoundsToRoute(route);
       }
       this.mapManager.invalidateSize();
+      setTimeout(() => {
+        if (this.mapManager) this.mapManager.invalidateSize();
+      }, 200);
     }
 
     this.render();
@@ -170,12 +177,37 @@ class WhereIsMyBusController {
     if (this.mapManager && this.mapManager.map) this.mapManager.map.zoomOut();
   }
 
-  renderBusUpdate(bus) {
-    if (!bus || bus.id !== this.currentBusId) return;
+  /**
+   * Synchronizes moving bus positions directly on the Leaflet map
+   */
+  syncLiveBusPositions() {
+    if (!this.mapManager) return;
 
-    if (this.mapManager) {
-      this.mapManager.updateBusMarker(bus, true, true);
+    const bus = window.appState.getBusById(this.currentBusId);
+    if (!bus) return;
+
+    // Update the tracked bus marker on map with highlight/Rank 1 styling
+    this.mapManager.updateBusMarker(bus, true, true);
+
+    // Also update any other active buses on this same route
+    const route = window.appState.getRouteById(bus.routeId);
+    if (route) {
+      const activeBusesOnRoute = window.appState.getBusesForRoute(route.id);
+      activeBusesOnRoute.forEach((otherBus) => {
+        if (otherBus.id !== bus.id) {
+          this.mapManager.updateBusMarker(otherBus, false, false);
+        }
+      });
     }
+
+    // Follow bus camera panning if enabled
+    if (this.isFollowing && bus.lat != null && bus.lng != null && bus.isTripActive) {
+      this.mapManager.setFollowBus(bus.id);
+    }
+  }
+
+  renderBusUpdate(bus) {
+    this.syncLiveBusPositions();
     this.render();
   }
 
@@ -185,6 +217,28 @@ class WhereIsMyBusController {
 
     const route = window.appState.getRouteById(bus.routeId);
     if (!route) return;
+
+    // Dynamically toggle online/offline state
+    const wimbLiveContent = document.getElementById('wimbLiveContent');
+    const wimbOfflineMessage = document.getElementById('wimbOfflineMessage');
+    const wimbHudStats = document.getElementById('wimbHudStats');
+
+    if (wimbLiveContent && wimbOfflineMessage) {
+      if (bus.isTripActive) {
+        wimbLiveContent.style.display = 'grid';
+        wimbOfflineMessage.style.display = 'none';
+        if (wimbHudStats) wimbHudStats.style.display = 'flex';
+      } else {
+        wimbLiveContent.style.display = 'none';
+        wimbOfflineMessage.style.display = 'block';
+        if (wimbHudStats) wimbHudStats.style.display = 'none';
+      }
+    }
+
+    // Always ensure live map marker is synced
+    if (this.mapManager) {
+      this.syncLiveBusPositions();
+    }
 
     // Update Telemetry Badges
     const liveStatus = document.getElementById('wimbLiveStatus');
