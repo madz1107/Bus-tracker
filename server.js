@@ -37,6 +37,27 @@ function loadData() {
   if (!Array.isArray(db.routes)) db.routes = [];
   if (!Array.isArray(db.buses)) db.buses = [];
   if (!Array.isArray(db.users)) db.users = [];
+
+  // Guarantee permanent default passenger accounts for instant access & serverless resets
+  if (!db.users.some(u => u.email === 'passenger@123')) {
+    db.users.push({
+      id: 'user-pass-default',
+      email: 'passenger@123',
+      password: 'passenger@123',
+      name: 'Daily Commuter',
+      role: 'passenger'
+    });
+  }
+  if (!db.users.some(u => u.email === 'passenger@citybus.com')) {
+    db.users.push({
+      id: 'user-pass-1',
+      email: 'passenger@citybus.com',
+      password: 'pass123',
+      name: 'Priya Sharma',
+      role: 'passenger'
+    });
+  }
+
   return db;
 }
 
