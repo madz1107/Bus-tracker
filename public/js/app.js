@@ -8,6 +8,18 @@ class AppController {
   }
 
   init() {
+    try {
+      const savedPassengers = JSON.parse(localStorage.getItem('citybus_registered_passengers') || '[]');
+      if (Array.isArray(savedPassengers) && savedPassengers.length > 0) {
+        if (!window.appState.users) window.appState.users = [];
+        savedPassengers.forEach(sp => {
+          if (!window.appState.users.some(u => u.email && u.email.toLowerCase() === sp.email.toLowerCase())) {
+            window.appState.users.push(sp);
+          }
+        });
+      }
+    } catch (e) {}
+
     const user = window.appState.currentUser;
 
     if (user) {
@@ -109,33 +121,21 @@ class AppController {
     // Switch back to login form mode if user was on registration
     this.toggleAuthMode('login');
 
-    // Show registration and 1-tap quick access ONLY on passenger tab
+    // Show registration toggle and guest access ONLY on passenger tab
     const authToggle = document.getElementById('passengerAuthToggle');
+    const guestAction = document.getElementById('passengerGuestAction');
     if (authToggle) {
       authToggle.style.display = role === 'passenger' ? 'block' : 'none';
     }
-
-    const quickEntry = document.getElementById('passengerQuickEntryBox');
-    if (quickEntry) {
-      quickEntry.style.display = role === 'passenger' ? 'block' : 'none';
+    if (guestAction) {
+      guestAction.style.display = role === 'passenger' ? 'block' : 'none';
     }
 
-    // Clear fields or pre-fill last used passenger on this device
+    // Clear fields so user types fresh
     const emailInput = document.getElementById('fsLoginEmail');
     const passInput  = document.getElementById('fsLoginPassword');
-    if (role === 'passenger') {
-      const savedList = JSON.parse(localStorage.getItem('citybus_registered_passengers') || '[]');
-      if (savedList.length > 0) {
-        if (emailInput) emailInput.value = savedList[savedList.length - 1].email || '';
-        if (passInput) passInput.value = savedList[savedList.length - 1].password || '';
-      } else {
-        if (emailInput) emailInput.value = '';
-        if (passInput) passInput.value = '';
-      }
-    } else {
-      if (emailInput) { emailInput.value = ''; emailInput.focus(); }
-      if (passInput)  { passInput.value  = ''; }
-    }
+    if (emailInput) { emailInput.value = ''; emailInput.focus(); }
+    if (passInput)  { passInput.value  = ''; }
   }
 
   /**
@@ -163,36 +163,57 @@ class AppController {
   }
 
   /**
-   * Saves registered passenger locally on this device so they are never forgotten even if server restarts
+   * Saves newly registered passenger to local browser store so accounts persist
+   * even across serverless cold starts or stateless cloud hosts
    */
-  saveLocalPassenger(user) {
+  saveLocalRegisteredPassenger(user) {
     try {
       const list = JSON.parse(localStorage.getItem('citybus_registered_passengers') || '[]');
-      const idx = list.findIndex(u => u.email.toLowerCase() === user.email.toLowerCase());
+      const idx = list.findIndex(u => u.email && u.email.toLowerCase() === user.email.toLowerCase());
       if (idx >= 0) {
         list[idx] = user;
       } else {
         list.push(user);
       }
       localStorage.setItem('citybus_registered_passengers', JSON.stringify(list));
+      
+      // Also sync into current session appState users
+      if (!window.appState.users) window.appState.users = [];
+      const stateIdx = window.appState.users.findIndex(u => u.email && u.email.toLowerCase() === user.email.toLowerCase());
+      if (stateIdx >= 0) {
+        window.appState.users[stateIdx] = user;
+      } else {
+        window.appState.users.push(user);
+      }
     } catch (e) {
-      console.warn('Could not save local passenger', e);
+      console.warn('Failed to save local passenger:', e);
     }
   }
 
   /**
-   * Retrieves a locally saved passenger from device storage
+   * Finds a user across local storage registered passengers and appState users
    */
-  getLocalPassenger(email, password) {
+  findLocalUser(email, password, expectedRole) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    
+    // Check locally saved passengers first
+    let localPassengers = [];
     try {
-      const list = JSON.parse(localStorage.getItem('citybus_registered_passengers') || '[]');
-      return list.find(u => 
-        (u.email.toLowerCase() === email.toLowerCase() || (u.name && u.name.toLowerCase() === email.toLowerCase())) && 
-        u.password === password
-      );
-    } catch (e) {
-      return null;
-    }
+      localPassengers = JSON.parse(localStorage.getItem('citybus_registered_passengers') || '[]');
+    } catch (e) {}
+
+    const fromSaved = localPassengers.find(u => 
+      u.email && u.email.toLowerCase() === cleanEmail && u.password === password
+    );
+    if (fromSaved) return fromSaved;
+
+    // Check appState users
+    const allUsers = window.appState.users || [];
+    const matched = allUsers.find(u => 
+      (u.email && u.email.toLowerCase() === cleanEmail || u.id === email || u.busId === email) && 
+      u.password === password
+    );
+    return matched || null;
   }
 
   /**
@@ -216,7 +237,7 @@ class AppController {
       return;
     }
 
-    const newUserObj = {
+    const newUser = {
       id: 'user-pass-' + Math.floor(Math.random() * 9000 + 1000),
       name,
       email,
@@ -225,8 +246,8 @@ class AppController {
       role: 'passenger'
     };
 
-    // Always store in local device vault immediately
-    this.saveLocalPassenger(newUserObj);
+    // Always save locally so account is permanently remembered on this browser
+    this.saveLocalRegisteredPassenger(newUser);
 
     try {
       const res = await fetch('/api/auth/register', {
@@ -237,22 +258,20 @@ class AppController {
 
       const data = await res.json();
       if (res.ok && data.success && data.user) {
-        this.saveLocalPassenger(data.user);
+        this.saveLocalRegisteredPassenger(data.user);
         window.appState.setCurrentUser(data.user);
         this.showMainApp(data.user);
         this.showToast(`Account created successfully! Welcome, ${data.user.name}! 🎉`, 'success');
-      } else {
-        // Fallback to local user created on device
-        window.appState.setCurrentUser(newUserObj);
-        this.showMainApp(newUserObj);
-        this.showToast(`Account created on this device! Welcome, ${newUserObj.name}! 🎉`, 'success');
+        return;
       }
     } catch (err) {
-      // Offline / serverless fallback registration
-      window.appState.setCurrentUser(newUserObj);
-      this.showMainApp(newUserObj);
-      this.showToast(`Account created! Welcome, ${newUserObj.name}! 🎉`, 'success');
+      console.warn('Backend register request failed, falling back to local persistent store:', err);
     }
+
+    // Success with local persistent account
+    window.appState.setCurrentUser(newUser);
+    this.showMainApp(newUser);
+    this.showToast(`Account created! Welcome, ${newUser.name}! 🎉`, 'success');
   }
 
   /**
@@ -263,23 +282,6 @@ class AppController {
     const email = document.getElementById('fsLoginEmail').value.trim();
     const password = document.getElementById('fsLoginPassword').value.trim();
     const expectedRole = this.selectedLoginRole || 'passenger';
-
-    // Fast check for passenger default credentials
-    if (expectedRole === 'passenger' && (
-      (email.toLowerCase() === 'passenger@123' && password === 'passenger@123') ||
-      (email.toLowerCase() === 'passenger@citybus.com' && password === 'pass123')
-    )) {
-      const defaultUser = {
-        id: 'user-pass-default',
-        name: 'Daily Passenger',
-        email: email,
-        role: 'passenger'
-      };
-      window.appState.setCurrentUser(defaultUser);
-      this.showMainApp(defaultUser);
-      this.showToast(`Welcome back, ${defaultUser.name}!`, 'success');
-      return;
-    }
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -295,56 +297,30 @@ class AppController {
           this.showToast(`Access Denied: This is a ${actualRole} account. Please click the ${actualRole} tab to sign in.`, 'error');
           return;
         }
-        if (data.user.role === 'passenger') {
-          this.saveLocalPassenger({ ...data.user, password });
-        }
         window.appState.setCurrentUser(data.user);
         this.showMainApp(data.user);
         this.showToast(`Welcome back, ${data.user.name}! (${data.user.role.toUpperCase()})`, 'success');
         return;
       }
-
-      // If server rejected (e.g. serverless instance restart or cold reboot), check local device vault!
-      if (expectedRole === 'passenger') {
-        const localMatch = this.getLocalPassenger(email, password);
-        if (localMatch) {
-          window.appState.setCurrentUser(localMatch);
-          this.showMainApp(localMatch);
-          this.showToast(`Welcome back, ${localMatch.name}!`, 'success');
-          return;
-        }
-      }
-
-      this.showToast(data.error || 'Invalid email or password.', 'error');
     } catch (err) {
-      // Local fallback lookup with strict role verification
-      if (expectedRole === 'passenger') {
-        const localMatch = this.getLocalPassenger(email, password);
-        if (localMatch) {
-          window.appState.setCurrentUser(localMatch);
-          this.showMainApp(localMatch);
-          this.showToast(`Welcome back, ${localMatch.name}!`, 'success');
-          return;
-        }
-      }
-
-      const matched = (window.appState.users || []).find(
-        (u) => (u.email === email || u.id === email || u.busId === email) && u.password === password
-      );
-
-      if (matched) {
-        if (matched.role !== expectedRole) {
-          const actualRole = matched.role.toUpperCase();
-          this.showToast(`Access Denied: This is a ${actualRole} account. Please click the ${actualRole} tab to sign in.`, 'error');
-          return;
-        }
-        window.appState.setCurrentUser(matched);
-        this.showMainApp(matched);
-        this.showToast(`Logged in as ${matched.name} (${matched.role.toUpperCase()})`, 'success');
-      } else {
-        this.showToast('Invalid credentials. Please verify your email and password.', 'error');
-      }
+      console.warn('Network auth error, attempting local lookup:', err);
     }
+
+    // Local persistent account fallback (for serverless environments or offline)
+    const localUser = this.findLocalUser(email, password, expectedRole);
+    if (localUser) {
+      if (localUser.role !== expectedRole) {
+        const actualRole = localUser.role.toUpperCase();
+        this.showToast(`Access Denied: This is a ${actualRole} account. Please click the ${actualRole} tab to sign in.`, 'error');
+        return;
+      }
+      window.appState.setCurrentUser(localUser);
+      this.showMainApp(localUser);
+      this.showToast(`Welcome back, ${localUser.name}! (${localUser.role.toUpperCase()})`, 'success');
+      return;
+    }
+
+    this.showToast('Invalid email or password. Please verify your credentials.', 'error');
   }
 
   /**
