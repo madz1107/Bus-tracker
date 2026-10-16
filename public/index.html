@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nellai72 | Tirunelveli Real-Time City Bus Live Tracking</title>
+  <meta name="description" content="Nellai72 - Smart Tirunelveli City Bus Live Tracking with GPS Geolocation, Live ETA, Crowd Occupancy status, and Where Is My Bus radar.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS for Map Rendering -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="app-body">
+
+  <!-- ======================================================== -->
+  <!-- 0. DEDICATED FULL-SCREEN INITIAL LOGIN SCREEN -->
+  <!-- ======================================================== -->
+  <div id="loginScreenView" class="login-fullscreen-overlay active">
+    <div class="login-auth-card">
+      
+      <!-- Brand Header -->
+      <div class="login-card-brand">
+        <div class="logo-icon-wrap" style="width: 50px; height: 50px;">
+          <i data-lucide="bus" style="width: 28px; height: 28px;"></i>
+          <span class="live-beacon"></span>
+        </div>
+        <div>
+          <h1 class="brand-name" style="font-size: 1.65rem;">Nellai<span class="brand-highlight">72</span></h1>
+          <p class="brand-tagline">Tirunelveli Smart Transit Network</p>
+        </div>
+      </div>
+
+      <div class="login-welcome-text">
+        <h2>Nellai72 City Bus Live Tracking</h2>
+        <p>Select your portal role — credentials will auto-fill, then click Sign In.</p>
+      </div>
+
+      <!-- Role Selector Tabs -->
+      <div class="login-role-selector">
+        <button type="button" class="role-select-btn active" data-role="passenger" onclick="app.selectLoginRole('passenger')">
+          <i data-lucide="user"></i>
+          <span>Passenger</span>
+        </button>
+        <button type="button" class="role-select-btn" data-role="Bus" onclick="app.selectLoginRole('Bus')">
+          <i data-lucide="bus"></i>
+          <span>Bus</span>
+        </button>
+        <button type="button" class="role-select-btn" data-role="admin" onclick="app.selectLoginRole('admin')">
+          <i data-lucide="shield"></i>
+          <span>Admin</span>
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="fullscreenLoginForm" onsubmit="app.handleFullscreenLogin(event)" autocomplete="off">
+        <div class="form-group mb-3">
+          <label for="fsLoginEmail"><i data-lucide="mail"></i> Email / Login ID</label>
+          <input type="text" id="fsLoginEmail" class="form-control" required
+                 autocomplete="new-password" placeholder="Enter email or ID…">
+        </div>
+        <div class="form-group mb-4">
+          <label for="fsLoginPassword"><i data-lucide="key"></i> Password</label>
+          <input type="password" id="fsLoginPassword" class="form-control" required
+                 autocomplete="new-password" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnFsSubmit">
+          <i data-lucide="log-in"></i> Sign In to Portal
+        </button>
+
+        <div id="passengerAuthToggle" style="margin-top: 1.1rem; text-align: center; font-size: 0.88rem; color: #64748b;">
+          New Passenger? <a href="javascript:void(0)" onclick="app.toggleAuthMode('register')" style="color: #2563eb; font-weight: 700; text-decoration: none;">Create Free Account</a>
+        </div>
+      </form>
+
+      <!-- Passenger Registration Form -->
+      <form id="fullscreenRegisterForm" onsubmit="app.handlePassengerRegister(event)" autocomplete="off" style="display: none;">
+        <div class="form-group mb-3">
+          <label for="fsRegName"><i data-lucide="user"></i> Full Name</label>
+          <input type="text" id="fsRegName" class="form-control" required placeholder="e.g. Ramesh Kumar">
+        </div>
+        <div class="form-group mb-3">
+          <label for="fsRegEmail"><i data-lucide="mail"></i> Email Address</label>
+          <input type="email" id="fsRegEmail" class="form-control" required placeholder="name@example.com">
+        </div>
+        <div class="form-group mb-3">
+          <label for="fsRegPhone"><i data-lucide="phone"></i> Mobile Number (Optional)</label>
+          <input type="tel" id="fsRegPhone" class="form-control" placeholder="+91 98765 43210">
+        </div>
+        <div class="form-group mb-3">
+          <label for="fsRegPassword"><i data-lucide="key"></i> Create Password</label>
+          <input type="password" id="fsRegPassword" class="form-control" required minlength="6" placeholder="Min. 6 characters">
+        </div>
+        <div class="form-group mb-4">
+          <label for="fsRegConfirmPassword"><i data-lucide="check-circle"></i> Confirm Password</label>
+          <input type="password" id="fsRegConfirmPassword" class="form-control" required minlength="6" placeholder="Re-enter password">
+        </div>
+        <button type="submit" class="btn btn-success btn-block btn-lg" id="btnFsRegister">
+          <i data-lucide="user-plus"></i> Register as Passenger
+        </button>
+        <div style="margin-top: 1.1rem; text-align: center; font-size: 0.88rem; color: #64748b;">
+          Already have an account? <a href="javascript:void(0)" onclick="app.toggleAuthMode('login')" style="color: #2563eb; font-weight: 700; text-decoration: none;">Sign In here</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- App Wrapper (Visible after Login) -->
+  <div id="appMainWrapper" class="app-main-wrapper" style="display: none;">
+
+  <!-- Top Navigation Header -->
+  <header class="app-header" id="appHeader">
+    <div class="header-left">
+      <div class="brand-logo" onclick="app.navigate('passenger')">
+        <div class="logo-icon-wrap">
+          <i data-lucide="bus" class="logo-icon"></i>
+          <span class="live-beacon"></span>
+        </div>
+        <div class="logo-text">
+          <span class="brand-name">Nellai<span class="brand-highlight">72</span></span>
+          <span class="brand-tagline">Tirunelveli Smart Transit</span>
+        </div>
+      </div>
+
+      <!-- Quick Route Switcher / Status -->
+      <div class="live-network-badge">
+        <span class="pulse-dot green"></span>
+        <span id="activeBusesCountText">5 Active Buses Live</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs / Role Switcher -->
+    <nav class="portal-nav" id="portalNav">
+      <button class="nav-tab active" data-portal="passenger" id="navTabPassenger" onclick="app.navigate('passenger')">
+        <i data-lucide="user"></i>
+        <span>Passenger</span>
+      </button>
+      <button class="nav-tab" data-portal="where-is-my-bus" id="navTabWimb" onclick="app.navigate('where-is-my-bus')" style="display: none;">
+        <i data-lucide="map-pin"></i>
+        <span>Where Is My Bus?</span>
+        <span class="hot-badge">LIVE</span>
+      </button>
+      <button class="nav-tab" data-portal="Bus" id="navTabBus" onclick="app.navigate('Bus')">
+        <i data-lucide="bus"></i>
+        <span>Bus</span>
+      </button>
+      <button class="nav-tab" data-portal="admin" id="navTabAdmin" onclick="app.navigate('admin')">
+        <i data-lucide="shield"></i>
+        <span>Admin</span>
+      </button>
+    </nav>
+
+    <!-- User Auth Controls -->
+    <div class="header-right">
+      <div class="user-auth-pill" id="userAuthPill">
+        <!-- Injected via JavaScript -->
+        <button class="btn btn-outline btn-sm" onclick="app.openLoginModal()">
+          <i data-lucide="log-in"></i> Sign In
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Portal Container -->
+  <main class="main-container" id="mainContainer">
+
+    <!-- ======================================================== -->
+    <!-- 1. PASSENGER PORTAL -->
+    <!-- ======================================================== -->
+    <section id="portalPassenger" class="portal-view active">
+      <div class="passenger-hero">
+        <button class="btn btn-outline" style="position: absolute; top: 1.5rem; right: 1.5rem; background: white; z-index: 10;" onclick="passenger.findNearestStop()">
+          <i data-lucide="crosshair"></i> Find Nearest Stop
+        </button>
+        <div class="hero-content">
+          <div class="hero-chip">
+            <i data-lucide="radio" class="icon-pulse"></i>
+            <span>Tirunelveli Real-Time GPS Connected</span>
+          </div>
+          <h1 class="hero-title">Track Tirunelveli City Buses in Real Time</h1>
+          <p class="hero-subtitle">Live tracking for Nellaiappar Temple, Palayamkottai, New Bus Stand, TVMCH High Ground, and Pettai routes. See which bus arrives first with smart ETA ranking.</p>
+          
+          <!-- Favorite Routes & Stops ("My Daily Commute") Section -->
+          <div class="favorite-commutes-section" id="favoriteCommutesSection" style="display: none;">
+            <div class="fav-section-header">
+              <div class="fav-title-wrap">
+                <div class="fav-icon-badge">
+                  <i data-lucide="star" style="color: #f59e0b; fill: #f59e0b; width: 18px; height: 18px;"></i>
+                </div>
+                <div>
+                  <h2 class="fav-title">⭐ My Daily Commute</h2>
+                  <p class="fav-subtitle">Starred routes & stops • 1-Tap instant live radar tracking</p>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline fav-add-btn" onclick="passenger.openSaveFavoriteModal()" title="Add Custom Daily Commute">
+                <i data-lucide="plus" style="width: 15px; height: 15px;"></i> Add Commute
+              </button>
+            </div>
+            
+            <div class="favorite-commutes-grid" id="favoriteCommutesGrid">
+              <!-- Rendered dynamically by PassengerController -->
+            </div>
+          </div>
+
+          <!-- Search & Filter Deck -->
+          <div class="search-card" style="margin-bottom: 1.5rem;">
+            <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h3 style="margin-bottom: 0; color: #0f172a; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="route" style="color: #2563eb; width: 18px; height: 18px;"></i> 1. Track by Route & Stop
+              </h3>
+              <button id="btnStarCurrentCommute" class="btn btn-xs btn-outline star-commute-btn" onclick="passenger.toggleFavoriteCurrentCommute()" title="Star this route & stop as Daily Commute">
+                <i data-lucide="star" style="width: 14px; height: 14px;"></i> <span>Star Commute</span>
+              </button>
+            </div>
+            <div class="search-field">
+              <label for="passengerRouteSelect"><i data-lucide="route"></i> Select Route</label>
+              <select id="passengerRouteSelect" class="form-control" onchange="passenger.onRouteChanged()">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            
+            <div class="search-field">
+              <label for="passengerStopSelect"><i data-lucide="map-pin"></i> Your Boarding Stop</label>
+              <select id="passengerStopSelect" class="form-control" onchange="passenger.onStopChanged()">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <div class="search-field">
+              <label for="passengerDestSelect"><i data-lucide="map-pin"></i> Destination Stop</label>
+              <select id="passengerDestSelect" class="form-control" onchange="passenger.onDestChanged()">
+                <option value="">Any Destination</option>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <button class="btn btn-primary btn-search" onclick="passenger.trackSelectedBus('byRoute')">
+              <i data-lucide="navigation"></i> Track Live
+            </button>
+          </div>
+
+          <div class="search-card">
+            <h3 style="grid-column: 1 / -1; margin-bottom: 0.5rem; color: #0f172a; font-size: 1rem; font-weight: 700;">2. Track by Bus Number</h3>
+            <div class="search-field" style="grid-column: span 3;">
+              <label for="passengerBusSearch"><i data-lucide="search"></i> Find Bus #</label>
+              <input type="text" id="passengerBusSearch" class="form-control" placeholder="e.g. 101, 102, 202" oninput="passenger.onSearchInput(this.value)">
+            </div>
+
+            <button class="btn btn-primary btn-search" onclick="passenger.trackSelectedBus('byBusNumber')">
+              <i data-lucide="navigation"></i> Track Live
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multiple Buses Arrival Priority / Leaderboard Section -->
+      <div class="content-section">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <div class="section-icon-bubble">
+              <i data-lucide="zap"></i>
+            </div>
+            <div>
+              <h2 class="section-title">Live Bus Arrival Priority for <span id="selectedStopNameDisplay" class="text-primary">All Stops</span></h2>
+              <p class="section-desc">Dynamic multi-bus priority ranked by <strong>Earliest Live ETA</strong> (not just physical distance). Updates in real-time as buses move.</p>
+            </div>
+          </div>
+          <div class="live-sync-indicator">
+            <span class="ping-circle"></span>
+            <span>Live Auto-Sync</span>
+          </div>
+        </div>
+
+        <!-- Priority Cards Container -->
+        <div class="priority-cards-grid" id="priorityBusesContainer">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- All Active Fleet Grid -->
+      <div class="content-section">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <div class="section-icon-bubble">
+              <i data-lucide="layout-grid"></i>
+            </div>
+            <div>
+              <h2 class="section-title">All Active Fleet on Network</h2>
+              <p class="section-desc">Click any bus card to inspect live telemetry or launch the full "Where Is My Bus?" live map.</p>
+            </div>
+          </div>
+          <div class="fleet-filter-pills" id="routeFilterPills">
+            <button class="pill active" onclick="passenger.filterByRoute('all')">All Routes</button>
+          </div>
+        </div>
+
+        <div class="fleet-cards-grid" id="allBusesGrid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- NEAREST STOP MAP PORTAL -->
+    <!-- ======================================================== -->
+    <section id="portalNearestStopMap" class="portal-view">
+      <div class="content-section" style="padding: 1.5rem; display: flex; flex-direction: column; height: 100%; min-height: 80vh;">
+        <div class="section-header" style="margin-bottom: 1rem;">
+          <div class="section-title-wrap" style="display: flex; align-items: center;">
+            <button class="btn btn-outline" style="margin-right: 1rem; padding: 0.5rem;" onclick="app.navigate('passenger')">
+              <i data-lucide="arrow-left"></i> Back
+            </button>
+            <div>
+              <h2 class="section-title" id="nearestStopMapTitle">Nearest Bus Stop Map</h2>
+              <p class="section-desc">View your location, the nearest stop, and full stop details.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; gap: 1rem; padding: 1rem;">
+          <div id="nearestStopMapContainer" style="width: 100%; height: 350px; border-radius: 12px; overflow: hidden; position: relative; z-index: 1;">
+            <!-- Map goes here -->
+          </div>
+          <div id="nearestStopInfoContainer" style="flex: 1; overflow-y: auto;">
+             <!-- Stop details populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+        <!-- 2. WHERE IS MY BUS? LIVE MAP & JOURNEY EXPERIENCE -->
+    <!-- ======================================================== -->
+    <section id="portalWhereIsMyBus" class="portal-view">
+      <div class="wimb-container">
+        
+        <!-- Smart Low-Crowd Suggestion Container -->
+        <div id="wimbSmartCrowdAlert"></div>
+
+        <!-- Sticky Header Telemetry HUD -->
+        <div class="wimb-header-hud">
+          <div class="wimb-bus-profile">
+            <div class="wimb-bus-badge" id="wimbBusNumberBadge">BUS 101</div>
+            <div>
+              <div class="wimb-bus-title" id="wimbBusRouteTitle">Route 101 - Central Metro Express</div>
+              <div class="wimb-bus-reg" id="wimbBusReg">Reg: TN-72-N-1892 • Bus: Muthu Kumar</div>
+            </div>
+          </div>
+
+          <!-- Quick Telemetry Badges -->
+          <div class="wimb-hud-stats" id="wimbHudStats">
+            <div class="hud-stat-item">
+              <span class="hud-label">Status</span>
+              <span class="hud-value status-pill green" id="wimbLiveStatus">🟢 Running</span>
+            </div>
+            <div class="hud-stat-item">
+              <span class="hud-label">Live Crowd</span>
+              <span class="hud-value" id="wimbLiveCrowd"><span class="crowd-pill moderate">Moderate</span></span>
+            </div>
+            <div class="hud-stat-item">
+              <span class="hud-label">Live Speed</span>
+              <span class="hud-value text-blue" id="wimbLiveSpeed">34 km/h</span>
+            </div>
+            <div class="hud-stat-item">
+              <span class="hud-label">Next Stop</span>
+              <span class="hud-value" id="wimbNextStop">Palayamkottai Stand</span>
+            </div>
+            <div class="hud-stat-item">
+              <span class="hud-label">Next Stop ETA</span>
+              <span class="hud-value text-emerald font-bold" id="wimbNextEta">3 min (1.2 km)</span>
+            </div>
+            <div class="hud-stat-item">
+              <span class="hud-label">GPS Freshness</span>
+              <span class="hud-value text-slate" id="wimbGpsFreshness">Updated live</span>
+            </div>
+          </div>
+          </div>
+
+          <!-- Action Controls -->
+          <div class="wimb-actions">
+            <select id="wimbBusSelector" class="form-control form-control-sm" onchange="wimb.onBusSelected(this.value)">
+              <!-- Options populated dynamically -->
+            </select>
+            <button class="btn btn-outline btn-sm" id="btnFollowBus" onclick="wimb.toggleFollowBus()">
+              <i data-lucide="crosshair"></i> <span id="followBusBtnText">Follow Bus</span>
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="wimb.fitFullRoute()">
+              <i data-lucide="maximize-2"></i> Full Route
+            </button>
+            <button class="btn btn-warning btn-sm" id="btnWimbAlarm" onclick="if (window.proximityAlarm) { window.proximityAlarm.openAlarmModal(window.wimb ? window.wimb.currentBusId : null); }" title="Set Bus Approaching Wake-Up Alarm" style="background: #f59e0b; color: #0f172a; border-color: #d97706; font-weight: 700; cursor: pointer;">
+              <i data-lucide="bell"></i> <span>Wake Me Up</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Split Layout: Interactive Map + Vertical Journey Timeline -->
+        <div id="wimbOfflineMessage" style="display: none; text-align: center; padding: 4rem 1rem; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 1rem;">
+          <i data-lucide="bus-off" style="width: 48px; height: 48px; color: #94a3b8; margin-bottom: 1rem;"></i>
+          <h2 style="color: #0f172a; margin-bottom: 0.5rem;">This Bus is Currently Offline</h2>
+          <p style="color: #64748b; margin-bottom: 1.5rem;">The bus has ended its trip and is not broadcasting a live GPS signal.</p>
+          <button class="btn btn-primary" onclick="window.app.navigate('passenger')">Back to Passenger Portal</button>
+        </div>
+
+        <div id="wimbLiveContent" class="wimb-main-grid">
+          
+          <!-- Left: Live Interactive Map -->
+          <div class="wimb-map-wrapper">
+            <div id="wimbMap" class="wimb-map-canvas"></div>
+            
+            <!-- Floating Map Overlays -->
+            <div class="map-floating-card top-left">
+              <div class="traffic-beacon">
+                <span class="dot green"></span> Live GPS Stream
+              </div>
+              <div class="map-tip" id="wimbMapBearingTip">Heading: South-East (115°)</div>
+            </div>
+
+            <div class="map-floating-card bottom-right">
+              <button class="map-action-icon-btn" title="Center on Bus" onclick="wimb.centerOnBus()">
+                <i data-lucide="locate"></i>
+              </button>
+              <button class="map-action-icon-btn" title="Zoom In" onclick="wimb.zoomIn()">
+                <i data-lucide="plus"></i>
+              </button>
+              <button class="map-action-icon-btn" title="Zoom Out" onclick="wimb.zoomOut()">
+                <i data-lucide="minus"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: "Where Is My Train"-Style Vertical Journey Timeline -->
+          <div class="wimb-timeline-panel">
+            <div class="timeline-panel-header">
+              <div class="panel-heading">
+                <i data-lucide="git-commit"></i>
+                <span>Live Route Progression</span>
+              </div>
+              <span class="route-progress-pct" id="wimbProgressPct">42% Complete</span>
+            </div>
+
+            <!-- Route Overall Progress Bar -->
+            <div class="wimb-progress-bar-bg">
+              <div class="wimb-progress-bar-fill" id="wimbProgressBarFill" style="width: 42%;"></div>
+            </div>
+
+            <!-- Vertical Stops List with Moving Bus Icon -->
+            <div class="linear-stops-timeline" id="wimbStopsTimeline">
+              <!-- Dynamically populated -->
+            </div>
+
+            <!-- Upcoming Stops ETA Table Footer -->
+            <div class="wimb-eta-table-card">
+              <div class="card-mini-title"><i data-lucide="clock"></i> Upcoming Stop ETA Breakdown</div>
+              <div class="eta-table-responsive">
+                <table class="eta-table" id="wimbEtaTable">
+                  <thead>
+                    <tr>
+                      <th>Stop Name</th>
+                      <th>Distance</th>
+                      <th>Live ETA</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="wimbEtaTableBody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- 3. Bus PORTAL (Mobile First) -->
+    <!-- ======================================================== -->
+    <section id="portalBus" class="portal-view">
+      <div class="Bus-container">
+        
+        <!-- Bus Mobile Header Card -->
+        <div class="Bus-top-card">
+          <div class="Bus-profile-strip">
+            <div class="avatar-circle">
+              <i data-lucide="user"></i>
+            </div>
+            <div class="Bus-meta">
+              <h2 class="Bus-name" id="condNameDisplay">Rajesh Kumar</h2>
+              <p class="Bus-role" id="condRoleDisplay">Duty Bus • ID: BUS-USER-101</p>
+            </div>
+            <div class="bus-assigned-badge" id="condAssignedBusBadge">
+              BUS 101
+            </div>
+          </div>
+
+          <!-- Route Banner -->
+          <div class="Bus-route-banner" id="condRouteBanner">
+            <div class="banner-route-tag">Assigned Route</div>
+            <select id="condRouteSelect" class="form-control" style="background: white; color: #1e293b; border: 1px solid #cbd5e1; margin: 6px 0; font-weight: 500; padding: 8px;" onchange="Bus.changeActiveRoute()">
+            </select>
+            <div class="banner-route-name" id="condRouteName" style="display: none;">Route 101 - Central Metro Express</div>
+            <div class="banner-stops-count" id="condStopsCount">6 Stops Total</div>
+          </div>
+        </div>
+
+        <!-- Big Trip Action Controller -->
+        <div class="trip-control-deck">
+          <div class="trip-status-indicator" id="condTripStatusBox">
+            <div class="status-icon-wrap" id="condStatusIconWrap">
+              <i data-lucide="play-circle"></i>
+            </div>
+            <div>
+              <div class="status-title" id="condTripStatusTitle">Trip In Progress</div>
+              <div class="status-subtitle" id="condTripStatusSubtitle">Broadcasting live GPS coordinates</div>
+            </div>
+          </div>
+
+          <div class="trip-action-buttons">
+            <button class="btn btn-success btn-lg btn-block" id="btnCondStartTrip" onclick="Bus.startTrip()">
+              <i data-lucide="play"></i> Start Trip
+            </button>
+            <button class="btn btn-danger btn-lg btn-block" id="btnCondEndTrip" onclick="Bus.endTrip()">
+              <i data-lucide="square"></i> End Trip
+            </button>
+          </div>
+        </div>
+
+        <div id="condActiveTripContent">
+        <!-- Bus Live Bus Crowd & Occupancy Level Controller -->
+        <div class="Bus-crowd-card">
+          <div class="telemetry-header" style="margin-bottom: 0.35rem;">
+            <div class="card-mini-title"><i data-lucide="users"></i> Bus Crowd &amp; Occupancy Status</div>
+            <div class="crowd-pill" id="condCurrentCrowdBadge"><span class="dot green"></span> Low Crowd</div>
+          </div>
+          <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem;">
+            Tap below to update live crowd level. This broadcasts to waiting passengers and admin instantly.
+          </p>
+          <div class="crowd-buttons-grid">
+            <button type="button" class="btn-crowd-option low-opt" id="btnCrowdLow" onclick="Bus.setCrowdLevel('Low')">
+              <div class="crowd-icon-circle" style="background:#D1FAE5; color:#059669;">💺</div>
+              <div class="crowd-btn-title">Low Crowd</div>
+              <div class="crowd-btn-sub">Seats Available</div>
+            </button>
+            <button type="button" class="btn-crowd-option mod-opt active" id="btnCrowdModerate" onclick="Bus.setCrowdLevel('Moderate')">
+              <div class="crowd-icon-circle" style="background:#FEF3C7; color:#D97706;">🚶</div>
+              <div class="crowd-btn-title">Moderate</div>
+              <div class="crowd-btn-sub">Standing Only</div>
+            </button>
+            <button type="button" class="btn-crowd-option heavy-opt" id="btnCrowdHeavy" onclick="Bus.setCrowdLevel('Heavy')">
+              <div class="crowd-icon-circle" style="background:#FEE2E2; color:#DC2626;">👥</div>
+              <div class="crowd-btn-title">Heavy Crowd</div>
+              <div class="crowd-btn-sub">Bus Full / Packed</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live GPS & Telemetry Dashboard Card -->
+        <div class="Bus-telemetry-card">
+          <div class="telemetry-header">
+            <div class="card-mini-title"><i data-lucide="activity"></i> Real-Time Telemetry & Stop Radar</div>
+            <div class="gps-badge" id="condGpsStatusBadge">
+              <span class="dot green"></span> GPS LIVE
+            </div>
+          </div>
+
+          <div class="telemetry-grid">
+            <div class="telemetry-cell">
+              <span class="t-label">Live Speed</span>
+              <span class="t-val text-blue" id="condLiveSpeed">34 <small>km/h</small></span>
+            </div>
+            <div class="telemetry-cell">
+              <span class="t-label">Current Stop</span>
+              <span class="t-val" id="condCurrentStop">Kilpauk College</span>
+            </div>
+            <div class="telemetry-cell">
+              <span class="t-label">Next Stop</span>
+              <span class="t-val text-primary" id="condNextStop">Central Junction</span>
+            </div>
+            <div class="telemetry-cell">
+              <span class="t-label">ETA to Next</span>
+              <span class="t-val text-emerald" id="condNextEta">5 min (2.4 km)</span>
+            </div>
+          </div>
+
+          <!-- Stop Geofence Radar Box -->
+          <div class="geofence-radar-box">
+            <div class="radar-ping-anim"></div>
+            <div class="radar-info">
+              <div class="radar-title" id="condGeofenceTitle">Approaching Central Railway Junction</div>
+              <div class="radar-desc" id="condGeofenceDesc">Automatic Geofence Active (Radius: 80m) • Reached stops are logged automatically.</div>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- Bus Route Stops Mini-Map -->
+        <div class="Bus-map-card">
+          <div class="card-mini-title"><i data-lucide="map"></i> Route Live Map</div>
+          <div id="condMap" class="cond-map-canvas"></div>
+        </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- 4. ADMIN PORTAL -->
+    <!-- ======================================================== -->
+    <section id="portalAdmin" class="portal-view">
+      <div class="admin-shell">
+
+        <!-- ── Admin Sidebar Navigation ── -->
+        <aside class="admin-sidebar">
+          <div class="admin-sidebar-brand">
+            <i data-lucide="shield-check"></i>
+            <span>Control Room</span>
+          </div>
+
+          <nav class="admin-nav">
+            <button class="admin-nav-btn active" id="adminNavOverview" onclick="admin.switchSection('overview')">
+              <i data-lucide="layout-dashboard"></i>
+              <span>Overview</span>
+            </button>
+            <button class="admin-nav-btn" id="adminNavBuses" onclick="admin.switchSection('buses')">
+              <i data-lucide="bus"></i>
+              <span>Manage Buses</span>
+            </button>
+            <button class="admin-nav-btn" id="adminNavRoutes" onclick="admin.switchSection('routes')">
+              <i data-lucide="route"></i>
+              <span>Manage Routes</span>
+            </button>
+            <button class="admin-nav-btn" id="adminNavStops" onclick="admin.switchSection('stops')">
+              <i data-lucide="map-pin"></i>
+              <span>Manage Stops</span>
+            </button>
+          </nav>
+
+          <div class="admin-sidebar-footer">
+            <button class="btn btn-outline btn-sm btn-block" onclick="admin.refreshFleetData()">
+              <i data-lucide="refresh-cw"></i> Refresh Data
+            </button>
+          </div>
+        </aside>
+
+        <!-- ── Admin Main Content ── -->
+        <div class="admin-main-content">
+
+          <!-- ====== SECTION 1: OVERVIEW ====== -->
+          <div class="admin-section" id="adminSectionOverview">
+            <div class="admin-section-header">
+              <div>
+                <h1 class="admin-page-title">Fleet Control Center</h1>
+                <p class="admin-page-subtitle">Real-time fleet radar, live bus telemetry, and network KPIs.</p>
+              </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="admin-kpi-grid">
+              <div class="kpi-card" onclick="admin.switchSection('buses')" style="cursor:pointer;">
+                <div class="kpi-icon-bubble blue"><i data-lucide="bus"></i></div>
+                <div class="kpi-data">
+                  <span class="kpi-num" id="kpiTotalBuses">6</span>
+                  <span class="kpi-label">Total Fleet Buses</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon-bubble green"><i data-lucide="activity"></i></div>
+                <div class="kpi-data">
+                  <span class="kpi-num" id="kpiActiveBuses">5</span>
+                  <span class="kpi-label">Running Live</span>
+                </div>
+              </div>
+              <div class="kpi-card" onclick="admin.switchSection('routes')" style="cursor:pointer;">
+                <div class="kpi-icon-bubble amber"><i data-lucide="route"></i></div>
+                <div class="kpi-data">
+                  <span class="kpi-num" id="kpiTotalRoutes">3</span>
+                  <span class="kpi-label">Active Routes</span>
+                </div>
+              </div>
+              <div class="kpi-card" onclick="admin.switchSection('stops')" style="cursor:pointer;">
+                <div class="kpi-icon-bubble purple"><i data-lucide="map-pin"></i></div>
+                <div class="kpi-data">
+                  <span class="kpi-num" id="kpiTotalStops">18</span>
+                  <span class="kpi-label">Geofenced Stops</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Fleet Radar Map -->
+            <div class="admin-map-card">
+              <div class="admin-map-header">
+                <div class="admin-section-title"><i data-lucide="radar"></i> Live Fleet Radar</div>
+                <div class="admin-map-filters">
+                  <select id="adminMapRouteFilter" class="form-control form-control-sm" onchange="admin.onMapFilterChange(this.value)">
+                    <option value="all">All Routes</option>
+                  </select>
+                  <select id="adminMapBusFilter" class="form-control form-control-sm" style="margin-left:8px;" onchange="admin.onMapBusFilterChange(this.value)">
+                    <option value="all">All Buses</option>
+                  </select>
+                </div>
+              </div>
+              <div id="adminFleetMap" class="admin-fleet-map-canvas"></div>
+            </div>
+          </div>
+
+          <!-- ====== SECTION 2: MANAGE BUSES ====== -->
+          <div class="admin-section" id="adminSectionBuses" style="display:none;">
+            <div class="admin-section-header">
+              <div>
+                <h1 class="admin-page-title">Manage Buses</h1>
+                <p class="admin-page-subtitle">Add, edit, and monitor the bus fleet with live telemetry.</p>
+              </div>
+              <button class="btn btn-primary" onclick="admin.openAddBusModal()">
+                <i data-lucide="plus"></i> Add New Bus
+              </button>
+            </div>
+
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <div class="admin-section-title"><i data-lucide="list"></i> Bus Fleet & Telemetry Status</div>
+                <div class="search-input-wrap">
+                  <i data-lucide="search"></i>
+                  <input type="text" placeholder="Search bus # or Bus…" oninput="admin.filterBusTable(this.value)" class="form-control form-control-sm">
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="admin-table" id="adminBusTable">
+                  <thead>
+                    <tr>
+                      <th>Bus #</th>
+                      <th>Reg Number</th>
+                      <th>Route</th>
+                      <th>Bus</th>
+                      <th>Crowd</th>
+                      <th>Status</th>
+                      <th>Speed</th>
+                      <th>Current Stop</th>
+                      <th>Next Stop</th>
+                      <th>Live ETA</th>
+                      <th>Progress</th>
+                      <th>Last GPS</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminBusTableBody"><!-- Populated dynamically --></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ====== SECTION 3: MANAGE ROUTES ====== -->
+          <div class="admin-section" id="adminSectionRoutes" style="display:none;">
+            <div class="admin-section-header">
+              <div>
+                <h1 class="admin-page-title">Manage Routes</h1>
+                <p class="admin-page-subtitle">Create, view and manage bus route corridors across the city network.</p>
+              </div>
+              <button class="btn btn-primary" onclick="admin.openAddRouteModal()">
+                <i data-lucide="git-branch"></i> Create New Route
+              </button>
+            </div>
+
+            <!-- Route Cards Grid -->
+            <div class="admin-route-cards-grid" id="adminRouteCardsGrid">
+              <!-- Populated dynamically -->
+            </div>
+
+            <!-- Route Stop Sequence Planner (shown when route is selected) -->
+            <div class="admin-card" id="routePlannerCard" style="display:none;">
+              <div class="admin-card-header">
+                <div class="admin-section-title"><i data-lucide="git-merge"></i> Stop Sequence Planner</div>
+                <div class="admin-route-tabs" id="adminRouteTabs"><!-- Populated dynamically --></div>
+              </div>
+              <div class="route-planner-body" id="routePlannerBody"><!-- Populated dynamically --></div>
+            </div>
+          </div>
+
+          <!-- ====== SECTION 4: MANAGE STOPS ====== -->
+          <div class="admin-section" id="adminSectionStops" style="display:none;">
+            <div class="admin-section-header">
+              <div>
+                <h1 class="admin-page-title">Manage Stops</h1>
+                <p class="admin-page-subtitle">Add geofenced bus stops to any route. Click on the map to pin a location.</p>
+              </div>
+            </div>
+
+            <!-- Route Selector for Stop Management -->
+            <div class="admin-card" style="padding: 1.25rem;">
+              <div class="admin-section-title" style="margin-bottom:1rem;"><i data-lucide="route"></i> Select Route to Manage Stops</div>
+              <div class="admin-stop-route-selector" id="adminStopRouteSelector">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- Stop List for selected route -->
+            <div class="admin-card" id="adminStopListCard" style="display:none;">
+              <div class="admin-card-header">
+                <div class="admin-section-title" id="adminStopListTitle"><i data-lucide="map-pin"></i> Stops</div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-secondary btn-sm" id="adminDrawRouteBtn" onclick="admin.openDrawRouteModal()">
+                    <i data-lucide="pen-tool"></i> Draw Route on Map
+                  </button>
+                  <button class="btn btn-secondary btn-sm" id="adminManageFaresBtn" onclick="">
+                    <i data-lucide="ticket"></i> Manage Fares
+                  </button>
+                  <button class="btn btn-primary btn-sm" id="adminAddStopBtn" onclick="">
+                    <i data-lucide="plus"></i> Add Stop to Route
+                  </button>
+                </div>
+              </div>
+              <div class="route-stops-sequence-list" id="adminInlineStopList">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end .admin-main-content -->
+      </div><!-- end .admin-shell -->
+    </section>
+
+  </main>
+  </div><!-- End of #appMainWrapper -->
+
+  <!-- ======================================================== -->
+  <!-- MODALS -->
+  <!-- ======================================================== -->
+
+  <!-- Login Modal -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title"><i data-lucide="lock"></i> Portal Authentication</div>
+        <button class="modal-close-btn" onclick="app.closeLoginModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-sm text-muted mb-3">Choose a demo role or enter your credentials to log in.</p>
+        
+        <!-- Quick Demo Switcher Buttons -->
+        <div class="demo-login-grid mb-4">
+          <button class="btn btn-outline btn-sm btn-block" onclick="app.fillDemoLogin('admin')">
+            <i data-lucide="shield"></i> Demo Admin
+          </button>
+          <button class="btn btn-outline btn-sm btn-block" onclick="app.fillDemoLogin('Bus')">
+            <i data-lucide="user-check"></i> Demo Bus
+          </button>
+          <button class="btn btn-outline btn-sm btn-block" onclick="app.fillDemoLogin('passenger')">
+            <i data-lucide="navigation"></i> Demo Passenger
+          </button>
+        </div>
+
+        <form id="loginForm" onsubmit="app.handleLoginSubmit(event)">
+          <div class="form-group mb-3">
+            <label for="loginEmail"><i data-lucide="mail"></i> Email / ID</label>
+            <input type="text" id="loginEmail" class="form-control" required placeholder="e.g. admin@citybus.com">
+          </div>
+          <div class="form-group mb-4">
+            <label for="loginPassword"><i data-lucide="key"></i> Password</label>
+            <input type="password" id="loginPassword" class="form-control" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <i data-lucide="log-in"></i> Sign In to Portal
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Bus Modal -->
+  <div class="modal-overlay" id="busModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="busModalTitle"><i data-lucide="bus"></i> Add New Bus</div>
+        <button class="modal-close-btn" onclick="admin.closeBusModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="busForm" onsubmit="admin.saveBus(event)">
+          <input type="hidden" id="busFormId">
+          <div class="form-row mb-3">
+            <div class="form-col">
+              <label for="busFormNumber">Bus Number</label>
+              <input type="text" id="busFormNumber" class="form-control" required placeholder="e.g. 104">
+            </div>
+            <div class="form-col">
+              <label for="busFormReg">Registration Number</label>
+              <input type="text" id="busFormReg" class="form-control" required placeholder="e.g. TN-01-AB-1044">
+            </div>
+          </div>
+          <div class="form-group mb-3">
+            <label for="busFormRoute">Assigned Routes (Ctrl+Click for multiple)</label>
+            <select id="busFormRoute" class="form-control" required multiple style="height: 100px;">
+              <!-- Dynamic -->
+            </select>
+          </div>
+          <div class="form-row mb-3">
+            <div class="form-col">
+              <label for="busFormBus">Bus Name</label>
+              <input type="text" id="busFormBus" class="form-control" required placeholder="e.g. Anand Verma">
+            </div>
+            <div class="form-col">
+              <label for="busFormPhone">Bus Phone</label>
+              <input type="text" id="busFormPhone" class="form-control" placeholder="+91 98400 00000">
+            </div>
+          </div>
+          <div class="form-row mb-3">
+            <div class="form-col">
+              <label for="busFormLoginEmail">Bus Login ID (or Email)</label>
+              <input type="text" id="busFormLoginEmail" class="form-control" placeholder="e.g. BUS-104 or email">
+            </div>
+            <div class="form-col">
+              <label for="busFormLoginPassword">Bus Login Password</label>
+              <input type="text" id="busFormLoginPassword" class="form-control" placeholder="Leave blank to keep current">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Save Bus</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Route Modal -->
+  <div class="modal-overlay" id="routeModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="routeModalTitle"><i data-lucide="git-branch"></i> Create New Route</div>
+        <button class="modal-close-btn" onclick="admin.closeRouteModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="routeForm" onsubmit="admin.saveRoute(event)">
+          <input type="hidden" id="routeFormId">
+          <div class="form-row mb-3">
+            <div class="form-col">
+              <label for="routeFormCode">Route Code</label>
+              <input type="text" id="routeFormCode" class="form-control" required placeholder="e.g. 404">
+            </div>
+            <div class="form-col">
+              <label for="routeFormColor">Route Theme Color</label>
+              <input type="color" id="routeFormColor" class="form-control form-control-color" value="#3B82F6">
+            </div>
+          </div>
+          <div class="form-group mb-3">
+            <label for="routeFormName">Route Name</label>
+            <input type="text" id="routeFormName" class="form-control" required placeholder="e.g. Coastal Shuttle">
+          </div>
+          <div class="form-group mb-3">
+            <label for="routeFormDescription">Route Description</label>
+            <textarea id="routeFormDescription" class="form-control" placeholder="Optional description..." rows="2"></textarea>
+          </div>
+          <button type="submit" id="routeFormSubmitBtn" class="btn btn-primary btn-block">Create Route</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Stop to Route Modal -->
+  <div class="modal-overlay" id="addStopModal">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title"><i data-lucide="map-pin"></i> Add Stop to Route</div>
+        <button class="modal-close-btn" onclick="admin.closeAddStopModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="stopForm" onsubmit="admin.saveStopToRoute(event)">
+          <input type="hidden" id="stopFormRouteId">
+          <input type="hidden" id="stopFormLat">
+          <input type="hidden" id="stopFormLng">
+
+          <div class="form-group mb-3">
+            <label for="stopFormName">Bus Stop Name</label>
+            <input type="text" id="stopFormName" class="form-control" required placeholder="e.g. Palayamkottai Bus Stand">
+          </div>
+
+          <!-- Map Picker -->
+          <div class="mb-3">
+            <label style="font-size:0.82rem; font-weight:700; color:#475569; display:block; margin-bottom:6px;">
+              📍 Click on the map to pin the stop location
+            </label>
+            <div id="stopPickerMap" style="width:100%; height:260px; border-radius:12px; border:2px solid #e2e8f0; overflow:hidden;"></div>
+            <div id="stopPickerCoords" style="margin-top:6px; font-size:0.78rem; color:#64748b; text-align:center; min-height:18px;">
+              No location selected — tap the map above
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btnSaveStop" disabled>
+            <i data-lucide="plus-circle"></i> Add Stop to Sequence
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Draw Route on Map Modal -->
+  <div class="modal-overlay" id="drawRouteModal">
+    <div class="modal-card" style="max-width: 600px; width: 95%;">
+      <div class="modal-header">
+        <div class="modal-title"><i data-lucide="pen-tool"></i> Draw Route Roadway</div>
+        <button class="modal-close-btn" onclick="admin.closeDrawRouteModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">
+          Click on the map to trace the precise road path. The line will connect between your clicks. 
+          Use this to shape the route exactly as it travels on real roads.
+        </p>
+        <div id="drawRouteMap" style="width:100%; height:400px; border-radius:12px; border:2px solid #e2e8f0; overflow:hidden; margin-bottom: 12px;"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div id="drawRouteStatus" style="font-size: 0.8rem; font-weight: 600; color: #475569;">
+            Points: <span id="drawRoutePointsCount">0</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="admin.undoDrawPoint()">
+              <i data-lucide="undo"></i> Undo
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" style="color: #ef4444; border-color: #fca5a5;" onclick="admin.clearDrawPoints()">
+              <i data-lucide="trash-2"></i> Clear
+            </button>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" onclick="admin.saveDrawnRoute()">
+          <i data-lucide="save"></i> Save Custom Route Line
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Stop Name Modal -->
+  <div class="modal-overlay" id="editStopModal">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-header">
+        <div class="modal-title"><i data-lucide="edit"></i> Edit Stop Name</div>
+        <button class="modal-close-btn" onclick="admin.closeEditStopModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="editStopForm" onsubmit="admin.saveEditedStop(event)">
+          <input type="hidden" id="editStopFormRouteId">
+          <input type="hidden" id="editStopFormStopId">
+          <input type="hidden" id="editStopFormLat">
+          <input type="hidden" id="editStopFormLng">
+          
+          <div class="form-group mb-3">
+            <label for="editStopFormName">Stop Name</label>
+            <input type="text" id="editStopFormName" class="form-control" required placeholder="e.g. Main Station">
+          </div>
+          
+          <!-- Map Picker -->
+          <div class="mb-3">
+            <label style="font-size:0.82rem; font-weight:700; color:#475569; display:block; margin-bottom:6px;">
+              📍 Click on the map to change the stop location
+            </label>
+            <div id="editStopPickerMap" style="width:100%; height:260px; border-radius:12px; border:2px solid #e2e8f0; overflow:hidden;"></div>
+            <div id="editStopPickerCoords" style="margin-top:6px; font-size:0.78rem; color:#64748b; text-align:center; min-height:18px;">
+              Current location selected
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket Price (Fare Matrix) Modal -->
+  <div class="modal-overlay" id="ticketPriceModal">
+    <div class="modal-card" style="max-width: 500px; width: 95%;">
+      <div class="modal-header">
+        <div class="modal-title"><i data-lucide="ticket"></i> Manage Ticket Prices</div>
+        <button class="modal-close-btn" onclick="admin.closeTicketPriceModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 16px;">
+          Set ticket prices from a specific boarding stop to all subsequent destination stops on this route.
+        </p>
+        
+        <div class="form-group mb-3">
+          <label for="fareMatrixBoardingStop">Select Boarding Stop</label>
+          <select id="fareMatrixBoardingStop" class="form-control" onchange="admin.onFareBoardingStopChanged()">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div id="fareMatrixDestinationsContainer" style="margin-top: 16px; max-height: 350px; overflow-y: auto; padding-right: 8px;">
+          <!-- Dynamically populated list of inputs -->
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" style="margin-top: 16px;" onclick="admin.saveFareMatrix()">
+          <i data-lucide="save"></i> Save Ticket Prices
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- BUS PROXIMITY / WAKE ME UP ALARM MODAL -->
+  <!-- ======================================================== -->
+  <div class="modal-overlay" id="proximityAlarmModal">
+    <div class="modal-card modal-card-medium" style="max-width: 620px; width: 94%; margin: auto; border-radius: 18px; box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.45); border: 1px solid #cbd5e1; overflow: hidden; max-height: calc(100vh - 3rem); display: flex; flex-direction: column;">
+      
+      <!-- Center-Aligned Header -->
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 1.25rem 1.5rem; position: relative; text-align: center; display: flex; align-items: center; justify-content: center;">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <div style="background: #f59e0b; color: #0f172a; width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);">
+              <i data-lucide="bell-ring" style="width: 18px; height: 18px;"></i>
+            </div>
+            <span style="font-size: 1.15rem; font-weight: 800; letter-spacing: -0.2px; color: #ffffff;">Bus Approaching & Departing Alarm</span>
+          </div>
+          <div style="font-size: 0.78rem; font-weight: 500; color: #94a3b8;">"Wake Me Up" Smart Proximity Alert System</div>
+        </div>
+        <button class="modal-close-btn" style="position: absolute; right: 1.25rem; top: 1.25rem; color: #94a3b8; background: transparent; border: none; cursor: pointer;" onclick="proximityAlarm.closeAlarmModal()"><i data-lucide="x"></i></button>
+      </div>
+
+      <!-- Scrollable Form Body -->
+      <form onsubmit="proximityAlarm.setAlarm(event)" class="modal-body" style="padding: 1.5rem 1.75rem; overflow-y: auto;">
+        
+        <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.25rem; line-height: 1.5; text-align: center;">
+          Rest peacefully! We'll play a notification sound chime and alert you the moment your bus is nearing your stop.
+        </p>
+
+        <!-- 2-Column Responsive Row: Bus Selector & Alert Purpose -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 1rem;">
+          
+          <!-- Col 1: Bus Selector -->
+          <div class="form-group">
+            <label for="alarmBusSelect" style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 5px; display: block;">Select Bus to Track</label>
+            <select id="alarmBusSelect" class="form-control" onchange="proximityAlarm.onAlarmBusChanged(this.value)">
+              <!-- Options populated dynamically -->
+            </select>
+            <div id="alarmBusInfoBadge" style="font-size: 0.76rem; color: #64748b; margin-top: 4px;"></div>
+          </div>
+
+          <!-- Col 2: Alert Purpose -->
+          <div class="form-group">
+            <label style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 5px; display: block;">Alert Purpose</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <button type="button" class="btn btn-xs btn-primary" id="btnAlarmModeBoarding" onclick="proximityAlarm.selectStopMode('boarding')" style="border-radius: 8px; padding: 8px 6px; font-weight: 700; font-size: 0.8rem; text-align: center; justify-content: center;">
+                🛫 Pickup Stop
+              </button>
+              <button type="button" class="btn btn-xs btn-outline" id="btnAlarmModeDeparting" onclick="proximityAlarm.selectStopMode('departing')" style="border-radius: 8px; padding: 8px 6px; font-weight: 700; font-size: 0.8rem; text-align: center; justify-content: center;">
+                🛬 Drop-off Stop
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Target Stop Selector (Full Width) -->
+        <div class="form-group mb-3">
+          <label for="alarmStopSelect" style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 5px; display: block;" id="alarmStopLabel">
+            Your Boarding Stop (Pickup)
+          </label>
+          <select id="alarmStopSelect" class="form-control" onchange="proximityAlarm.onTargetStopChanged()">
+            <!-- Options populated dynamically -->
+          </select>
+        </div>
+
+        <!-- 2-Column Trigger Condition Row -->
+        <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 12px; margin-bottom: 0.75rem;">
+          <div class="form-group">
+            <label for="alarmTriggerType" style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 5px; display: block;">Alert Me When</label>
+            <select id="alarmTriggerType" class="form-control" onchange="proximityAlarm.updateTriggerUnitLabel()">
+              <option value="distance" selected>Distance is within</option>
+              <option value="stops">Remaining stops are within</option>
+              <option value="eta">Live ETA is within</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="alarmTriggerValue" style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 5px; display: block;" id="alarmTriggerUnit">Meters</label>
+            <input type="number" id="alarmTriggerValue" class="form-control" value="500" min="1" step="any" required style="text-align: center; font-weight: 700; font-size: 0.95rem;">
+          </div>
+        </div>
+
+        <!-- Centered Recommendation Badge -->
+        <div id="alarmTriggerHelp" style="text-align: center; font-size: 0.8rem; color: #0284c7; background: #f0f9ff; padding: 6px 14px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 1.25rem;">
+          Recommended: 300m - 1000m (e.g., 500 meters away).
+        </div>
+
+        <!-- Notification Channels / Options Card -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; margin-bottom: 1.25rem;">
+          <div style="font-size: 0.8rem; font-weight: 800; color: #475569; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Alert Options</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #1e293b; cursor: pointer;">
+              <input type="checkbox" id="alarmSoundCheck" checked style="accent-color: #2563eb; width: 16px; height: 16px;">
+              <span>🔔 Notification Sound</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #1e293b; cursor: pointer;">
+              <input type="checkbox" id="alarmPushCheck" checked style="accent-color: #2563eb; width: 16px; height: 16px;">
+              <span>📢 Push Alert</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #1e293b; cursor: pointer;">
+              <input type="checkbox" id="alarmVibrateCheck" checked style="accent-color: #2563eb; width: 16px; height: 16px;">
+              <span>📳 Phone Vibration</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #1e293b; cursor: pointer;" title="Also play sound when bus departs any stop en route">
+              <input type="checkbox" id="alarmDepartingCheck" checked style="accent-color: #2563eb; width: 16px; height: 16px;">
+              <span>🚀 Departed Stop Alert</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Actions Row -->
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button type="button" class="btn btn-outline" style="flex: 1; padding: 10px; font-weight: 700; border-radius: 10px; justify-content: center;" onclick="proximityAlarm.testChime()">
+            <i data-lucide="volume-2"></i> Test Sound
+          </button>
+          <button type="submit" class="btn btn-primary" style="flex: 1.6; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 10px; font-weight: 700; border-radius: 10px; justify-content: center; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);">
+            <i data-lucide="bell"></i> Activate Alarm
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- HIGH PRIORITY WAKE-UP ALARM RINGING SCREEN -->
+  <!-- ======================================================== -->
+  <div class="modal-overlay" id="proximityAlarmTriggeredModal" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);">
+    <div class="modal-card proximity-ringing-card" style="max-width: 500px; width: 92%; margin: auto; text-align: center; border: 2px solid #f59e0b; box-shadow: 0 0 50px rgba(245, 158, 11, 0.45); border-radius: 18px; overflow: hidden;">
+      <div class="modal-body" style="padding: 2.25rem 1.5rem;">
+        
+        <!-- Animated Ringing Bell Animation -->
+        <div class="ringing-bell-container">
+          <div class="ringing-bell-ripple"></div>
+          <div class="ringing-bell-ripple delay"></div>
+          <div class="ringing-bell-icon">
+            <i data-lucide="bell-ring" style="width: 42px; height: 42px; color: #d97706;"></i>
+          </div>
+        </div>
+
+        <div id="triggeredAlarmCategoryBadge" style="display: inline-block; background: #fef3c7; color: #b45309; padding: 4px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.85rem;">
+          🔔 Bus Approaching Now!
+        </div>
+
+        <h2 style="font-size: 1.7rem; color: #0f172a; font-weight: 800; margin-bottom: 0.35rem;" id="triggeredAlarmBusTitle">
+          BUS 101
+        </h2>
+        <p style="font-size: 1.05rem; color: #475569; margin-bottom: 1.5rem;" id="triggeredAlarmDesc">
+          is approaching <strong id="triggeredAlarmStopTitle" style="color: #0f172a;">Your Stop</strong>!
+        </p>
+
+        <!-- Live Telemetry Stats in Trigger Card -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 1.5rem;">
+          <div>
+            <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Distance</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #2563eb;" id="triggeredAlarmDistanceVal">450m</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Live ETA</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #10b981;" id="triggeredAlarmEtaVal">~2 min</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Remaining</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #f59e0b;" id="triggeredAlarmStopsVal">1 stop</div>
+          </div>
+        </div>
+
+        <!-- Big Dismiss / Wake Up Button -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button class="btn btn-primary btn-lg btn-block" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-size: 1.1rem; padding: 14px; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);" onclick="proximityAlarm.dismissTriggeredAlarm()">
+            <i data-lucide="check-circle-2"></i> I'm Awake • Dismiss Alarm
+          </button>
+          <button class="btn btn-outline btn-block" style="border-radius: 10px;" onclick="proximityAlarm.viewBusFromAlarm()">
+            <i data-lucide="navigation"></i> View Live on Map
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- ⭐ SAVE / EDIT FAVORITE COMMUTE MODAL -->
+  <!-- ======================================================== -->
+  <div class="modal-overlay" id="saveFavoriteModal">
+    <div class="modal-card modal-card-medium" style="max-width: 500px; width: 92%; margin: auto; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 1.25rem 1.5rem; position: relative;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+            <i data-lucide="star" style="color: #f59e0b; fill: #f59e0b; width: 20px; height: 20px;"></i>
+            <span style="font-size: 1.15rem; font-weight: 800; color: #ffffff;">Save Daily Commute</span>
+          </div>
+          <div style="font-size: 0.78rem; font-weight: 500; color: #94a3b8;">1-tap quick access card on your home screen</div>
+        </div>
+        <button class="modal-close-btn" style="position: absolute; right: 1.25rem; top: 1.25rem; color: #94a3b8; background: transparent; border: none; cursor: pointer;" onclick="passenger.closeSaveFavoriteModal()"><i data-lucide="x"></i></button>
+      </div>
+
+      <form onsubmit="passenger.saveFavoriteCommute(event)" class="modal-body" style="padding: 1.5rem 1.75rem; overflow-y: auto;">
+        
+        <!-- Quick Preset Badges -->
+        <div class="form-group mb-3">
+          <label style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 6px; display: block;">Commute Preset</label>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;" id="favPresetChips">
+            <button type="button" class="btn btn-xs btn-outline preset-chip active" onclick="passenger.selectFavoritePreset('🎓 College', '🎓 College Commute')">🎓 College</button>
+            <button type="button" class="btn btn-xs btn-outline preset-chip" onclick="passenger.selectFavoritePreset('💼 Office', '💼 Office Commute')">💼 Office</button>
+            <button type="button" class="btn btn-xs btn-outline preset-chip" onclick="passenger.selectFavoritePreset('🏠 Home', '🏠 Heading Home')">🏠 Home</button>
+            <button type="button" class="btn btn-xs btn-outline preset-chip" onclick="passenger.selectFavoritePreset('⚡ Daily', '⚡ Daily Route')">⚡ Daily</button>
+          </div>
+        </div>
+
+        <!-- Commute Label -->
+        <div class="form-group mb-3">
+          <label for="favCommuteLabel" style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 5px; display: block;">Commute Name / Nickname</label>
+          <input type="text" id="favCommuteLabel" class="form-control" placeholder="e.g. 🎓 College Commute" required value="🎓 College Commute">
+        </div>
+
+        <!-- Route Selector -->
+        <div class="form-group mb-3">
+          <label for="favModalRouteSelect" style="font-weight: 700; font-size: 0.85rem; color: #334155; margin-bottom: 5px; display: block;"><i data-lucide="route" style="width: 14px; height: 14px;"></i> Select Route</label>
+          <select id="favModalRouteSelect" class="form-control" onchange="passenger.onFavModalRouteChanged()">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <!-- Boarding & Destination Stops Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem;">
+          <div class="form-group">
+            <label for="favModalStopSelect" style="font-weight: 700; font-size: 0.82rem; color: #334155; margin-bottom: 5px; display: block;"><i data-lucide="map-pin" style="width: 13px; height: 13px; color: #2563eb;"></i> Boarding Stop</label>
+            <select id="favModalStopSelect" class="form-control" onchange="passenger.onFavModalStopChanged()">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="favModalDestSelect" style="font-weight: 700; font-size: 0.82rem; color: #334155; margin-bottom: 5px; display: block;"><i data-lucide="flag" style="width: 13px; height: 13px; color: #10b981;"></i> Destination Stop</label>
+            <select id="favModalDestSelect" class="form-control">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button type="button" class="btn btn-outline" style="flex: 1; padding: 11px; font-weight: 700; border-radius: 10px; justify-content: center;" onclick="passenger.closeSaveFavoriteModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" style="flex: 1.6; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 11px; font-weight: 700; border-radius: 10px; justify-content: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);">
+            <i data-lucide="star" style="fill: white; width: 16px; height: 16px;"></i> Save Commute
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Floating Proximity Alarm Widget -->
+  <div id="activeProximityAlarmWidget" class="floating-alarm-widget" style="display: none;"></div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- App JS Modules -->
+  <script src="js/geo-engine.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/priority-engine.js"></script>
+  <script src="js/map-manager.js"></script>
+  <script src="js/proximity-alarm.js"></script>
+  <script src="js/passenger.js"></script>
+  <script src="js/where-is-my-bus.js"></script>
+  <script src="js/Bus.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

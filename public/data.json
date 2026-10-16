@@ -1,0 +1,349 @@
+﻿{
+    "routes":  [
+                   {
+                       "id":  "route-1",
+                       "name":  "Route 101 - New Bus Stand to Town Temple \u0026 Pettai",
+                       "code":  "101",
+                       "color":  "#2563EB",
+                       "stops":  [
+                                     {
+                                         "id":  "stop-101-1",
+                                         "name":  "New Bus Stand (Vaeinthaankulam)",
+                                         "lat":  8.7032,
+                                         "lng":  77.7285,
+                                         "sequence":  1
+                                     },
+                                     {
+                                         "id":  "stop-101-2",
+                                         "name":  "Palayamkottai Bus Stand",
+                                         "lat":  8.7180,
+                                         "lng":  77.7420,
+                                         "sequence":  2
+                                     },
+                                     {
+                                         "id":  "stop-101-3",
+                                         "name":  "VOC Ground / St. Xavier\u0027s",
+                                         "lat":  8.7245,
+                                         "lng":  77.7340,
+                                         "sequence":  3
+                                     },
+                                     {
+                                         "id":  "stop-101-4",
+                                         "name":  "Nellai Railway Junction Overbridge",
+                                         "lat":  8.7290,
+                                         "lng":  77.7125,
+                                         "sequence":  4
+                                     },
+                                     {
+                                         "id":  "stop-101-5",
+                                         "name":  "Tirunelveli Town Swami Nellaiappar Temple",
+                                         "lat":  8.7305,
+                                         "lng":  77.6880,
+                                         "sequence":  5
+                                     },
+                                     {
+                                         "id":  "stop-101-6",
+                                         "name":  "Pettai Industrial Estate",
+                                         "lat":  8.7450,
+                                         "lng":  77.6710,
+                                         "sequence":  6
+                                     }
+                                 ]
+                   },
+                   {
+                       "id":  "route-2",
+                       "name":  "Route 202 - TVMCH High Ground to Thazhaiyuthu Cements",
+                       "code":  "202",
+                       "color":  "#059669",
+                       "stops":  [
+                                     {
+                                         "id":  "stop-202-1",
+                                         "name":  "TVMCH Medical College Hospital",
+                                         "lat":  8.7095,
+                                         "lng":  77.7560,
+                                         "sequence":  1
+                                     },
+                                     {
+                                         "id":  "stop-202-2",
+                                         "name":  "Vannarpettai Bridge Bypass",
+                                         "lat":  8.7260,
+                                         "lng":  77.7220,
+                                         "sequence":  2
+                                     },
+                                     {
+                                         "id":  "stop-202-3",
+                                         "name":  "Tirunelveli Collectorate \u0026 Court",
+                                         "lat":  8.7330,
+                                         "lng":  77.7250,
+                                         "sequence":  3
+                                     },
+                                     {
+                                         "id":  "stop-202-4",
+                                         "name":  "Thachannallur Bypass Road (NH44)",
+                                         "lat":  8.7520,
+                                         "lng":  77.7190,
+                                         "sequence":  4
+                                     },
+                                     {
+                                         "id":  "stop-202-5",
+                                         "name":  "Sankar Nagar / India Cements Thazhaiyuthu",
+                                         "lat":  8.7840,
+                                         "lng":  77.7290,
+                                         "sequence":  5
+                                     }
+                                 ]
+                   },
+                   {
+                       "id":  "route-3",
+                       "name":  "Route 303 - Perumalpuram to New Bus Stand via Palayamkottai",
+                       "code":  "303",
+                       "color":  "#D97706",
+                       "stops":  [
+                                     {
+                                         "id":  "stop-303-1",
+                                         "name":  "Reddiarpatti Main Road",
+                                         "lat":  8.6850,
+                                         "lng":  77.7480,
+                                         "sequence":  1
+                                     },
+                                     {
+                                         "id":  "stop-303-2",
+                                         "name":  "Perumalpuram Arch",
+                                         "lat":  8.6980,
+                                         "lng":  77.7420,
+                                         "sequence":  2
+                                     },
+                                     {
+                                         "id":  "stop-303-3",
+                                         "name":  "Sarah Tucker College Corner",
+                                         "lat":  8.7160,
+                                         "lng":  77.7460,
+                                         "sequence":  3
+                                     },
+                                     {
+                                         "id":  "stop-303-4",
+                                         "name":  "Anna Stadium \u0026 Armed Reserve Ground",
+                                         "lat":  8.7120,
+                                         "lng":  77.7380,
+                                         "sequence":  4
+                                     },
+                                     {
+                                         "id":  "stop-303-5",
+                                         "name":  "New Bus Stand (Vaeinthaankulam)",
+                                         "lat":  8.7032,
+                                         "lng":  77.7285,
+                                         "sequence":  5
+                                     }
+                                 ]
+                   }
+               ],
+    "buses":  [
+                  {
+                      "id":  "BUS-101",
+                      "busNumber":  "101",
+                      "regNumber":  "TN-72-N-1892",
+                      "routeId":  "route-1",
+                      "conductorId":  "cond-1",
+                      "conductorName":  "Muthu Kumar",
+                      "conductorPhone":  "+91 94431 12345",
+                      "status":  "Running",
+                      "lat":  8.72935792,
+                      "lng":  77.7136094,
+                      "speed":  35,
+                      "bearing":  308.12657392475529,
+                      "currentStopId":  "stop-101-4",
+                      "currentStopName":  "Nellai Railway Junction Overbridge",
+                      "nextStopId":  "stop-101-5",
+                      "nextStopName":  "Tirunelveli Town Swami Nellaiappar Temple",
+                      "distanceToNextKm":  2.8,
+                      "etaMinutes":  5,
+                      "routeProgress":  45,
+                      "reachedStopIds":  [
+                                             "stop-101-1",
+                                             "stop-101-2"
+                                         ],
+                      "lastUpdated":  "2026-08-26T23:03:12.802Z",
+                      "crowdLevel":  "Heavy",
+                      "isTripActive":  true,
+                      "simulatorIndex":  0.45111111111111063
+                  },
+                  {
+                      "id":  "BUS-102",
+                      "busNumber":  "102",
+                      "regNumber":  "TN-72-N-2045",
+                      "routeId":  "route-1",
+                      "conductorId":  "cond-2",
+                      "conductorName":  "Subbiah Thevar",
+                      "conductorPhone":  "+91 94432 23456",
+                      "status":  "Running",
+                      "lat":  8.7295,
+                      "lng":  77.7020,
+                      "speed":  42,
+                      "bearing":  270,
+                      "currentStopId":  "stop-101-4",
+                      "currentStopName":  "Nellai Railway Junction Overbridge",
+                      "nextStopId":  "stop-101-5",
+                      "nextStopName":  "Tirunelveli Town Swami Nellaiappar Temple",
+                      "distanceToNextKm":  1.8,
+                      "etaMinutes":  4,
+                      "routeProgress":  65,
+                      "reachedStopIds":  [
+                                             "stop-101-1",
+                                             "stop-101-2",
+                                             "stop-101-3",
+                                             "stop-101-4"
+                                         ],
+                      "lastUpdated":  null,
+                      "crowdLevel":  "Low",
+                      "isTripActive":  true,
+                      "simulatorIndex":  0.65
+                  },
+                  {
+                      "id":  "BUS-103",
+                      "busNumber":  "103",
+                      "regNumber":  "TN-72-N-3110",
+                      "routeId":  "route-1",
+                      "conductorId":  "cond-3",
+                      "conductorName":  "Antony Raj",
+                      "conductorPhone":  "+91 94433 34567",
+                      "status":  "Running",
+                      "lat":  8.7050,
+                      "lng":  77.7300,
+                      "speed":  24,
+                      "bearing":  45,
+                      "currentStopId":  "stop-101-1",
+                      "currentStopName":  "New Bus Stand (Vaeinthaankulam)",
+                      "nextStopId":  "stop-101-2",
+                      "nextStopName":  "Palayamkottai Bus Stand",
+                      "distanceToNextKm":  2.2,
+                      "etaMinutes":  7,
+                      "routeProgress":  10,
+                      "reachedStopIds":  [
+                                             "stop-101-1"
+                                         ],
+                      "lastUpdated":  null,
+                      "crowdLevel":  "Heavy",
+                      "isTripActive":  true,
+                      "simulatorIndex":  0.10
+                  },
+                  {
+                      "id":  "BUS-201",
+                      "busNumber":  "201",
+                      "regNumber":  "TN-72-N-4420",
+                      "routeId":  "route-2",
+                      "conductorId":  "cond-4",
+                      "conductorName":  "Kandasamy P.",
+                      "conductorPhone":  "+91 94434 45678",
+                      "status":  "Running",
+                      "lat":  8.7300,
+                      "lng":  77.7240,
+                      "speed":  38,
+                      "bearing":  350,
+                      "currentStopId":  "stop-202-2",
+                      "currentStopName":  "Vannarpettai Bridge Bypass",
+                      "nextStopId":  "stop-202-3",
+                      "nextStopName":  "Tirunelveli Collectorate \u0026 Court",
+                      "distanceToNextKm":  1.1,
+                      "etaMinutes":  2,
+                      "routeProgress":  40,
+                      "reachedStopIds":  [
+                                             "stop-202-1",
+                                             "stop-202-2"
+                                         ],
+                      "lastUpdated":  null,
+                      "crowdLevel":  "Moderate",
+                      "isTripActive":  true,
+                      "simulatorIndex":  0.40
+                  },
+                  {
+                      "id":  "BUS-202",
+                      "busNumber":  "202",
+                      "regNumber":  "TN-72-N-5120",
+                      "routeId":  "route-2",
+                      "conductorId":  "cond-5",
+                      "conductorName":  "Perumal Swamy",
+                      "conductorPhone":  "+91 94435 56789",
+                      "status":  "Stopped",
+                      "lat":  8.7095,
+                      "lng":  77.7560,
+                      "speed":  0,
+                      "bearing":  0,
+                      "currentStopId":  "stop-202-1",
+                      "currentStopName":  "TVMCH Medical College Hospital",
+                      "nextStopId":  "stop-202-2",
+                      "nextStopName":  "Vannarpettai Bridge Bypass",
+                      "distanceToNextKm":  2.5,
+                      "etaMinutes":  6,
+                      "routeProgress":  0,
+                      "reachedStopIds":  [
+                                             "stop-202-1"
+                                         ],
+                      "lastUpdated":  null,
+                      "crowdLevel":  "Low",
+                      "isTripActive":  false,
+                      "simulatorIndex":  0.0
+                  },
+                  {
+                      "id":  "BUS-301",
+                      "busNumber":  "301",
+                      "regNumber":  "TN-72-N-6330",
+                      "routeId":  "route-3",
+                      "conductorId":  "cond-6",
+                      "conductorName":  "Thangaraj M.",
+                      "conductorPhone":  "+91 94436 67890",
+                      "status":  "Running",
+                      "lat":  8.7000,
+                      "lng":  77.7420,
+                      "speed":  40,
+                      "bearing":  10,
+                      "currentStopId":  "stop-303-2",
+                      "currentStopName":  "Perumalpuram Arch",
+                      "nextStopId":  "stop-303-3",
+                      "nextStopName":  "Sarah Tucker College Corner",
+                      "distanceToNextKm":  1.6,
+                      "etaMinutes":  3,
+                      "routeProgress":  30,
+                      "reachedStopIds":  [
+                                             "stop-303-1",
+                                             "stop-303-2"
+                                         ],
+                      "lastUpdated":  null,
+                      "crowdLevel":  "Moderate",
+                      "isTripActive":  true,
+                      "simulatorIndex":  0.30
+                  }
+              ],
+    "users":  [
+                  {
+                      "id":  "user-admin",
+                      "email":  "admin@123",
+                      "password":  "admin@123",
+                      "name":  "Nellai Transit Control Officer",
+                      "role":  "admin"
+                  },
+                  {
+                      "id":  "cond-1",
+                      "email":  "conductor1@citybus.com",
+                      "password":  "pass123",
+                      "name":  "Muthu Kumar",
+                      "role":  "conductor",
+                      "busId":  "BUS-101"
+                  },
+                  {
+                      "id":  "user-pass-1",
+                      "email":  "passenger@citybus.com",
+                      "password":  "pass123",
+                      "name":  "Priya Sharma",
+                      "role":  "passenger"
+                  },
+                  {
+                      "id":  "passenger-20260826230047-237",
+                      "email":  "kavitha@gmail.com",
+                      "password":  "password123",
+                      "name":  "Kavitha S",
+                      "role":  "passenger",
+                      "phone":  "+919876543210",
+                      "createdAt":  "2026-08-26T23:00:47.758Z"
+                  }
+              ]
+}
