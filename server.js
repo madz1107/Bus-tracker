@@ -79,7 +79,12 @@ function busToRow(bus) {
   if (bus.busNumber !== undefined) row.bus_number = bus.busNumber;
   if (bus.regNumber !== undefined) row.reg_number = bus.regNumber;
   if (bus.BusName !== undefined || bus.name !== undefined) row.bus_name = bus.BusName || bus.name;
-  if (bus.routeId !== undefined) row.route_id = bus.routeId;
+  
+  if (bus.routeId !== undefined) {
+    const routeExists = db.routes && db.routes.some(r => r.id === bus.routeId);
+    row.route_id = routeExists ? bus.routeId : null;
+  }
+  
   if (bus.assignedRouteIds !== undefined) row.assigned_route_ids = bus.assignedRouteIds;
   if (bus.conductorId !== undefined) row.conductor_id = bus.conductorId;
   if (bus.conductorName !== undefined) row.conductor_name = bus.conductorName;
@@ -140,13 +145,13 @@ async function syncFromSupabase() {
       supabase.from('users').select('*')
     ]);
 
-    if (!routesRes.error && routesRes.data && routesRes.data.length > 0) {
+    if (!routesRes.error && Array.isArray(routesRes.data)) {
       db.routes = routesRes.data;
     }
-    if (!busesRes.error && busesRes.data && busesRes.data.length > 0) {
+    if (!busesRes.error && Array.isArray(busesRes.data)) {
       db.buses = busesRes.data.map(rowToBus);
     }
-    if (!usersRes.error && usersRes.data && usersRes.data.length > 0) {
+    if (!usersRes.error && Array.isArray(usersRes.data) && usersRes.data.length > 0) {
       db.users = usersRes.data;
     }
     saveData();
@@ -176,9 +181,9 @@ app.get('/api/state', async (req, res) => {
         supabase.from('buses').select('*').order('bus_number', { ascending: true }),
         supabase.from('users').select('*')
       ]);
-      if (!r.error && r.data && r.data.length > 0) db.routes = r.data;
-      if (!b.error && b.data && b.data.length > 0) db.buses = b.data.map(rowToBus);
-      if (!u.error && u.data && u.data.length > 0) db.users = u.data;
+      if (!r.error && Array.isArray(r.data)) db.routes = r.data;
+      if (!b.error && Array.isArray(b.data)) db.buses = b.data.map(rowToBus);
+      if (!u.error && Array.isArray(u.data) && u.data.length > 0) db.users = u.data;
     } catch (e) {}
   }
   res.json(db);
@@ -277,7 +282,7 @@ app.get('/api/routes', async (req, res) => {
   if (supabase) {
     try {
       const { data, error } = await supabase.from('routes').select('*').order('code', { ascending: true });
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         db.routes = data;
       }
     } catch (e) {}
@@ -382,7 +387,7 @@ app.get('/api/buses', async (req, res) => {
   if (supabase) {
     try {
       const { data, error } = await supabase.from('buses').select('*').order('bus_number', { ascending: true });
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         db.buses = data.map(rowToBus);
       }
     } catch (e) {}

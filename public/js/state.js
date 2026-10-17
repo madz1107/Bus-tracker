@@ -53,6 +53,14 @@ class StateManager {
         const res = await fetch('/api/buses');
         if (!res.ok) return;
         const freshBuses = await res.json();
+        if (!Array.isArray(freshBuses)) return;
+
+        // If fleet count changed or IDs differ (e.g., bus added or deleted), sync immediately
+        if (freshBuses.length !== this.buses.length || freshBuses.some(fb => !this.getBusById(fb.id))) {
+          this.buses = freshBuses;
+          this.notify({ type: 'FLEET_UPDATED' });
+          return;
+        }
 
         let hasChange = false;
         const changedBusIds = [];
@@ -238,13 +246,29 @@ class StateManager {
 
   async deleteBus(busId) {
     try {
+      // 1. Optimistic immediate removal from local state & UI
+      this.buses = this.buses.filter(b => b.id !== busId);
+      this.notify({ type: 'BUS_DELETED', busId });
+      this.notify({ type: 'FLEET_UPDATED' });
+
+      // 2. Direct Supabase deletion if connected in browser
+      if (window.CloudDB && window.CloudDB.supabase) {
+        try {
+          await window.CloudDB.supabase.from('buses').delete().eq('id', busId);
+        } catch (sErr) {
+          console.warn('Direct Supabase delete bus:', sErr);
+        }
+      }
+
+      // 3. Backend API delete
       const res = await fetch(`/api/buses/${busId}`, { method: 'DELETE' });
       if (res.ok) {
-        await this.init();
         this.channel.postMessage({ type: 'FLEET_UPDATED' });
         return true;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Delete bus error:', e);
+    }
     return false;
   }
 

@@ -459,7 +459,12 @@ class AdminController {
 
   async deleteBusPrompt(busId) {
     if (confirm(`Are you sure you want to delete ${busId}?`)) {
+      if (this.markers && this.markers[busId]) {
+        this.markers[busId].remove();
+        delete this.markers[busId];
+      }
       await window.appState.deleteBus(busId);
+      this.render();
       window.app.showToast('Bus deleted.', 'info');
     }
   }
