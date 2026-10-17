@@ -18,15 +18,37 @@
     }
   }
 
-  // 2. Initialize Firebase (Optional / Configurable)
+  // 2. Firebase Configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyANCHkg4s37uUx4Nu5iXvtDidRXVbTh2Wk",
+    authDomain: "nellai72-2aeb8.firebaseapp.com",
+    projectId: "nellai72-2aeb8",
+    storageBucket: "nellai72-2aeb8.firebasestorage.app",
+    messagingSenderId: "485293954337",
+    appId: "1:485293954337:web:53f9b9f019b2a675ac1a60",
+    measurementId: "G-KE7X06QWFD"
+  };
+  window.firebaseConfig = firebaseConfig;
+
   let firebaseApp = null;
-  if (window.firebase && window.firebaseConfig && window.firebaseConfig.apiKey) {
+  let firebaseAnalytics = null;
+  let firebaseAuth = null;
+
+  if (window.firebase && typeof window.firebase.initializeApp === 'function') {
     try {
-      firebaseApp = window.firebase.initializeApp(window.firebaseConfig);
+      firebaseApp = window.firebase.initializeApp(firebaseConfig);
       window.firebaseApp = firebaseApp;
-      console.log('✅ Firebase initialized successfully.');
+      if (typeof window.firebase.analytics === 'function') {
+        firebaseAnalytics = window.firebase.analytics();
+        window.firebaseAnalytics = firebaseAnalytics;
+      }
+      if (typeof window.firebase.auth === 'function') {
+        firebaseAuth = window.firebase.auth();
+        window.firebaseAuth = firebaseAuth;
+      }
+      console.log('✅ Firebase initialized for project: nellai72-2aeb8');
     } catch (err) {
-      console.warn('⚠️ Firebase init skipped:', err.message);
+      console.warn('⚠️ Firebase init skipped or already active:', err.message);
     }
   }
 
