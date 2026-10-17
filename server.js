@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,19 +17,98 @@ app.use(express.urlencoded({ extended: true }));
 const dataFilePath = path.join(__dirname, 'data.json');
 const publicDir = path.join(__dirname, 'public');
 
-// In-Memory Database Store
+// Initialize Supabase Client
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://yvjfcmjmlcuzxscvuzhm.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2amZjbWptbGN1enhzY3Z1emhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyMjU3MzUsImV4cCI6MjEwNzgwMTczNX0.dZ7IL_sySbvIYApMWVkWJZN4gMKkufbIZqOicO9uIXQ';
+
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ Supabase connected:', SUPABASE_URL);
+  } catch (err) {
+    console.warn('⚠️ Supabase initialization skipped:', err.message);
+  }
+}
+
+// In-Memory Database Store (with JSON file fallback)
 let db = {
   routes: [],
   buses: [],
   users: []
 };
 
-// Helper: Load Data
+// Helper: Convert Postgres snake_case row to App camelCase bus model
+function rowToBus(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    busNumber: row.bus_number,
+    regNumber: row.reg_number,
+    BusName: row.bus_name,
+    name: row.bus_name,
+    routeId: row.route_id,
+    assignedRouteIds: row.assigned_route_ids || [],
+    conductorId: row.conductor_id,
+    conductorName: row.conductor_name,
+    conductorPhone: row.conductor_phone,
+    status: row.status,
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    speed: Number(row.speed || 0),
+    bearing: Number(row.bearing || 0),
+    currentStopId: row.current_stop_id,
+    currentStopName: row.current_stop_name,
+    nextStopId: row.next_stop_id,
+    nextStopName: row.next_stop_name,
+    distanceToNextKm: Number(row.distance_to_next_km || 0),
+    etaMinutes: Number(row.eta_minutes || 0),
+    routeProgress: Number(row.route_progress || 0),
+    reachedStopIds: row.reached_stop_ids || [],
+    crowdLevel: row.crowd_level || 'Moderate',
+    isTripActive: Boolean(row.is_trip_active),
+    simulatorIndex: Number(row.simulator_index || 0),
+    lastUpdated: row.last_updated
+  };
+}
+
+// Helper: Convert App camelCase bus model to Postgres snake_case row
+function busToRow(bus) {
+  const row = {};
+  if (bus.id !== undefined) row.id = bus.id;
+  if (bus.busNumber !== undefined) row.bus_number = bus.busNumber;
+  if (bus.regNumber !== undefined) row.reg_number = bus.regNumber;
+  if (bus.BusName !== undefined || bus.name !== undefined) row.bus_name = bus.BusName || bus.name;
+  if (bus.routeId !== undefined) row.route_id = bus.routeId;
+  if (bus.assignedRouteIds !== undefined) row.assigned_route_ids = bus.assignedRouteIds;
+  if (bus.conductorId !== undefined) row.conductor_id = bus.conductorId;
+  if (bus.conductorName !== undefined) row.conductor_name = bus.conductorName;
+  if (bus.conductorPhone !== undefined) row.conductor_phone = bus.conductorPhone;
+  if (bus.status !== undefined) row.status = bus.status;
+  if (bus.lat !== undefined) row.lat = Number(bus.lat);
+  if (bus.lng !== undefined) row.lng = Number(bus.lng);
+  if (bus.speed !== undefined) row.speed = Number(bus.speed);
+  if (bus.bearing !== undefined) row.bearing = Number(bus.bearing);
+  if (bus.currentStopId !== undefined) row.current_stop_id = bus.currentStopId;
+  if (bus.currentStopName !== undefined) row.current_stop_name = bus.currentStopName;
+  if (bus.nextStopId !== undefined) row.next_stop_id = bus.nextStopId;
+  if (bus.nextStopName !== undefined) row.next_stop_name = bus.nextStopName;
+  if (bus.distanceToNextKm !== undefined) row.distance_to_next_km = Number(bus.distanceToNextKm);
+  if (bus.etaMinutes !== undefined) row.eta_minutes = Number(bus.etaMinutes);
+  if (bus.routeProgress !== undefined) row.route_progress = Number(bus.routeProgress);
+  if (bus.reachedStopIds !== undefined) row.reached_stop_ids = bus.reachedStopIds;
+  if (bus.crowdLevel !== undefined) row.crowd_level = bus.crowdLevel;
+  if (bus.isTripActive !== undefined) row.is_trip_active = Boolean(bus.isTripActive);
+  if (bus.simulatorIndex !== undefined) row.simulator_index = Number(bus.simulatorIndex);
+  row.last_updated = new Date().toISOString();
+  return row;
+}
+
+// Helper: Load Data from local JSON fallback
 function loadData() {
   try {
     if (fs.existsSync(dataFilePath)) {
       let raw = fs.readFileSync(dataFilePath, 'utf8');
-      // Strip UTF-8 BOM if present
       raw = raw.replace(/^\uFEFF/, '');
       db = JSON.parse(raw);
     }
@@ -40,18 +121,44 @@ function loadData() {
   return db;
 }
 
-// Helper: Save Data (safe for read-only serverless platforms like Vercel)
+// Helper: Save Data to local JSON (safe for serverless read-only disk)
 function saveData() {
   try {
     fs.writeFileSync(dataFilePath, JSON.stringify(db, null, 2), 'utf8');
   } catch (err) {
-    // On serverless environments (e.g. Vercel), disk is read-only. We silently maintain in-memory updates.
-    console.warn('Notice: Disk write skipped or read-only filesystem (in-memory state updated):', err.message);
+    // Disk write skipped on read-only environments
   }
 }
 
-// Initial Load
+// Refresh data from Supabase Cloud
+async function syncFromSupabase() {
+  if (!supabase) return;
+  try {
+    const [routesRes, busesRes, usersRes] = await Promise.all([
+      supabase.from('routes').select('*').order('code', { ascending: true }),
+      supabase.from('buses').select('*').order('bus_number', { ascending: true }),
+      supabase.from('users').select('*')
+    ]);
+
+    if (!routesRes.error && routesRes.data && routesRes.data.length > 0) {
+      db.routes = routesRes.data;
+    }
+    if (!busesRes.error && busesRes.data && busesRes.data.length > 0) {
+      db.buses = busesRes.data.map(rowToBus);
+    }
+    if (!usersRes.error && usersRes.data && usersRes.data.length > 0) {
+      db.users = usersRes.data;
+    }
+    saveData();
+    console.log(`📡 Synced from Supabase: ${db.routes.length} routes, ${db.buses.length} buses, ${db.users.length} users.`);
+  } catch (e) {
+    console.warn('Supabase sync warning, using local state:', e.message);
+  }
+}
+
+// Initial bootstrap
 loadData();
+syncFromSupabase();
 
 // Serve Static Frontend Assets
 app.use(express.static(publicDir));
@@ -61,20 +168,53 @@ app.use(express.static(publicDir));
 // ==========================================
 
 // 1. Full State Snapshot
-app.get('/api/state', (req, res) => {
+app.get('/api/state', async (req, res) => {
+  if (supabase) {
+    try {
+      const [r, b, u] = await Promise.all([
+        supabase.from('routes').select('*').order('code', { ascending: true }),
+        supabase.from('buses').select('*').order('bus_number', { ascending: true }),
+        supabase.from('users').select('*')
+      ]);
+      if (!r.error && r.data && r.data.length > 0) db.routes = r.data;
+      if (!b.error && b.data && b.data.length > 0) db.buses = b.data.map(rowToBus);
+      if (!u.error && u.data && u.data.length > 0) db.users = u.data;
+    } catch (e) {}
+  }
   res.json(db);
 });
 
 // 2. Authentication: Login
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password, expectedRole } = req.body;
   if (!email || !password) {
     return res.status(400).json({ success: false, error: 'Email and password are required.' });
   }
 
-  const matched = db.users.find(u => 
-    (u.email === email || u.id === email || u.busId === email) && u.password === password
-  );
+  let matched = null;
+
+  // Check Supabase first
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .or(`email.eq.${email},id.eq.${email},bus_id.eq.${email}`)
+        .eq('password', password)
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        matched = data[0];
+      }
+    } catch (e) {}
+  }
+
+  // Fallback to in-memory db
+  if (!matched) {
+    matched = db.users.find(u => 
+      (u.email === email || u.id === email || u.busId === email) && u.password === password
+    );
+  }
 
   if (!matched) {
     return res.status(401).json({ success: false, error: 'Invalid email or password.' });
@@ -96,21 +236,16 @@ app.post('/api/auth/login', (req, res) => {
       name: matched.name,
       email: matched.email,
       role: matched.role,
-      busId: matched.busId || null
+      busId: matched.busId || matched.bus_id || null
     }
   });
 });
 
 // 2b. Authentication: Passenger Registration
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const { email, password, name, phone } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({ success: false, error: 'Name, email, and password are required.' });
-  }
-
-  const existing = db.users.find(u => u.email === email);
-  if (existing) {
-    return res.status(409).json({ success: false, error: 'An account with this email already exists.' });
   }
 
   const newUser = {
@@ -122,6 +257,15 @@ app.post('/api/auth/register', (req, res) => {
     role: 'passenger'
   };
 
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('users').insert([newUser]);
+      if (error && error.code === '23505') {
+        return res.status(409).json({ success: false, error: 'An account with this email already exists in Supabase.' });
+      }
+    } catch (e) {}
+  }
+
   db.users.push(newUser);
   saveData();
 
@@ -129,15 +273,36 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 // 3. Routes: Get All
-app.get('/api/routes', (req, res) => {
+app.get('/api/routes', async (req, res) => {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('routes').select('*').order('code', { ascending: true });
+      if (!error && data && data.length > 0) {
+        db.routes = data;
+      }
+    } catch (e) {}
+  }
   res.json(db.routes || []);
 });
 
 // 3b. Routes: Create / Update
-app.post('/api/routes', (req, res) => {
+app.post('/api/routes', async (req, res) => {
   const routeData = req.body;
   if (!routeData.id) {
     routeData.id = 'route-' + Math.floor(10 + Math.random() * 90);
+  }
+
+  if (supabase) {
+    try {
+      await supabase.from('routes').upsert({
+        id: routeData.id,
+        name: routeData.name,
+        code: routeData.code,
+        color: routeData.color || '#2563EB',
+        stops: routeData.stops || [],
+        roadway: routeData.roadway || []
+      });
+    } catch (e) {}
   }
 
   const existingIdx = db.routes.findIndex(r => r.id === routeData.id);
@@ -151,15 +316,20 @@ app.post('/api/routes', (req, res) => {
 });
 
 // 3c. Routes: Delete
-app.delete('/api/routes/:id', (req, res) => {
+app.delete('/api/routes/:id', async (req, res) => {
   const routeId = req.params.id;
+  if (supabase) {
+    try {
+      await supabase.from('routes').delete().eq('id', routeId);
+    } catch (e) {}
+  }
   db.routes = db.routes.filter(r => r.id !== routeId);
   saveData();
   res.json({ success: true, message: 'Route deleted' });
 });
 
 // 3d. Routes: Add Stop
-app.post('/api/routes/:id/stops', (req, res) => {
+app.post('/api/routes/:id/stops', async (req, res) => {
   const routeId = req.params.id;
   const stopData = req.body;
   const route = db.routes.find(r => r.id === routeId);
@@ -176,11 +346,18 @@ app.post('/api/routes/:id/stops', (req, res) => {
   }
   route.stops.push(stopData);
   saveData();
+
+  if (supabase) {
+    try {
+      await supabase.from('routes').update({ stops: route.stops }).eq('id', routeId);
+    } catch (e) {}
+  }
+
   res.json({ success: true, stop: stopData });
 });
 
 // 3e. Routes: Delete Stop
-app.delete('/api/routes/:id/stops/:stopId', (req, res) => {
+app.delete('/api/routes/:id/stops/:stopId', async (req, res) => {
   const { id: routeId, stopId } = req.params;
   const route = db.routes.find(r => r.id === routeId);
 
@@ -191,12 +368,25 @@ app.delete('/api/routes/:id/stops/:stopId', (req, res) => {
   if (Array.isArray(route.stops)) {
     route.stops = route.stops.filter(s => s.id !== stopId);
     saveData();
+    if (supabase) {
+      try {
+        await supabase.from('routes').update({ stops: route.stops }).eq('id', routeId);
+      } catch (e) {}
+    }
   }
   res.json({ success: true, message: 'Stop removed' });
 });
 
 // 4. Buses: Get All
-app.get('/api/buses', (req, res) => {
+app.get('/api/buses', async (req, res) => {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('buses').select('*').order('bus_number', { ascending: true });
+      if (!error && data && data.length > 0) {
+        db.buses = data.map(rowToBus);
+      }
+    } catch (e) {}
+  }
   res.json(db.buses || []);
 });
 
@@ -211,7 +401,7 @@ app.get('/api/buses/:id', (req, res) => {
 });
 
 // 4c. Buses: GPS Location Broadcast
-app.post('/api/buses/:id/location', (req, res) => {
+app.post('/api/buses/:id/location', async (req, res) => {
   const busId = req.params.id;
   const body = req.body;
   const bus = db.buses.find(b => b.id === busId);
@@ -240,11 +430,16 @@ app.post('/api/buses/:id/location', (req, res) => {
   bus.lastUpdated = new Date().toISOString();
   saveData();
 
+  // Async sync to Supabase PostgreSQL & Realtime
+  if (supabase) {
+    supabase.from('buses').update(busToRow(bus)).eq('id', busId).then().catch(() => {});
+  }
+
   res.json({ success: true, bus });
 });
 
 // 4d. Buses: Crowd Level Broadcast
-app.post('/api/buses/:id/crowd', (req, res) => {
+app.post('/api/buses/:id/crowd', async (req, res) => {
   const bus = db.buses.find(b => b.id === req.params.id);
   if (!bus) {
     return res.status(404).json({ error: 'Bus not found' });
@@ -256,11 +451,15 @@ app.post('/api/buses/:id/crowd', (req, res) => {
   bus.lastUpdated = new Date().toISOString();
   saveData();
 
+  if (supabase) {
+    supabase.from('buses').update({ crowd_level: bus.crowdLevel, last_updated: bus.lastUpdated }).eq('id', bus.id).then().catch(() => {});
+  }
+
   res.json({ success: true, bus });
 });
 
 // 4e. Buses: Trip Control (Start / End Trip)
-app.post('/api/buses/:id/trip', (req, res) => {
+app.post('/api/buses/:id/trip', async (req, res) => {
   const bus = db.buses.find(b => b.id === req.params.id);
   if (!bus) {
     return res.status(404).json({ error: 'Bus not found' });
@@ -275,11 +474,20 @@ app.post('/api/buses/:id/trip', (req, res) => {
   bus.lastUpdated = new Date().toISOString();
   saveData();
 
+  if (supabase) {
+    supabase.from('buses').update({
+      is_trip_active: bus.isTripActive,
+      status: bus.status,
+      speed: bus.speed,
+      last_updated: bus.lastUpdated
+    }).eq('id', bus.id).then().catch(() => {});
+  }
+
   res.json({ success: true, bus });
 });
 
 // 4f. Buses: Create / Update Bus (Admin)
-app.post('/api/buses', (req, res) => {
+app.post('/api/buses', async (req, res) => {
   const newBus = req.body;
   if (!newBus.id) {
     newBus.id = 'BUS-' + Math.floor(100 + Math.random() * 900);
@@ -298,6 +506,7 @@ app.post('/api/buses', (req, res) => {
       password: passwordToSet,
       name: newBus.BusName || 'Bus Driver',
       role: 'Bus',
+      bus_id: newBus.id,
       busId: newBus.id
     };
 
@@ -306,9 +515,19 @@ app.post('/api/buses', (req, res) => {
     } else {
       db.users.push(busUser);
     }
+
+    if (supabase) {
+      supabase.from('users').upsert({
+        id: busUser.id,
+        email: busUser.email,
+        password: busUser.password,
+        name: busUser.name,
+        role: 'Bus',
+        bus_id: newBus.id
+      }).then().catch(() => {});
+    }
   }
 
-  // Remove password from bus payload before saving
   delete newBus.loginPassword;
 
   const existingIdx = db.buses.findIndex(b => b.id === newBus.id);
@@ -319,15 +538,75 @@ app.post('/api/buses', (req, res) => {
   }
 
   saveData();
+
+  if (supabase) {
+    try {
+      await supabase.from('buses').upsert(busToRow(newBus));
+    } catch (e) {}
+  }
+
   res.json({ success: true, bus: newBus });
 });
 
 // 4g. Buses: Delete Bus
-app.delete('/api/buses/:id', (req, res) => {
+app.delete('/api/buses/:id', async (req, res) => {
   const busId = req.params.id;
   db.buses = db.buses.filter(b => b.id !== busId);
   saveData();
+
+  if (supabase) {
+    try {
+      await supabase.from('buses').delete().eq('id', busId);
+    } catch (e) {}
+  }
+
   res.json({ success: true, message: 'Bus removed' });
+});
+
+// 5. Favorite Commutes API
+app.get('/api/favorites/:userId', async (req, res) => {
+  const { userId } = req.params;
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('favorite_commutes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        return res.json({ success: true, favorites: data });
+      }
+    } catch (e) {}
+  }
+  res.json({ success: true, favorites: [] });
+});
+
+app.post('/api/favorites', async (req, res) => {
+  const favData = req.body;
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('favorite_commutes')
+        .insert([{
+          user_id: favData.userId,
+          route_id: favData.routeId,
+          stop_id: favData.stopId,
+          dest_id: favData.destId,
+          bus_id: favData.busId,
+          route_name: favData.routeName,
+          stop_name: favData.stopName,
+          dest_name: favData.destName,
+          bus_number: favData.busNumber
+        }])
+        .select();
+
+      if (!error && data && data.length > 0) {
+        return res.json({ success: true, favorite: data[0] });
+      }
+    } catch (e) {}
+  }
+  res.json({ success: true, favorite: favData });
 });
 
 // Fallback route: serve index.html for SPA

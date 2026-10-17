@@ -146,6 +146,11 @@ class StateManager {
     this.channel.postMessage(payload);
     this.notify(payload);
 
+    // Direct real-time cloud broadcast via Supabase
+    if (window.CloudDB && typeof window.CloudDB.updateBusLocation === 'function') {
+      window.CloudDB.updateBusLocation(busId, locationData);
+    }
+
     // Sync to backend asynchronously
     try {
       fetch(`/api/buses/${busId}/location`, {
@@ -175,6 +180,11 @@ class StateManager {
     // Broadcast across browser tabs instantly
     this.channel.postMessage(payload);
     this.notify(payload);
+
+    // Direct real-time cloud broadcast via Supabase
+    if (window.CloudDB && typeof window.CloudDB.updateBusLocation === 'function') {
+      window.CloudDB.updateBusLocation(busId, { crowdLevel });
+    }
 
     try {
       fetch(`/api/buses/${busId}/crowd`, {
