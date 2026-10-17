@@ -692,18 +692,13 @@ class AdminController {
     this.renderStopsSection();
   }
 
-  deleteRoute(routeId) {
+  async deleteRoute(routeId) {
     if (!confirm('Are you sure you want to delete this route? This action cannot be undone.')) {
       return;
     }
-    const idx = window.appState.routes.findIndex(r => r.id === routeId);
-    if (idx !== -1) {
-      window.appState.routes.splice(idx, 1);
-      window.appState.notify();
-      window.app.showToast('Route deleted successfully', 'success');
-      this.renderRouteCards();
-      fetch(`/api/routes/${routeId}`, { method: 'DELETE' }).catch(console.error);
-    }
+    await window.appState.deleteRoute(routeId);
+    this.renderRouteCards();
+    window.app.showToast('Route deleted successfully', 'success');
   }
 
   async createReturnRoute(routeId) {

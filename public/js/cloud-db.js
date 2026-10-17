@@ -91,32 +91,90 @@
     if (!supabaseClient) return;
 
     try {
-      const channel = supabaseClient
+      // 1. Live Buses Channel (GPS, Create, Update, Delete)
+      supabaseClient
         .channel('realtime:public:buses')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'buses' },
           (payload) => {
-            const freshRow = payload.new;
-            if (!freshRow || !freshRow.id || !window.appState) return;
+            if (!window.appState) return;
 
-            const updatedBus = rowToBus(freshRow);
-            const local = window.appState.getBusById(updatedBus.id);
-
-            if (local) {
-              Object.assign(local, updatedBus);
-              window.appState.notify({
-                type: 'BUS_LOCATION_UPDATE',
-                source: 'supabase_realtime',
-                busId: updatedBus.id,
-                locationData: updatedBus
-              });
+            if (payload.eventType === 'DELETE') {
+              const deletedId = payload.old ? payload.old.id : null;
+              if (deletedId) {
+                window.appState.buses = window.appState.buses.filter(b => b.id !== deletedId);
+                window.appState.notify({ type: 'BUS_DELETED', busId: deletedId });
+                window.appState.notify({ type: 'FLEET_UPDATED' });
+              }
+            } else if (payload.eventType === 'INSERT') {
+              const freshRow = payload.new;
+              if (freshRow && freshRow.id) {
+                const newBus = rowToBus(freshRow);
+                if (!window.appState.getBusById(newBus.id)) {
+                  window.appState.buses.push(newBus);
+                }
+                window.appState.notify({ type: 'FLEET_UPDATED' });
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              const freshRow = payload.new;
+              if (freshRow && freshRow.id) {
+                const updatedBus = rowToBus(freshRow);
+                const local = window.appState.getBusById(updatedBus.id);
+                if (local) {
+                  Object.assign(local, updatedBus);
+                  window.appState.notify({
+                    type: 'BUS_LOCATION_UPDATE',
+                    source: 'supabase_realtime',
+                    busId: updatedBus.id,
+                    locationData: updatedBus
+                  });
+                } else {
+                  window.appState.buses.push(updatedBus);
+                  window.appState.notify({ type: 'FLEET_UPDATED' });
+                }
+              }
             }
           }
         )
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log('⚡ Connected to Supabase Realtime channel for live bus GPS tracking.');
+            console.log('⚡ Connected to Supabase Realtime channel for live bus tracking.');
+          }
+        });
+
+      // 2. Live Routes & Stops Channel (Create, Update, Stops change, Delete)
+      supabaseClient
+        .channel('realtime:public:routes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'routes' },
+          (payload) => {
+            if (!window.appState) return;
+
+            if (payload.eventType === 'DELETE') {
+              const deletedId = payload.old ? payload.old.id : null;
+              if (deletedId) {
+                window.appState.routes = window.appState.routes.filter(r => r.id !== deletedId);
+                window.appState.notify({ type: 'ROUTES_UPDATED', routeId: deletedId });
+              }
+            } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const freshRoute = payload.new;
+              if (freshRoute && freshRoute.id) {
+                const idx = window.appState.routes.findIndex(r => r.id === freshRoute.id);
+                if (idx >= 0) {
+                  window.appState.routes[idx] = freshRoute;
+                } else {
+                  window.appState.routes.push(freshRoute);
+                }
+                window.appState.notify({ type: 'ROUTES_UPDATED', route: freshRoute });
+              }
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('⚡ Connected to Supabase Realtime channel for live routes & stops.');
           }
         });
     } catch (e) {

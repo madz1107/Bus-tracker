@@ -55,56 +55,73 @@ class StateManager {
    */
   startLivePolling() {
     if (this._pollInterval) clearInterval(this._pollInterval);
+    let pollCount = 0;
     this._pollInterval = setInterval(async () => {
       try {
+        pollCount++;
+        // 1. Poll Buses (every 2s)
         const res = await fetch('/api/buses');
-        if (!res.ok) return;
-        const freshBuses = await res.json();
-        if (!Array.isArray(freshBuses)) return;
+        if (res.ok) {
+          const freshBuses = await res.json();
+          if (Array.isArray(freshBuses)) {
+            // If fleet count changed or IDs differ (e.g., bus added or deleted), sync immediately
+            if (freshBuses.length !== this.buses.length || freshBuses.some(fb => !this.getBusById(fb.id))) {
+              this.buses = freshBuses;
+              this.notify({ type: 'FLEET_UPDATED' });
+            } else {
+              let hasChange = false;
+              const changedBusIds = [];
+              freshBuses.forEach((freshBus) => {
+                const local = this.getBusById(freshBus.id);
+                if (local) {
+                  const hasBusChanged = (
+                    local.lat !== freshBus.lat ||
+                    local.lng !== freshBus.lng ||
+                    local.speed !== freshBus.speed ||
+                    local.bearing !== freshBus.bearing ||
+                    local.status !== freshBus.status ||
+                    local.crowdLevel !== freshBus.crowdLevel ||
+                    local.nextStopName !== freshBus.nextStopName ||
+                    local.isTripActive !== freshBus.isTripActive ||
+                    local.etaMinutes !== freshBus.etaMinutes ||
+                    local.distanceToNextKm !== freshBus.distanceToNextKm ||
+                    local.routeProgress !== freshBus.routeProgress ||
+                    local.lastUpdated !== freshBus.lastUpdated
+                  );
 
-        // If fleet count changed or IDs differ (e.g., bus added or deleted), sync immediately
-        if (freshBuses.length !== this.buses.length || freshBuses.some(fb => !this.getBusById(fb.id))) {
-          this.buses = freshBuses;
-          this.notify({ type: 'FLEET_UPDATED' });
-          return;
-        }
+                  if (hasBusChanged) {
+                    Object.assign(local, freshBus);
+                    changedBusIds.push(freshBus.id);
+                    hasChange = true;
+                  }
+                }
+              });
 
-        let hasChange = false;
-        const changedBusIds = [];
-        freshBuses.forEach((freshBus) => {
-          const local = this.getBusById(freshBus.id);
-          if (local) {
-            // Check if any position, telemetry, crowd, or status attribute changed
-            const hasBusChanged = (
-              local.lat !== freshBus.lat ||
-              local.lng !== freshBus.lng ||
-              local.speed !== freshBus.speed ||
-              local.bearing !== freshBus.bearing ||
-              local.status !== freshBus.status ||
-              local.crowdLevel !== freshBus.crowdLevel ||
-              local.nextStopName !== freshBus.nextStopName ||
-              local.isTripActive !== freshBus.isTripActive ||
-              local.etaMinutes !== freshBus.etaMinutes ||
-              local.distanceToNextKm !== freshBus.distanceToNextKm ||
-              local.routeProgress !== freshBus.routeProgress ||
-              local.lastUpdated !== freshBus.lastUpdated
-            );
-
-            if (hasBusChanged) {
-              Object.assign(local, freshBus);
-              changedBusIds.push(freshBus.id);
-              hasChange = true;
+              if (hasChange) {
+                this.notify({ type: 'BUS_LOCATION_UPDATE', source: 'poll', changedBusIds });
+              }
             }
           }
-        });
+        }
 
-        if (hasChange) {
-          this.notify({ type: 'BUS_LOCATION_UPDATE', source: 'poll', changedBusIds });
+        // 2. Poll Routes & Stops (every 6s / 3 ticks) for automatic background database sync
+        if (pollCount % 3 === 0) {
+          const rRes = await fetch('/api/routes');
+          if (rRes.ok) {
+            const freshRoutes = await rRes.json();
+            if (Array.isArray(freshRoutes)) {
+              const routesDiffer = JSON.stringify(freshRoutes) !== JSON.stringify(this.routes);
+              if (routesDiffer) {
+                this.routes = freshRoutes;
+                this.notify({ type: 'ROUTES_UPDATED' });
+              }
+            }
+          }
         }
       } catch (e) {
-        // Silently ignore polling errors (offline, server restart, etc.)
+        // Silently ignore polling errors
       }
-    }, 2000); // Poll every 2 seconds for smooth real-time cross-device accuracy
+    }, 2000);
   }
 
   subscribe(callback) {
@@ -237,17 +254,56 @@ class StateManager {
 
   async saveBus(busData) {
     try {
+      // 1. Optimistic immediate local update
+      const existingIdx = this.buses.findIndex(b => b.id === busData.id);
+      if (existingIdx >= 0) {
+        this.buses[existingIdx] = busData;
+      } else {
+        this.buses.push(busData);
+      }
+      this.notify({ type: 'BUS_UPDATED', bus: busData });
+      this.notify({ type: 'FLEET_UPDATED' });
+
+      // 2. Direct Supabase save if connected in browser
+      if (window.CloudDB && window.CloudDB.supabase) {
+        try {
+          const row = {
+            id: busData.id,
+            bus_number: busData.busNumber,
+            reg_number: busData.regNumber,
+            bus_name: busData.BusName || busData.name,
+            route_id: busData.routeId,
+            conductor_id: busData.conductorId,
+            conductor_name: busData.conductorName,
+            conductor_phone: busData.conductorPhone,
+            status: busData.status || 'Stopped',
+            lat: Number(busData.lat || 8.7139),
+            lng: Number(busData.lng || 77.7285),
+            speed: Number(busData.speed || 0),
+            bearing: Number(busData.bearing || 0),
+            crowd_level: busData.crowdLevel || 'Moderate',
+            is_trip_active: Boolean(busData.isTripActive),
+            last_updated: new Date().toISOString()
+          };
+          await window.CloudDB.supabase.from('buses').upsert(row);
+        } catch (sErr) {
+          console.warn('Direct Supabase saveBus warning:', sErr);
+        }
+      }
+
+      // 3. Backend API save
       const res = await fetch('/api/buses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(busData)
       });
       if (res.ok) {
-        await this.init();
         this.channel.postMessage({ type: 'FLEET_UPDATED' });
         return true;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('saveBus error:', e);
+    }
     return false;
   }
 
@@ -318,6 +374,36 @@ class StateManager {
       }
     } catch (e) {
       console.error('saveRoute error:', e);
+    }
+    return false;
+  }
+
+  async deleteRoute(routeId) {
+    try {
+      // 1. Optimistic removal
+      this.routes = this.routes.filter(r => r.id !== routeId);
+      if (this.selectedRouteId === routeId) {
+        this.selectedRouteId = this.routes.length > 0 ? this.routes[0].id : null;
+      }
+      this.notify({ type: 'ROUTES_UPDATED', routeId });
+
+      // 2. Direct Supabase delete
+      if (window.CloudDB && window.CloudDB.supabase) {
+        try {
+          await window.CloudDB.supabase.from('routes').delete().eq('id', routeId);
+        } catch (sErr) {
+          console.warn('Direct Supabase delete route warning:', sErr);
+        }
+      }
+
+      // 3. Backend API delete
+      const res = await fetch(`/api/routes/${routeId}`, { method: 'DELETE' });
+      if (res.ok) {
+        this.channel.postMessage({ type: 'FLEET_UPDATED' });
+        return true;
+      }
+    } catch (e) {
+      console.error('deleteRoute error:', e);
     }
     return false;
   }
