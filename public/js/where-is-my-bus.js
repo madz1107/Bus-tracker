@@ -4,12 +4,13 @@
 class WhereIsMyBusController {
   constructor() {
     this.mapManager = null;
-    this.currentBusId = 'BUS-101';
+    this.currentBusId = null;
     this.isFollowing = true;
     this.freshnessInterval = null;
 
     // Subscribe to state updates (GPS polling, BroadcastChannel, and fleet updates)
     window.appState.subscribe((state, event) => {
+      this.populateBusSelector();
       this.syncLiveBusPositions();
       this.render();
     });
@@ -20,8 +21,14 @@ class WhereIsMyBusController {
       this.mapManager = new MapManager('wimbMap', { zoom: 13 });
     }
 
+    if ((!this.currentBusId || !window.appState.getBusById(this.currentBusId)) && window.appState.buses.length > 0) {
+      this.currentBusId = window.appState.buses[0].id;
+    }
+
     this.populateBusSelector();
-    this.loadBus(window.appState.selectedBusId || 'BUS-101');
+    if (this.currentBusId || window.appState.selectedBusId) {
+      this.loadBus(window.appState.selectedBusId || this.currentBusId);
+    }
 
     // Ensure map container renders properly after DOM display transitions
     setTimeout(() => {

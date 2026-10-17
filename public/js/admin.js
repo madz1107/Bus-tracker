@@ -6,7 +6,7 @@ class AdminController {
     this.fleetMap = null;
     this.activeRouteFilter = 'all';
     this.activeBusFilter = 'all';
-    this.selectedRouteTab = 'route-1';
+    this.selectedRouteTab = null;
     this.searchQuery = '';
     this._routesRendered = false;
 
@@ -1133,7 +1133,7 @@ class AdminController {
     window.app.showToast('Ticket prices saved successfully!', 'success');
   }
 
-  deleteStop(routeId, stopId) {
+  async deleteStop(routeId, stopId) {
     const route = window.appState.getRouteById(routeId);
     if (!route) return;
     const idx = route.stops.findIndex(s => s.id === stopId);
@@ -1141,10 +1141,9 @@ class AdminController {
       route.stops.splice(idx, 1);
       // Re-sequence
       route.stops.forEach((s, i) => s.sequence = i + 1);
-      window.appState.notify();
       this.selectRouteForStops(routeId);
       window.app.showToast('Stop removed from route', 'info');
-      fetch(`/api/routes/${routeId}/stops/${stopId}`, { method: 'DELETE' }).catch(console.error);
+      await window.appState.saveRoute(route);
     }
   }
 
@@ -1211,7 +1210,7 @@ class AdminController {
     }
   }
 
-  saveEditedStop(event) {
+  async saveEditedStop(event) {
     event.preventDefault();
     const routeId = document.getElementById('editStopFormRouteId').value;
     const stopId = document.getElementById('editStopFormStopId').value;
@@ -1230,20 +1229,15 @@ class AdminController {
     if (!isNaN(newLat)) stop.lat = newLat;
     if (!isNaN(newLng)) stop.lng = newLng;
     
-    window.appState.notify();
     this.selectRouteForStops(routeId);
     window.app.showToast(`Stop "${stop.name}" updated!`, 'success');
-    fetch('/api/routes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(route)
-    }).catch(console.error);
+    await window.appState.saveRoute(route);
 
     this.closeEditStopModal();
   }
 
 
-  moveStop(routeId, idx, direction) {
+  async moveStop(routeId, idx, direction) {
     const route = window.appState.getRouteById(routeId);
     if (!route || !route.stops) return;
     const newIdx = idx + direction;
@@ -1251,14 +1245,8 @@ class AdminController {
     const stops = route.stops;
     [stops[idx], stops[newIdx]] = [stops[newIdx], stops[idx]];
     stops.forEach((s, i) => s.sequence = i + 1);
-    window.appState.notify();
     this.selectRouteForStops(routeId);
-    // Sync to server
-    fetch(`/api/routes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(route)
-    }).catch(console.error);
+    await window.appState.saveRoute(route);
   }
 
   /**
@@ -1269,6 +1257,10 @@ class AdminController {
     if (!selector) return;
 
     const routes = window.appState.routes;
+    if ((!this._selectedStopRouteId || !routes.some(r => r.id === this._selectedStopRouteId)) && routes.length > 0) {
+      this._selectedStopRouteId = routes[0].id;
+    }
+
     selector.innerHTML = routes.map((route) => `
       <button class="admin-route-select-btn ${this._selectedStopRouteId === route.id ? 'active' : ''}"
               onclick="admin.selectRouteForStops('${route.id}')"

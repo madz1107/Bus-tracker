@@ -3,7 +3,7 @@
  */
 class PassengerController {
   constructor() {
-    this.selectedRouteId = 'route-1';
+    this.selectedRouteId = null;
     this.selectedStopId = null;
     this.selectedDestId = null;
     this.searchQuery = '';
@@ -12,13 +12,25 @@ class PassengerController {
 
     this.loadFavorites();
 
-    // Subscribe to state updates
+    // Subscribe to state updates (e.g. stops added/edited in Admin portal or initial DB load)
     window.appState.subscribe((state, event) => {
+      this.syncSelectedRoute();
+      this.populateRouteDropdown();
+      this.populateStopDropdown();
+      this.populateDestDropdown();
       this.render();
     });
   }
 
+  syncSelectedRoute() {
+    if ((!this.selectedRouteId || !window.appState.getRouteById(this.selectedRouteId)) && window.appState.routes.length > 0) {
+      this.selectedRouteId = window.appState.routes[0].id;
+      window.appState.selectedRouteId = this.selectedRouteId;
+    }
+  }
+
   init() {
+    this.syncSelectedRoute();
     this.populateRouteDropdown();
     this.populateStopDropdown();
     this.populateDestDropdown();
@@ -30,11 +42,19 @@ class PassengerController {
     const routeSelect = document.getElementById('passengerRouteSelect');
     if (!routeSelect) return;
 
+    this.syncSelectedRoute();
+
     routeSelect.innerHTML = window.appState.routes.map((r) => `
       <option value="${r.id}" ${r.id === this.selectedRouteId ? 'selected' : ''}>
         ${r.name}
       </option>
     `).join('');
+
+    // Ensure selected value matches DOM
+    if (routeSelect.value && routeSelect.value !== this.selectedRouteId) {
+      this.selectedRouteId = routeSelect.value;
+      window.appState.selectedRouteId = this.selectedRouteId;
+    }
 
     // Also build filter pills
     const pillsContainer = document.getElementById('routeFilterPills');
@@ -52,19 +72,25 @@ class PassengerController {
     const stopSelect = document.getElementById('passengerStopSelect');
     if (!stopSelect) return;
 
+    this.syncSelectedRoute();
+
     const route = window.appState.getRouteById(this.selectedRouteId);
-    if (!route || !route.stops) {
+    if (!route || !route.stops || route.stops.length === 0) {
       stopSelect.innerHTML = '<option value="">No stops available</option>';
+      const stopDisplay = document.getElementById('selectedStopNameDisplay');
+      if (stopDisplay) stopDisplay.textContent = 'All Stops';
       return;
     }
 
-    if (!this.selectedStopId && route.stops.length > 0) {
-      this.selectedStopId = route.stops[2] ? route.stops[2].id : route.stops[0].id;
+    // Check if current selectedStopId is valid in the route's stops
+    const stopExists = route.stops.some((s) => s.id === this.selectedStopId);
+    if (!stopExists && route.stops.length > 0) {
+      this.selectedStopId = route.stops[0].id;
     }
 
     stopSelect.innerHTML = route.stops.map((s) => `
       <option value="${s.id}" ${s.id === this.selectedStopId ? 'selected' : ''}>
-        Stop #${s.sequence}: ${s.name}
+        Stop #${s.sequence || 1}: ${s.name}
       </option>
     `).join('');
 
@@ -79,8 +105,10 @@ class PassengerController {
     const destSelect = document.getElementById('passengerDestSelect');
     if (!destSelect) return;
 
+    this.syncSelectedRoute();
+
     const route = window.appState.getRouteById(this.selectedRouteId);
-    if (!route || !route.stops) {
+    if (!route || !route.stops || route.stops.length === 0) {
       destSelect.innerHTML = '<option value="">Any Destination</option>';
       return;
     }
@@ -89,11 +117,13 @@ class PassengerController {
     const startIdx = route.stops.findIndex((s) => s.id === this.selectedStopId);
     if (startIdx >= 0) {
       availableDestinations = route.stops.slice(startIdx + 1);
+    } else {
+      availableDestinations = route.stops.slice(1);
     }
 
     // Reset selectedDestId if it's no longer in the valid list
     if (this.selectedDestId && !availableDestinations.find(s => s.id === this.selectedDestId)) {
-        this.selectedDestId = null;
+      this.selectedDestId = null;
     }
 
     destSelect.innerHTML = '<option value="">Any Destination</option>' + availableDestinations.map((s) => {
@@ -107,7 +137,7 @@ class PassengerController {
       }
       return `
         <option value="${s.id}" ${s.id === this.selectedDestId ? 'selected' : ''}>
-          Stop #${s.sequence}: ${s.name}${priceText}
+          Stop #${s.sequence || 1}: ${s.name}${priceText}
         </option>
       `;
     }).join('');

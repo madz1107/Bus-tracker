@@ -7,9 +7,9 @@ class StateManager {
     this.buses = [];
     this.users = [];
     this.currentUser = JSON.parse(localStorage.getItem('citybus_user') || 'null');
-    this.selectedRouteId = 'route-1';
+    this.selectedRouteId = null;
     this.selectedStopId = null;
-    this.selectedBusId = 'BUS-101';
+    this.selectedBusId = null;
     this.listeners = new Set();
     
     // Cross-tab Instant Sync Channel
@@ -32,6 +32,13 @@ class StateManager {
         this.routes = data.routes || [];
         this.buses = data.buses || [];
         this.users = data.users || [];
+        
+        if ((!this.selectedRouteId || !this.getRouteById(this.selectedRouteId)) && this.routes.length > 0) {
+          this.selectedRouteId = this.routes[0].id;
+        }
+        if ((!this.selectedBusId || !this.getBusById(this.selectedBusId)) && this.buses.length > 0) {
+          this.selectedBusId = this.buses[0].id;
+        }
         this.notify();
       }
     } catch (e) {
@@ -274,17 +281,44 @@ class StateManager {
 
   async saveRoute(routeData) {
     try {
+      // 1. Optimistic immediate local update
+      const existingIdx = this.routes.findIndex(r => r.id === routeData.id);
+      if (existingIdx >= 0) {
+        this.routes[existingIdx] = routeData;
+      } else {
+        this.routes.push(routeData);
+      }
+      this.notify({ type: 'ROUTES_UPDATED', route: routeData });
+
+      // 2. Direct Supabase save if connected in browser
+      if (window.CloudDB && window.CloudDB.supabase) {
+        try {
+          await window.CloudDB.supabase.from('routes').upsert({
+            id: routeData.id,
+            name: routeData.name,
+            code: routeData.code,
+            color: routeData.color || '#2563EB',
+            stops: routeData.stops || [],
+            roadway: routeData.roadway || []
+          });
+        } catch (sErr) {
+          console.warn('Direct Supabase save route error:', sErr);
+        }
+      }
+
+      // 3. Backend API save
       const res = await fetch('/api/routes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(routeData)
       });
       if (res.ok) {
-        await this.init();
         this.channel.postMessage({ type: 'FLEET_UPDATED' });
         return true;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('saveRoute error:', e);
+    }
     return false;
   }
 }
