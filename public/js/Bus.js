@@ -322,16 +322,7 @@ class BusController {
 
   speakAnnouncement(text) {}
 
-  changePassengerCount(delta) {
-    const bus = this.getBus();
-    if (!bus) return;
-    const current = bus.passengerCount || 0;
-    const nextCount = Math.max(0, current + delta);
-    bus.passengerCount = nextCount;
-    window.appState.updateBusLocation(this.busId, { passengerCount: nextCount });
-    const countEl = document.getElementById('condPassengerCount');
-    if (countEl) countEl.textContent = nextCount;
-  }
+  changePassengerCount(delta) {}
 
   broadcastDelay(alertText) {
     const bus = this.getBus();
@@ -573,12 +564,6 @@ class BusController {
     if (speedBar) {
       const pct = Math.min(100, Math.round((curSpeed / 80) * 100));
       speedBar.style.width = `${pct}%`;
-    }
-
-    // Passenger Count
-    const passengerCountEl = document.getElementById('condPassengerCount');
-    if (passengerCountEl) {
-      passengerCountEl.textContent = bus.passengerCount || 0;
     }
 
     // Geofence Radar Box
