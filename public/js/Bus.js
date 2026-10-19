@@ -12,11 +12,8 @@ class BusController {
     this.lastPositionTime = null;
     this.wakeLock = null;
     this.gpsWatchdogInterval = null;
-    this.keepAliveAudioCtx = null;
-    this.keepAliveSource = null;
-    this.tripStartTime = null;
-    this.tripTimerInterval = null;
-    this.voiceAnnouncementEnabled = false;
+    this.bgAudioEl = null;
+    this.bgWorker = null;
     this.isChecklistOpen = false;
 
     // Setup screen resume / visibility handlers immediately
@@ -69,12 +66,13 @@ class BusController {
       }
     }
 
-    // If trip was already marked active, start live phone GPS, wake lock, audio keep-alive & watchdog immediately
+    // If trip was already marked active, start live phone GPS, background service & worker immediately
     if (this.isTripActive) {
-      this.startPhoneGps();
-      this.requestWakeLock();
-      this.startSilentAudioKeepAlive();
+      this.startBackgroundMediaService();
+      this.startBackgroundWorker();
       this.startGpsWatchdog();
+      this.requestWakeLock();
+      this.startPhoneGps();
     }
 
     this.render();
@@ -234,7 +232,8 @@ class BusController {
 
     this.updateTripStatusUI(true);
     this.requestWakeLock();
-    this.startSilentAudioKeepAlive();
+    this.startBackgroundMediaService();
+    this.startBackgroundWorker();
     this.startGpsWatchdog();
 
     const bus = this.getBus();
@@ -248,7 +247,8 @@ class BusController {
       fetch(`/api/buses/${this.busId}/location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isTripActive: true, status: 'Running' })
+        body: JSON.stringify({ isTripActive: true, status: 'Running' }),
+        keepalive: true
       });
     } catch (e) {}
 
@@ -276,7 +276,8 @@ class BusController {
 
     this.updateTripStatusUI(false);
     this.releaseWakeLock();
-    this.stopSilentAudioKeepAlive();
+    this.stopBackgroundMediaService();
+    this.stopBackgroundWorker();
     this.stopGpsWatchdog();
     this.stopPhoneGps();
 
@@ -292,7 +293,8 @@ class BusController {
       fetch(`/api/buses/${this.busId}/location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isTripActive: false, status: 'Offline', speed: 0 })
+        body: JSON.stringify({ isTripActive: false, status: 'Offline', speed: 0 }),
+        keepalive: true
       });
     } catch (e) {}
 
@@ -418,26 +420,35 @@ class BusController {
   }
 
   /**
-   * Automatically handles phone screen wake-up / tab foregrounding without requiring page refresh
+   * Automatically handles phone screen wake-up / tab foregrounding / backgrounding
+   * Keeps GPS streaming active whether screen is manually locked or browser is minimized.
    */
   setupVisibilityHandlers() {
-    const handleResume = () => {
-      if (document.visibilityState === 'visible' && this.isTripActive) {
-        console.log('📱 Phone screen turned on / tab focused: auto-resuming GPS');
-        this.requestWakeLock();
-        this.startSilentAudioKeepAlive();
+    const handleVisibilityOrFocus = () => {
+      if (!this.isTripActive) return;
 
-        // Immediate direct hardware ping to unfreeze location instantly
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => this.handlePositionUpdate(pos),
-            (err) => console.warn('Instant resume GPS warning:', err.message),
-            { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
-          );
+      if (document.visibilityState === 'visible') {
+        console.log('📱 Phone screen turned on / tab focused: ensuring all tracking services active');
+        this.requestWakeLock();
+        
+        // Ensure background audio keep-alive is running
+        if (this.bgAudioEl && this.bgAudioEl.paused) {
+          this.bgAudioEl.play().catch(() => {});
+        }
+        
+        // Ensure background worker is running
+        if (!this.bgWorker) {
+          this.startBackgroundWorker();
         }
 
-        // Restart watchPosition stream
-        this.startPhoneGps();
+        // Immediate direct hardware ping to unfreeze location instantly
+        this.queryHardwareGps();
+
+        // Ensure watchPosition stream is alive
+        if (this.watchId === null) {
+          this.startPhoneGps();
+        }
+
         this.render();
 
         if (this.mapManager && this.mapManager.map) {
@@ -445,16 +456,26 @@ class BusController {
             try { this.mapManager.map.invalidateSize(); } catch (e) {}
           }, 100);
         }
+      } else {
+        // Tab went into background or phone locked: Ensure foreground media service & worker are actively running
+        console.log('📱 Tab backgrounded / screen off: reinforcing background keep-alive services');
+        if (this.bgAudioEl && this.bgAudioEl.paused) {
+          this.bgAudioEl.play().catch(() => {});
+        }
+        if (!this.bgWorker) {
+          this.startBackgroundWorker();
+        }
       }
     };
 
-    document.addEventListener('visibilitychange', handleResume);
-    window.addEventListener('focus', handleResume);
-    window.addEventListener('pageshow', handleResume);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    window.addEventListener('pageshow', handleVisibilityOrFocus);
+    window.addEventListener('blur', handleVisibilityOrFocus);
   }
 
   /**
-   * Screen Wake Lock API: Keeps phone screen awake & bright throughout the route
+   * Screen Wake Lock API: Keeps phone screen awake & bright while on duty
    */
   async requestWakeLock() {
     if ('wakeLock' in navigator && this.isTripActive) {
@@ -467,7 +488,7 @@ class BusController {
           console.log('💡 Screen Wake Lock acquired (screen will stay awake while on duty)');
         }
       } catch (err) {
-        console.warn('Wake Lock request error:', err);
+        console.warn('Wake Lock request warning:', err);
       }
     }
   }
@@ -482,7 +503,91 @@ class BusController {
   }
 
   /**
-   * Silent Web Audio Keep-Alive Loop: Signals mobile OS media subsystem to prevent freezing JS background execution
+   * HTML5 Audio & MediaSession API Foreground Service:
+   * Keeps the tab registered in Android OS / iOS as an active Media Foreground Service.
+   * This prevents mobile browsers from freezing JS execution when:
+   * 1. The phone power button is pressed (screen manually locked)
+   * 2. The driver navigates away from the browser (WhatsApp, Google Maps, Home screen)
+   */
+  startBackgroundMediaService() {
+    try {
+      if (!this.bgAudioEl) {
+        let el = document.getElementById('bgTrackerAudio');
+        if (!el) {
+          el = document.createElement('audio');
+          el.id = 'bgTrackerAudio';
+          el.src = '/silence.wav';
+          el.loop = true;
+          el.preload = 'auto';
+          el.setAttribute('playsinline', '');
+          el.setAttribute('webkit-playsinline', '');
+          el.style.position = 'fixed';
+          el.style.bottom = '-9999px';
+          el.style.left = '-9999px';
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+          document.body.appendChild(el);
+        }
+        this.bgAudioEl = el;
+      }
+
+      // Start playing silence (authorized by Start Trip touch gesture)
+      const playPromise = this.bgAudioEl.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Audio service autoplay deferred, will resume on user touch:', err);
+        });
+      }
+
+      // Configure MediaSession API for OS-level foreground service status
+      if ('mediaSession' in navigator) {
+        const bus = this.getBus();
+        const busNum = bus ? bus.busNumber : '1';
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: `Bus ${busNum} GPS Broadcasting`,
+          artist: 'CityBus Real-Time Tracking',
+          album: 'Live Location Streaming • Active'
+        });
+        navigator.mediaSession.playbackState = 'playing';
+
+        // Keep active even if user interacts with media controls in lock screen
+        navigator.mediaSession.setActionHandler('play', () => {
+          if (this.bgAudioEl) this.bgAudioEl.play().catch(() => {});
+          navigator.mediaSession.playbackState = 'playing';
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          // Re-trigger play immediately to prevent OS sleep
+          if (this.isTripActive && this.bgAudioEl) {
+            this.bgAudioEl.play().catch(() => {});
+            navigator.mediaSession.playbackState = 'playing';
+          }
+        });
+      }
+
+      // Also start Web Audio keep-alive as secondary fallback
+      this.startSilentAudioKeepAlive();
+    } catch (e) {
+      console.warn('Background media service init warning:', e);
+    }
+  }
+
+  stopBackgroundMediaService() {
+    try {
+      if (this.bgAudioEl) {
+        this.bgAudioEl.pause();
+        this.bgAudioEl.currentTime = 0;
+      }
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
+      this.stopSilentAudioKeepAlive();
+    } catch (e) {
+      console.warn('Background media service stop error:', e);
+    }
+  }
+
+  /**
+   * Silent Web Audio Keep-Alive Loop: Secondary audio subsystem insurance
    */
   startSilentAudioKeepAlive() {
     try {
@@ -519,7 +624,77 @@ class BusController {
   }
 
   /**
-   * GPS Watchdog: Checks every 5 seconds if coordinates are stalling, and forces a hardware ping
+   * Background Web Worker:
+   * Timers in the main window get throttled to once a minute or paused when a tab is hidden.
+   * Web Workers run in an isolated OS background thread that is NOT throttled when the tab
+   * is kept alive via the Foreground Media Service.
+   * Ticks every 3 seconds to trigger fresh hardware GPS readings.
+   */
+  startBackgroundWorker() {
+    this.stopBackgroundWorker();
+    try {
+      const workerCode = `
+        let timer = null;
+        self.onmessage = function(e) {
+          if (e.data === 'start') {
+            if (timer) clearInterval(timer);
+            timer = setInterval(function() {
+              self.postMessage('tick');
+            }, 3000);
+          } else if (e.data === 'stop') {
+            if (timer) clearInterval(timer);
+            timer = null;
+          }
+        };
+      `;
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      const workerUrl = URL.createObjectURL(blob);
+      this.bgWorker = new Worker(workerUrl);
+
+      this.bgWorker.onmessage = (e) => {
+        if (e.data === 'tick' && this.isTripActive) {
+          this.queryHardwareGps();
+        }
+      };
+
+      this.bgWorker.postMessage('start');
+      console.log('⚡ Background Web Worker started for continuous GPS broadcast');
+    } catch (err) {
+      console.warn('Web Worker creation failed, fallback to watchdog:', err);
+    }
+  }
+
+  stopBackgroundWorker() {
+    if (this.bgWorker) {
+      try {
+        this.bgWorker.postMessage('stop');
+        this.bgWorker.terminate();
+      } catch (e) {}
+      this.bgWorker = null;
+    }
+  }
+
+  /**
+   * Direct Hardware GPS Query:
+   * Pings device GPS chip directly with maximumAge: 0 to force an uncached satellite fix.
+   */
+  queryHardwareGps() {
+    if (!this.isTripActive || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => this.handlePositionUpdate(pos),
+      (err) => {
+        console.debug('Direct GPS query notice:', err.message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  /**
+   * GPS Watchdog: Checks if coordinates are stalling, and forces a hardware ping
    */
   startGpsWatchdog() {
     this.stopGpsWatchdog();
@@ -529,20 +704,16 @@ class BusController {
       const now = Date.now();
       const lastUpdateAge = this.lastPositionTime ? (now - this.lastPositionTime) : Infinity;
 
-      // If no GPS coordinate arrived in the last 7 seconds, ping the GPS hardware directly
-      if (lastUpdateAge > 7000 && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => this.handlePositionUpdate(pos),
-          (err) => console.warn('GPS watchdog ping warning:', err.message),
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
+      // If no GPS coordinate arrived in the last 6 seconds, ping the GPS hardware directly
+      if (lastUpdateAge > 6000) {
+        this.queryHardwareGps();
 
-        // If watchPosition went completely dead for more than 14s, restart stream
-        if (lastUpdateAge > 14000) {
+        // If watchPosition went completely dead for more than 12s, restart stream
+        if (lastUpdateAge > 12000) {
           this.startPhoneGps();
         }
       }
-    }, 5000);
+    }, 4000);
   }
 
   stopGpsWatchdog() {
@@ -726,7 +897,9 @@ class BusController {
     // Update Bus Mini Map
     if (this.mapManager) {
       this.mapManager.updateBusMarker(Object.assign({}, bus, updatePayload), true, true);
-      this.mapManager.centerOnLocation(lat, lng, 15);
+      if (document.visibilityState === 'visible') {
+        this.mapManager.centerOnLocation(lat, lng, 15);
+      }
     }
 
     this.render();

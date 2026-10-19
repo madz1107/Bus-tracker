@@ -56,6 +56,17 @@ class StateManager {
 
     // Start live polling for real-time GPS location accuracy across devices
     this.startLivePolling();
+
+    // Auto-resume polling immediately whenever screen wakes up or tab is focused
+    const handleScreenWake = () => {
+      if (document.visibilityState === 'visible') {
+        this.pollBusesOnce();
+        this.startLivePolling();
+      }
+    };
+    document.addEventListener('visibilitychange', handleScreenWake);
+    window.addEventListener('focus', handleScreenWake);
+    window.addEventListener('pageshow', handleScreenWake);
   }
 
   /**
@@ -138,7 +149,7 @@ class StateManager {
    */
   async pollBusesOnce() {
     try {
-      const res = await fetch('/api/buses');
+      const res = await fetch(`/api/buses?_t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const freshBuses = await res.json();
         if (Array.isArray(freshBuses)) {
@@ -234,7 +245,8 @@ class StateManager {
       fetch(`/api/buses/${busId}/location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(locationData)
+        body: JSON.stringify(locationData),
+        keepalive: true
       });
     } catch (e) {}
   }
