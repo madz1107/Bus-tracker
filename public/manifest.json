@@ -1,0 +1,18 @@
+{
+  "name": "Nellai72 City Bus Live Tracking",
+  "short_name": "Nellai72",
+  "description": "Real-time Tirunelveli City Bus GPS Tracking & Driver Cockpit",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1042/1042263.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

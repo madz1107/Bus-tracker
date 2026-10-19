@@ -19,6 +19,10 @@
   
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
 </head>
 <body class="app-body">
 
@@ -570,6 +574,15 @@
               </div>
             </button>
           </div>
+
+          <!-- Pocket Battery Saver Mode Button (Active only when on duty) -->
+          <button type="button" class="btn-pocket-mode" id="btnCondPocketMode" onclick="Bus.enterPocketMode()" style="display: none;">
+            <i data-lucide="moon"></i>
+            <div class="btn-pocket-text">
+              <span class="pocket-title">Pocket Battery Saver (Black Screen)</span>
+              <span class="pocket-sub">Turns screen black to save 100% battery while GPS broadcasts live without stopping</span>
+            </div>
+          </button>
         </div>
 
         <!-- ── Offline Standby Notice ── -->
@@ -739,6 +752,20 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- ── Fullscreen AMOLED Pocket HUD Overlay ── -->
+      <div id="condPocketOverlay" class="cond-pocket-overlay" style="display: none;" onclick="Bus.exitPocketMode()">
+        <div class="pocket-content">
+          <div class="pocket-radar-pulse"></div>
+          <div class="pocket-status-text">LIVE GPS BROADCASTING</div>
+          <div class="pocket-speed" id="pocketSpeed">0 KM/H</div>
+          <div class="pocket-stop" id="pocketNextStop">Next Stop: Tracking...</div>
+          <div class="pocket-instructions">
+            <span>🔒 Screen & Touches Locked</span>
+            <span class="pocket-hint">Battery is saved (Black AMOLED). Tap screen to exit.</span>
+          </div>
+        </div>
       </div>
     </section>
 

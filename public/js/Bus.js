@@ -15,6 +15,7 @@ class BusController {
     this.bgAudioEl = null;
     this.bgWorker = null;
     this.isChecklistOpen = false;
+    this.isPocketMode = false;
 
     // Setup screen resume / visibility handlers immediately
     this.setupVisibilityHandlers();
@@ -179,6 +180,14 @@ class BusController {
       btnEnd.disabled = !this.isTripActive;
       btnEnd.style.opacity = this.isTripActive ? '1' : '0.5';
       btnEnd.style.cursor = this.isTripActive ? 'pointer' : 'not-allowed';
+    }
+
+    const btnPocket = document.getElementById('btnCondPocketMode');
+    if (btnPocket) {
+      btnPocket.style.display = this.isTripActive ? 'flex' : 'none';
+    }
+    if (!this.isTripActive && this.isPocketMode) {
+      this.exitPocketMode();
     }
 
     const tripStatusBox = document.getElementById('condTripStatusBox');
@@ -420,6 +429,49 @@ class BusController {
   }
 
   /**
+   * Pocket Battery Saver Mode:
+   * Turns screen 100% black (AMOLED 0W) with touches locked so driver can pocket phone
+   * without turning off the phone screen, allowing Android to stream satellite GPS continuously!
+   */
+  enterPocketMode() {
+    if (!this.isTripActive) {
+      window.app.showToast('Please press Start Trip first before enabling Pocket Mode.', 'warning');
+      return;
+    }
+    const overlay = document.getElementById('condPocketOverlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      this.isPocketMode = true;
+      this.updatePocketModeHUD();
+      this.requestWakeLock();
+      window.app.showToast('Pocket Mode Active: Screen blacked out. GPS runs non-stop.', 'info');
+    }
+  }
+
+  exitPocketMode() {
+    const overlay = document.getElementById('condPocketOverlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+      this.isPocketMode = false;
+      this.render();
+      window.app.showToast('Pocket Mode Deactivated.', 'info');
+    }
+  }
+
+  updatePocketModeHUD() {
+    if (!this.isPocketMode) return;
+    const bus = this.getBus();
+    const speedEl = document.getElementById('pocketSpeed');
+    const stopEl = document.getElementById('pocketNextStop');
+    if (speedEl && bus) {
+      speedEl.textContent = `${bus.speed || 0} KM/H`;
+    }
+    if (stopEl && bus) {
+      stopEl.textContent = `Next: ${bus.nextStopName || 'En Route'} (${bus.etaMinutes || 0}m)`;
+    }
+  }
+
+  /**
    * Automatically handles phone screen wake-up / tab foregrounding / backgrounding
    * Keeps GPS streaming active whether screen is manually locked or browser is minimized.
    */
@@ -428,7 +480,7 @@ class BusController {
       if (!this.isTripActive) return;
 
       if (document.visibilityState === 'visible') {
-        console.log('📱 Phone screen turned on / tab focused: ensuring all tracking services active');
+        console.log('📱 Phone screen turned on / tab focused: re-binding hardware GPS');
         this.requestWakeLock();
         
         // Ensure background audio keep-alive is running
@@ -441,13 +493,11 @@ class BusController {
           this.startBackgroundWorker();
         }
 
+        // Force-restart watchPosition stream unconditionally (Android destroys background watchId)
+        this.startPhoneGps();
+
         // Immediate direct hardware ping to unfreeze location instantly
         this.queryHardwareGps();
-
-        // Ensure watchPosition stream is alive
-        if (this.watchId === null) {
-          this.startPhoneGps();
-        }
 
         this.render();
 
@@ -464,6 +514,9 @@ class BusController {
         }
         if (!this.bgWorker) {
           this.startBackgroundWorker();
+        }
+        if ('vibrate' in navigator) {
+          try { navigator.vibrate([120, 60, 120]); } catch (e) {}
         }
       }
     };
@@ -595,7 +648,13 @@ class BusController {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (AudioCtx) {
           this.keepAliveAudioCtx = new AudioCtx();
-          const buffer = this.keepAliveAudioCtx.createBuffer(1, this.keepAliveAudioCtx.sampleRate * 2, this.keepAliveAudioCtx.sampleRate);
+          const sampleRate = this.keepAliveAudioCtx.sampleRate;
+          const buffer = this.keepAliveAudioCtx.createBuffer(1, sampleRate * 2, sampleRate);
+          const channelData = buffer.getChannelData(0);
+          for (let i = 0; i < channelData.length; i++) {
+            // 25 Hz sub-audible tone at 0.001 amplitude (inaudible, but prevents silence detector pause)
+            channelData[i] = Math.sin((2 * Math.PI * 25 * i) / sampleRate) * 0.001;
+          }
           const source = this.keepAliveAudioCtx.createBufferSource();
           source.buffer = buffer;
           source.loop = true;
@@ -903,6 +962,7 @@ class BusController {
     }
 
     this.render();
+    this.updatePocketModeHUD();
   }
 
   setCrowdLevel(level) {
