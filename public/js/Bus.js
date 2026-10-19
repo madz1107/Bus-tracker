@@ -9,10 +9,18 @@ class BusController {
     this.watchId = null;
     this.mapManager = null;
     this.lastPosition = null;
+    this.lastPositionTime = null;
+    this.wakeLock = null;
+    this.gpsWatchdogInterval = null;
+    this.keepAliveAudioCtx = null;
+    this.keepAliveSource = null;
     this.tripStartTime = null;
     this.tripTimerInterval = null;
-    this.voiceAnnouncementEnabled = true;
+    this.voiceAnnouncementEnabled = false;
     this.isChecklistOpen = false;
+
+    // Setup screen resume / visibility handlers immediately
+    this.setupVisibilityHandlers();
 
     // Subscribe to state changes
     window.appState.subscribe((state, event) => {
@@ -39,7 +47,17 @@ class BusController {
 
     const bus = this.getBus();
     if (bus) {
-      this.isTripActive = bus.isTripActive === true;
+      const savedActive = localStorage.getItem('citybus_active_trip_' + bus.id) === 'true';
+      if (savedActive || bus.isTripActive === true) {
+        this.isTripActive = true;
+        this._hasExplicitTripState = true;
+        bus.isTripActive = true;
+      } else if (this._hasExplicitTripState) {
+        bus.isTripActive = this.isTripActive;
+      } else {
+        this.isTripActive = bus.isTripActive === true;
+      }
+
       const route = window.appState.getRouteById(bus.routeId);
       if (route && this.mapManager) {
         this.mapManager.clearStops();
@@ -51,10 +69,12 @@ class BusController {
       }
     }
 
-    // If trip was already marked active, start live phone GPS and timer immediately
+    // If trip was already marked active, start live phone GPS, wake lock, audio keep-alive & watchdog immediately
     if (this.isTripActive) {
-      this.startTripTimer();
       this.startPhoneGps();
+      this.requestWakeLock();
+      this.startSilentAudioKeepAlive();
+      this.startGpsWatchdog();
     }
 
     this.render();
@@ -208,7 +228,14 @@ class BusController {
   startTrip() {
     this.isTripActive = true;
     this._hasExplicitTripState = true;
+    try {
+      localStorage.setItem('citybus_active_trip_' + this.busId, 'true');
+    } catch (e) {}
+
     this.updateTripStatusUI(true);
+    this.requestWakeLock();
+    this.startSilentAudioKeepAlive();
+    this.startGpsWatchdog();
 
     const bus = this.getBus();
     if (bus) {
@@ -233,7 +260,7 @@ class BusController {
 
     this.playChime();
     this.render();
-    window.app.showToast('Trip Started! Live GPS location is streaming to passengers.', 'success');
+    window.app.showToast('Trip Started! Screen will stay awake and live GPS is broadcasting.', 'success');
   }
 
   /**
@@ -243,7 +270,14 @@ class BusController {
   endTrip() {
     this.isTripActive = false;
     this._hasExplicitTripState = true;
+    try {
+      localStorage.removeItem('citybus_active_trip_' + this.busId);
+    } catch (e) {}
+
     this.updateTripStatusUI(false);
+    this.releaseWakeLock();
+    this.stopSilentAudioKeepAlive();
+    this.stopGpsWatchdog();
     this.stopPhoneGps();
 
     const bus = this.getBus();
@@ -384,6 +418,177 @@ class BusController {
   }
 
   /**
+   * Automatically handles phone screen wake-up / tab foregrounding without requiring page refresh
+   */
+  setupVisibilityHandlers() {
+    const handleResume = () => {
+      if (document.visibilityState === 'visible' && this.isTripActive) {
+        console.log('📱 Phone screen turned on / tab focused: auto-resuming GPS');
+        this.requestWakeLock();
+        this.startSilentAudioKeepAlive();
+
+        // Immediate direct hardware ping to unfreeze location instantly
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => this.handlePositionUpdate(pos),
+            (err) => console.warn('Instant resume GPS warning:', err.message),
+            { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+          );
+        }
+
+        // Restart watchPosition stream
+        this.startPhoneGps();
+        this.render();
+
+        if (this.mapManager && this.mapManager.map) {
+          setTimeout(() => {
+            try { this.mapManager.map.invalidateSize(); } catch (e) {}
+          }, 100);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleResume);
+    window.addEventListener('focus', handleResume);
+    window.addEventListener('pageshow', handleResume);
+  }
+
+  /**
+   * Screen Wake Lock API: Keeps phone screen awake & bright throughout the route
+   */
+  async requestWakeLock() {
+    if ('wakeLock' in navigator && this.isTripActive) {
+      try {
+        if (!this.wakeLock || this.wakeLock.released) {
+          this.wakeLock = await navigator.wakeLock.request('screen');
+          this.wakeLock.addEventListener('release', () => {
+            this.wakeLock = null;
+          });
+          console.log('💡 Screen Wake Lock acquired (screen will stay awake while on duty)');
+        }
+      } catch (err) {
+        console.warn('Wake Lock request error:', err);
+      }
+    }
+  }
+
+  releaseWakeLock() {
+    if (this.wakeLock) {
+      try {
+        this.wakeLock.release();
+      } catch (e) {}
+      this.wakeLock = null;
+    }
+  }
+
+  /**
+   * Silent Web Audio Keep-Alive Loop: Signals mobile OS media subsystem to prevent freezing JS background execution
+   */
+  startSilentAudioKeepAlive() {
+    try {
+      if (!this.keepAliveAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          this.keepAliveAudioCtx = new AudioCtx();
+          const buffer = this.keepAliveAudioCtx.createBuffer(1, this.keepAliveAudioCtx.sampleRate * 2, this.keepAliveAudioCtx.sampleRate);
+          const source = this.keepAliveAudioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.loop = true;
+          source.connect(this.keepAliveAudioCtx.destination);
+          source.start(0);
+          this.keepAliveSource = source;
+        }
+      }
+      if (this.keepAliveAudioCtx && this.keepAliveAudioCtx.state === 'suspended') {
+        this.keepAliveAudioCtx.resume();
+      }
+    } catch (e) {}
+  }
+
+  stopSilentAudioKeepAlive() {
+    try {
+      if (this.keepAliveSource) {
+        this.keepAliveSource.stop();
+        this.keepAliveSource = null;
+      }
+      if (this.keepAliveAudioCtx) {
+        this.keepAliveAudioCtx.close();
+        this.keepAliveAudioCtx = null;
+      }
+    } catch (e) {}
+  }
+
+  /**
+   * GPS Watchdog: Checks every 5 seconds if coordinates are stalling, and forces a hardware ping
+   */
+  startGpsWatchdog() {
+    this.stopGpsWatchdog();
+    this.gpsWatchdogInterval = setInterval(() => {
+      if (!this.isTripActive) return;
+
+      const now = Date.now();
+      const lastUpdateAge = this.lastPositionTime ? (now - this.lastPositionTime) : Infinity;
+
+      // If no GPS coordinate arrived in the last 7 seconds, ping the GPS hardware directly
+      if (lastUpdateAge > 7000 && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => this.handlePositionUpdate(pos),
+          (err) => console.warn('GPS watchdog ping warning:', err.message),
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+
+        // If watchPosition went completely dead for more than 14s, restart stream
+        if (lastUpdateAge > 14000) {
+          this.startPhoneGps();
+        }
+      }
+    }, 5000);
+  }
+
+  stopGpsWatchdog() {
+    if (this.gpsWatchdogInterval) {
+      clearInterval(this.gpsWatchdogInterval);
+      this.gpsWatchdogInterval = null;
+    }
+  }
+
+  /**
+   * Unified GPS update handler for both watchPosition and instant watchdog pings
+   */
+  handlePositionUpdate(position) {
+    if (!position || !position.coords) return;
+    this.lastPositionTime = Date.now();
+    const { latitude, longitude, speed, heading } = position.coords;
+    
+    let calculatedSpeed = 0;
+    if (speed !== null && !isNaN(speed)) {
+      calculatedSpeed = Math.round(speed * 3.6); // Convert m/s to km/h
+    } else if (this.lastPosition) {
+      const distMeters = GeoEngine.getDistanceMeters(this.lastPosition.lat, this.lastPosition.lng, latitude, longitude);
+      const timeSec = (position.timestamp - this.lastPosition.time) / 1000;
+      if (timeSec > 0) {
+        calculatedSpeed = Math.round((distMeters / timeSec) * 3.6);
+      }
+    }
+
+    let calculatedHeading = heading || 0;
+    if (!heading && this.lastPosition) {
+      calculatedHeading = GeoEngine.getBearing(this.lastPosition.lat, this.lastPosition.lng, latitude, longitude);
+    }
+
+    this.lastPosition = {
+      lat: latitude,
+      lng: longitude,
+      time: position.timestamp || Date.now()
+    };
+
+    const badge = document.getElementById('condGpsStatusBadge');
+    if (badge && this.isTripActive) badge.innerHTML = '<span class="dot green"></span> GPS TRACKING LIVE';
+
+    this.processNewCoordinates(latitude, longitude, calculatedSpeed, calculatedHeading);
+  }
+
+  /**
    * Connects to device GPS hardware via navigator.geolocation.watchPosition
    */
   startPhoneGps() {
@@ -397,34 +602,15 @@ class BusController {
     const badge = document.getElementById('condGpsStatusBadge');
     if (badge) badge.innerHTML = '<span class="dot green"></span> GPS TRACKING LIVE';
 
+    // Immediate direct reading
+    navigator.geolocation.getCurrentPosition(
+      (pos) => this.handlePositionUpdate(pos),
+      (err) => console.warn('Initial GPS lock notice:', err.message),
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+    );
+
     this.watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const { latitude, longitude, speed, heading } = position.coords;
-        
-        let calculatedSpeed = 0;
-        if (speed !== null && !isNaN(speed)) {
-          calculatedSpeed = Math.round(speed * 3.6); // Convert m/s to km/h
-        } else if (this.lastPosition) {
-          const distMeters = GeoEngine.getDistanceMeters(this.lastPosition.lat, this.lastPosition.lng, latitude, longitude);
-          const timeSec = (position.timestamp - this.lastPosition.time) / 1000;
-          if (timeSec > 0) {
-            calculatedSpeed = Math.round((distMeters / timeSec) * 3.6);
-          }
-        }
-
-        let calculatedHeading = heading || 0;
-        if (!heading && this.lastPosition) {
-          calculatedHeading = GeoEngine.getBearing(this.lastPosition.lat, this.lastPosition.lng, latitude, longitude);
-        }
-
-        this.lastPosition = {
-          lat: latitude,
-          lng: longitude,
-          time: position.timestamp
-        };
-
-        this.processNewCoordinates(latitude, longitude, calculatedSpeed, calculatedHeading);
-      },
+      (position) => this.handlePositionUpdate(position),
       (error) => {
         console.warn('GPS Geolocation error:', error);
         let errorMsg = 'Could not get GPS lock.';
@@ -435,15 +621,17 @@ class BusController {
         } else if (error.code === 3) {
           errorMsg = 'GPS request timed out. Retrying location lock...';
         }
-        window.app.showToast(errorMsg, 'error');
+        if (document.visibilityState === 'visible') {
+          window.app.showToast(errorMsg, 'error');
+        }
 
         const badge = document.getElementById('condGpsStatusBadge');
-        if (badge) badge.innerHTML = '<span class="dot red"></span> GPS WAITING LOCK';
+        if (badge && this.isTripActive) badge.innerHTML = '<span class="dot red"></span> GPS WAITING LOCK';
       },
       {
         enableHighAccuracy: true,
         maximumAge: 1000,
-        timeout: 15000
+        timeout: 10000
       }
     );
   }

@@ -20,6 +20,15 @@ class StateManager {
       }
     };
 
+    // Auto-fetch fresh locations as soon as device screen turns on or tab focuses
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.pollBusesOnce();
+      }
+    });
+    window.addEventListener('focus', () => this.pollBusesOnce());
+    window.addEventListener('pageshow', () => this.pollBusesOnce());
+
     // Initialize state
     this.init();
   }
@@ -122,6 +131,43 @@ class StateManager {
         // Silently ignore polling errors
       }
     }, 2000);
+  }
+
+  /**
+   * One-shot instant bus location fetch when device screen wakes up or tab focuses
+   */
+  async pollBusesOnce() {
+    try {
+      const res = await fetch('/api/buses');
+      if (res.ok) {
+        const freshBuses = await res.json();
+        if (Array.isArray(freshBuses)) {
+          let hasChange = false;
+          const changedBusIds = [];
+          freshBuses.forEach((freshBus) => {
+            const local = this.getBusById(freshBus.id);
+            if (local) {
+              const changed = (
+                local.lat !== freshBus.lat ||
+                local.lng !== freshBus.lng ||
+                local.speed !== freshBus.speed ||
+                local.status !== freshBus.status ||
+                local.isTripActive !== freshBus.isTripActive ||
+                local.nextStopName !== freshBus.nextStopName
+              );
+              if (changed) {
+                Object.assign(local, freshBus);
+                changedBusIds.push(freshBus.id);
+                hasChange = true;
+              }
+            }
+          });
+          if (hasChange) {
+            this.notify({ type: 'BUS_LOCATION_UPDATE', source: 'resume', changedBusIds });
+          }
+        }
+      }
+    } catch (e) {}
   }
 
   subscribe(callback) {
