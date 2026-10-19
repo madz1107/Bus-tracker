@@ -15,7 +15,9 @@ class BusController {
     this.bgAudioEl = null;
     this.bgWorker = null;
     this.isChecklistOpen = false;
-    this.isPocketMode = false;
+    this.isPocketLockActive = false;
+    this._isGpsQueryPending = false;
+    this._lastPocketTap = 0;
 
     // Setup screen resume / visibility handlers immediately
     this.setupVisibilityHandlers();
@@ -182,12 +184,9 @@ class BusController {
       btnEnd.style.cursor = this.isTripActive ? 'pointer' : 'not-allowed';
     }
 
-    const btnPocket = document.getElementById('btnCondPocketMode');
+    const btnPocket = document.getElementById('btnCondPocketLock');
     if (btnPocket) {
       btnPocket.style.display = this.isTripActive ? 'flex' : 'none';
-    }
-    if (!this.isTripActive && this.isPocketMode) {
-      this.exitPocketMode();
     }
 
     const tripStatusBox = document.getElementById('condTripStatusBox');
@@ -284,6 +283,7 @@ class BusController {
     } catch (e) {}
 
     this.updateTripStatusUI(false);
+    this.disablePocketLock();
     this.releaseWakeLock();
     this.stopBackgroundMediaService();
     this.stopBackgroundWorker();
@@ -429,46 +429,62 @@ class BusController {
   }
 
   /**
-   * Pocket Battery Saver Mode:
-   * Turns screen 100% black (AMOLED 0W) with touches locked so driver can pocket phone
-   * without turning off the phone screen, allowing Android to stream satellite GPS continuously!
+   * Pocket Lock (OLED Screen Off / Battery Saver Mode):
+   * Turns entire screen pitch black (0% OLED battery consumption), locks touches against
+   * accidental pocket activation, while maintaining Screen Wake Lock & Foreground GPS streaming 100% live.
    */
-  enterPocketMode() {
+  enablePocketLock() {
     if (!this.isTripActive) {
-      window.app.showToast('Please press Start Trip first before enabling Pocket Mode.', 'warning');
+      window.app.showToast('Please start a trip first to use Pocket Lock.', 'warning');
       return;
     }
-    const overlay = document.getElementById('condPocketOverlay');
+    this.isPocketLockActive = true;
+    const overlay = document.getElementById('pocketLockOverlay');
     if (overlay) {
       overlay.style.display = 'flex';
-      this.isPocketMode = true;
-      this.updatePocketModeHUD();
-      this.requestWakeLock();
-      window.app.showToast('Pocket Mode Active: Screen blacked out. GPS runs non-stop.', 'info');
     }
+    const bus = this.getBus();
+    const badge = document.getElementById('pocketLockBusBadge');
+    if (badge && bus) {
+      badge.textContent = `BUS ${bus.busNumber} • LIVE ON DUTY`;
+    }
+    const speedEl = document.getElementById('pocketLockSpeed');
+    if (speedEl && bus) {
+      speedEl.textContent = `${bus.speed || 0} km/h`;
+    }
+    this.requestWakeLock();
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch (e) {}
+    if (window.lucide) {
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+    window.app.showToast('🔒 Pocket Lock Active: Screen is black, GPS is streaming 100% live!', 'info');
   }
 
-  exitPocketMode() {
-    const overlay = document.getElementById('condPocketOverlay');
+  disablePocketLock(e) {
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    this.isPocketLockActive = false;
+    const overlay = document.getElementById('pocketLockOverlay');
     if (overlay) {
       overlay.style.display = 'none';
-      this.isPocketMode = false;
-      this.render();
-      window.app.showToast('Pocket Mode Deactivated.', 'info');
     }
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch (e) {}
+    this.render();
   }
 
-  updatePocketModeHUD() {
-    if (!this.isPocketMode) return;
-    const bus = this.getBus();
-    const speedEl = document.getElementById('pocketSpeed');
-    const stopEl = document.getElementById('pocketNextStop');
-    if (speedEl && bus) {
-      speedEl.textContent = `${bus.speed || 0} KM/H`;
+  handlePocketLockTap(e) {
+    const now = Date.now();
+    if (this._lastPocketTap && (now - this._lastPocketTap < 400)) {
+      this.disablePocketLock();
     }
-    if (stopEl && bus) {
-      stopEl.textContent = `Next: ${bus.nextStopName || 'En Route'} (${bus.etaMinutes || 0}m)`;
-    }
+    this._lastPocketTap = now;
   }
 
   /**
@@ -480,7 +496,7 @@ class BusController {
       if (!this.isTripActive) return;
 
       if (document.visibilityState === 'visible') {
-        console.log('📱 Phone screen turned on / tab focused: re-binding hardware GPS');
+        console.log('📱 Phone screen turned on / tab focused: force-refreshing GPS streams');
         this.requestWakeLock();
         
         // Ensure background audio keep-alive is running
@@ -493,10 +509,11 @@ class BusController {
           this.startBackgroundWorker();
         }
 
-        // Force-restart watchPosition stream unconditionally (Android destroys background watchId)
+        // CRITICAL FIX: Kill stale/frozen watchPosition and start a fresh OS listener
+        this.stopPhoneGps();
         this.startPhoneGps();
 
-        // Immediate direct hardware ping to unfreeze location instantly
+        // Immediate direct hardware ping with 3s maxAge for instant unfreeze
         this.queryHardwareGps();
 
         this.render();
@@ -507,16 +524,12 @@ class BusController {
           }, 100);
         }
       } else {
-        // Tab went into background or phone locked: Ensure foreground media service & worker are actively running
-        console.log('📱 Tab backgrounded / screen off: reinforcing background keep-alive services');
+        console.log('📱 Tab hidden / screen off: reinforcing background keep-alive services');
         if (this.bgAudioEl && this.bgAudioEl.paused) {
           this.bgAudioEl.play().catch(() => {});
         }
         if (!this.bgWorker) {
           this.startBackgroundWorker();
-        }
-        if ('vibrate' in navigator) {
-          try { navigator.vibrate([120, 60, 120]); } catch (e) {}
         }
       }
     };
@@ -524,7 +537,6 @@ class BusController {
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
     window.addEventListener('focus', handleVisibilityOrFocus);
     window.addEventListener('pageshow', handleVisibilityOrFocus);
-    window.addEventListener('blur', handleVisibilityOrFocus);
   }
 
   /**
@@ -648,12 +660,13 @@ class BusController {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (AudioCtx) {
           this.keepAliveAudioCtx = new AudioCtx();
+          // Generate imperceptible 15Hz sub-audible tone (amplitude 0.0001)
+          // Prevents Chrome on Android from detecting silence and suspending the audio sink
           const sampleRate = this.keepAliveAudioCtx.sampleRate;
           const buffer = this.keepAliveAudioCtx.createBuffer(1, sampleRate * 2, sampleRate);
           const channelData = buffer.getChannelData(0);
           for (let i = 0; i < channelData.length; i++) {
-            // 25 Hz sub-audible tone at 0.001 amplitude (inaudible, but prevents silence detector pause)
-            channelData[i] = Math.sin((2 * Math.PI * 25 * i) / sampleRate) * 0.001;
+            channelData[i] = Math.sin(2 * Math.PI * 15 * (i / sampleRate)) * 0.0001;
           }
           const source = this.keepAliveAudioCtx.createBufferSource();
           source.buffer = buffer;
@@ -735,19 +748,26 @@ class BusController {
 
   /**
    * Direct Hardware GPS Query:
-   * Pings device GPS chip directly with maximumAge: 0 to force an uncached satellite fix.
+   * Pings device GPS chip directly with maximumAge: 3000 to rapidly retrieve fresh fused coordinates.
    */
   queryHardwareGps() {
     if (!this.isTripActive || !navigator.geolocation) return;
+    if (this._isGpsQueryPending) return;
+    this._isGpsQueryPending = true;
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => this.handlePositionUpdate(pos),
+      (pos) => {
+        this._isGpsQueryPending = false;
+        this.handlePositionUpdate(pos);
+      },
       (err) => {
+        this._isGpsQueryPending = false;
         console.debug('Direct GPS query notice:', err.message);
       },
       {
         enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
+        timeout: 8000,
+        maximumAge: 3000
       }
     );
   }
@@ -815,6 +835,11 @@ class BusController {
     const badge = document.getElementById('condGpsStatusBadge');
     if (badge && this.isTripActive) badge.innerHTML = '<span class="dot green"></span> GPS TRACKING LIVE';
 
+    if (this.isPocketLockActive) {
+      const speedEl = document.getElementById('pocketLockSpeed');
+      if (speedEl) speedEl.textContent = `${calculatedSpeed} km/h`;
+    }
+
     this.processNewCoordinates(latitude, longitude, calculatedSpeed, calculatedHeading);
   }
 
@@ -832,11 +857,11 @@ class BusController {
     const badge = document.getElementById('condGpsStatusBadge');
     if (badge) badge.innerHTML = '<span class="dot green"></span> GPS TRACKING LIVE';
 
-    // Immediate direct reading
+    // Immediate direct reading with 3s maxAge for instant satellite/fused lock
     navigator.geolocation.getCurrentPosition(
       (pos) => this.handlePositionUpdate(pos),
       (err) => console.warn('Initial GPS lock notice:', err.message),
-      { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 3000 }
     );
 
     this.watchId = navigator.geolocation.watchPosition(
@@ -860,7 +885,7 @@ class BusController {
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 1000,
+        maximumAge: 3000,
         timeout: 10000
       }
     );
@@ -962,7 +987,6 @@ class BusController {
     }
 
     this.render();
-    this.updatePocketModeHUD();
   }
 
   setCrowdLevel(level) {

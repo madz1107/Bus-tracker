@@ -22,7 +22,6 @@
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#2563eb">
 </head>
 <body class="app-body">
 
@@ -575,12 +574,12 @@
             </button>
           </div>
 
-          <!-- Pocket Battery Saver Mode Button (Active only when on duty) -->
-          <button type="button" class="btn-pocket-mode" id="btnCondPocketMode" onclick="Bus.enterPocketMode()" style="display: none;">
-            <i data-lucide="moon"></i>
-            <div class="btn-pocket-text">
-              <span class="pocket-title">Pocket Battery Saver (Black Screen)</span>
-              <span class="pocket-sub">Turns screen black to save 100% battery while GPS broadcasts live without stopping</span>
+          <!-- ── Pocket Lock / OLED Screen Off Mode (Active during trip) ── -->
+          <button type="button" class="btn-trip btn-pocket-mode" id="btnCondPocketLock" onclick="Bus.enablePocketLock()" style="display: none; width: 100%; margin-top: 12px;">
+            <i data-lucide="lock"></i>
+            <div class="btn-trip-text">
+              <span class="btn-main-label">Pocket Lock (OLED Screen Off)</span>
+              <span class="btn-sub-label">Pitch black screen • 0% battery • 100% Live GPS in pocket</span>
             </div>
           </button>
         </div>
@@ -752,20 +751,6 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- ── Fullscreen AMOLED Pocket HUD Overlay ── -->
-      <div id="condPocketOverlay" class="cond-pocket-overlay" style="display: none;" onclick="Bus.exitPocketMode()">
-        <div class="pocket-content">
-          <div class="pocket-radar-pulse"></div>
-          <div class="pocket-status-text">LIVE GPS BROADCASTING</div>
-          <div class="pocket-speed" id="pocketSpeed">0 KM/H</div>
-          <div class="pocket-stop" id="pocketNextStop">Next Stop: Tracking...</div>
-          <div class="pocket-instructions">
-            <span>🔒 Screen & Touches Locked</span>
-            <span class="pocket-hint">Battery is saved (Black AMOLED). Tap screen to exit.</span>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -1512,6 +1497,24 @@
 
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ── Fullscreen OLED Black Pocket Mode Overlay ── -->
+  <div id="pocketLockOverlay" class="pocket-lock-overlay" style="display: none;" onclick="Bus.handlePocketLockTap(event)">
+    <div class="pocket-lock-content">
+      <div class="pocket-lock-pulse-dot"></div>
+      <div class="pocket-lock-badge" id="pocketLockBusBadge">BUS 1 • LIVE ON DUTY</div>
+      <div class="pocket-lock-speed" id="pocketLockSpeed">0 km/h</div>
+      <div class="pocket-lock-status">
+        <i data-lucide="radio"></i> GPS Satellite Tracking Active
+      </div>
+      <div class="pocket-lock-notice">
+        Screen is dimmed pitch black to save battery.<br/>Live GPS is broadcasting 100% without sleep.<br/>Double-tap or use button below to exit.
+      </div>
+      <button type="button" class="btn-unlock-pocket" id="btnUnlockPocket" onclick="Bus.disablePocketLock(event)">
+        <i data-lucide="unlock"></i> Tap to Unlock Screen
+      </button>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <!-- Leaflet JS -->
