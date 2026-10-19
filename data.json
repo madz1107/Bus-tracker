@@ -1,63 +1,13 @@
 {
   "routes": [
     {
-      "id": "route-131",
-      "name": "Pirancheri to Tirunelveli",
-      "code": "131",
+      "id": "route-1",
+      "name": "1",
+      "code": "1",
       "color": "#3b82f6",
-      "stops": [
-        {
-          "id": "stop-131-1",
-          "lat": 8.659332,
-          "lng": 77.632737,
-          "name": "Pirancheri",
-          "sequence": 1
-        },
-        {
-          "id": "stop-131-6",
-          "lat": 8.665314,
-          "lng": 77.646282,
-          "name": "Subramaniyapuram",
-          "sequence": 2
-        },
-        {
-          "id": "stop-131-7",
-          "lat": 8.671609,
-          "lng": 77.680464,
-          "name": "Tharuvai",
-          "sequence": 3
-        },
-        {
-          "id": "stop-131-19",
-          "lat": 8.682088,
-          "lng": 77.698874,
-          "name": "Munnerpallam",
-          "sequence": 4
-        },
-        {
-          "id": "stop-131-20",
-          "lat": 8.699231,
-          "lng": 77.715132,
-          "name": "Melapalayam",
-          "sequence": 5
-        },
-        {
-          "id": "stop-131-21",
-          "lat": 8.703146,
-          "lng": 77.720427,
-          "name": "Bypass",
-          "sequence": 6
-        },
-        {
-          "id": "stop-131-22",
-          "lat": 8.702652,
-          "lng": 77.727123,
-          "name": "New Bus Stand",
-          "sequence": 7
-        }
-      ],
+      "stops": [],
       "roadway": [],
-      "created_at": "2026-10-17T11:52:51.456668+00:00"
+      "created_at": "2026-10-18T16:59:21.741018+00:00"
     }
   ],
   "buses": [
@@ -65,20 +15,20 @@
       "id": "BUS-1",
       "busNumber": "1",
       "regNumber": "TN 72 AB 3456",
-      "BusName": "Santhosh",
-      "name": "Santhosh",
-      "routeId": "route-131",
+      "BusName": "1",
+      "name": "1",
+      "routeId": "route-1",
       "assignedRouteIds": [
-        "route-131"
+        "route-1"
       ],
       "conductorId": null,
       "conductorName": null,
       "conductorPhone": null,
       "status": "Offline",
-      "lat": 8.6631429,
-      "lng": 77.6341262,
+      "lat": 11.7566,
+      "lng": 79.7628,
       "speed": 0,
-      "bearing": 162,
+      "bearing": 0,
       "currentStopId": "null",
       "currentStopName": "En Route",
       "nextStopId": "null",
@@ -86,13 +36,11 @@
       "distanceToNextKm": 0,
       "etaMinutes": 0,
       "routeProgress": 0,
-      "reachedStopIds": [
-        "stop-131-1"
-      ],
-      "crowdLevel": "Moderate",
+      "reachedStopIds": [],
+      "crowdLevel": "Low",
       "isTripActive": false,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-17T12:30:44.436+00:00"
+      "lastUpdated": "2026-10-19T08:20:03.099+00:00"
     }
   ],
   "users": [
@@ -107,60 +55,10 @@
       "created_at": "2026-10-17T11:22:51.850832+00:00"
     },
     {
-      "id": "cond-1",
-      "email": "conductor1@citybus.com",
-      "password": "pass123",
-      "name": "Muthu Kumar",
-      "role": "Bus",
-      "bus_id": "BUS-101",
-      "phone": "+91 94431 12345",
-      "created_at": "2026-10-17T11:22:51.850832+00:00"
-    },
-    {
-      "id": "cond-2",
-      "email": "conductor2@citybus.com",
-      "password": "pass123",
-      "name": "Subbiah Thevar",
-      "role": "Bus",
-      "bus_id": "BUS-102",
-      "phone": "+91 94432 23456",
-      "created_at": "2026-10-17T11:22:51.850832+00:00"
-    },
-    {
-      "id": "cond-3",
-      "email": "conductor3@citybus.com",
-      "password": "pass123",
-      "name": "Antony Raj",
-      "role": "Bus",
-      "bus_id": "BUS-103",
-      "phone": "+91 94433 34567",
-      "created_at": "2026-10-17T11:22:51.850832+00:00"
-    },
-    {
-      "id": "cond-4",
-      "email": "conductor4@citybus.com",
-      "password": "pass123",
-      "name": "Kandasamy P.",
-      "role": "Bus",
-      "bus_id": "BUS-201",
-      "phone": "+91 94434 45678",
-      "created_at": "2026-10-17T11:22:51.850832+00:00"
-    },
-    {
-      "id": "user-pass-1",
-      "email": "passenger@citybus.com",
-      "password": "pass123",
-      "name": "Priya Sharma",
-      "role": "passenger",
-      "bus_id": null,
-      "phone": null,
-      "created_at": "2026-10-17T11:22:51.850832+00:00"
-    },
-    {
       "id": "bus-user-870",
       "email": "bus@1",
-      "password": "123",
-      "name": "Santhosh",
+      "password": "1",
+      "name": "1",
       "role": "Bus",
       "bus_id": "BUS-1",
       "phone": null,
