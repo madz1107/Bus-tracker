@@ -573,15 +573,6 @@
               </div>
             </button>
           </div>
-
-          <!-- ── Pocket Lock / OLED Screen Off Mode (Active during trip) ── -->
-          <button type="button" class="btn-trip btn-pocket-mode" id="btnCondPocketLock" onclick="Bus.enablePocketLock()" style="display: none; width: 100%; margin-top: 12px;">
-            <i data-lucide="lock"></i>
-            <div class="btn-trip-text">
-              <span class="btn-main-label">Pocket Lock (OLED Screen Off)</span>
-              <span class="btn-sub-label">Pitch black screen • 0% battery • 100% Live GPS in pocket</span>
-            </div>
-          </button>
         </div>
 
         <!-- ── Offline Standby Notice ── -->
@@ -1497,24 +1488,6 @@
 
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
-
-  <!-- ── Fullscreen OLED Black Pocket Mode Overlay ── -->
-  <div id="pocketLockOverlay" class="pocket-lock-overlay" style="display: none;" onclick="Bus.handlePocketLockTap(event)">
-    <div class="pocket-lock-content">
-      <div class="pocket-lock-pulse-dot"></div>
-      <div class="pocket-lock-badge" id="pocketLockBusBadge">BUS 1 • LIVE ON DUTY</div>
-      <div class="pocket-lock-speed" id="pocketLockSpeed">0 km/h</div>
-      <div class="pocket-lock-status">
-        <i data-lucide="radio"></i> GPS Satellite Tracking Active
-      </div>
-      <div class="pocket-lock-notice">
-        Screen is dimmed pitch black to save battery.<br/>Live GPS is broadcasting 100% without sleep.<br/>Double-tap or use button below to exit.
-      </div>
-      <button type="button" class="btn-unlock-pocket" id="btnUnlockPocket" onclick="Bus.disablePocketLock(event)">
-        <i data-lucide="unlock"></i> Tap to Unlock Screen
-      </button>
-    </div>
-  </div>
 
   <!-- Scripts -->
   <!-- Leaflet JS -->

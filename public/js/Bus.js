@@ -15,9 +15,7 @@ class BusController {
     this.bgAudioEl = null;
     this.bgWorker = null;
     this.isChecklistOpen = false;
-    this.isPocketLockActive = false;
     this._isGpsQueryPending = false;
-    this._lastPocketTap = 0;
 
     // Setup screen resume / visibility handlers immediately
     this.setupVisibilityHandlers();
@@ -184,11 +182,6 @@ class BusController {
       btnEnd.style.cursor = this.isTripActive ? 'pointer' : 'not-allowed';
     }
 
-    const btnPocket = document.getElementById('btnCondPocketLock');
-    if (btnPocket) {
-      btnPocket.style.display = this.isTripActive ? 'flex' : 'none';
-    }
-
     const tripStatusBox = document.getElementById('condTripStatusBox');
     const statusTitle = document.getElementById('condTripStatusTitle');
     const statusSubtitle = document.getElementById('condTripStatusSubtitle');
@@ -283,7 +276,6 @@ class BusController {
     } catch (e) {}
 
     this.updateTripStatusUI(false);
-    this.disablePocketLock();
     this.releaseWakeLock();
     this.stopBackgroundMediaService();
     this.stopBackgroundWorker();
@@ -426,65 +418,6 @@ class BusController {
       this.mapManager.centerOnLocation(bus.lat, bus.lng, 15);
       window.app.showToast('Centered map on bus position', 'info');
     }
-  }
-
-  /**
-   * Pocket Lock (OLED Screen Off / Battery Saver Mode):
-   * Turns entire screen pitch black (0% OLED battery consumption), locks touches against
-   * accidental pocket activation, while maintaining Screen Wake Lock & Foreground GPS streaming 100% live.
-   */
-  enablePocketLock() {
-    if (!this.isTripActive) {
-      window.app.showToast('Please start a trip first to use Pocket Lock.', 'warning');
-      return;
-    }
-    this.isPocketLockActive = true;
-    const overlay = document.getElementById('pocketLockOverlay');
-    if (overlay) {
-      overlay.style.display = 'flex';
-    }
-    const bus = this.getBus();
-    const badge = document.getElementById('pocketLockBusBadge');
-    if (badge && bus) {
-      badge.textContent = `BUS ${bus.busNumber} • LIVE ON DUTY`;
-    }
-    const speedEl = document.getElementById('pocketLockSpeed');
-    if (speedEl && bus) {
-      speedEl.textContent = `${bus.speed || 0} km/h`;
-    }
-    this.requestWakeLock();
-    try {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-    } catch (e) {}
-    if (window.lucide) {
-      setTimeout(() => lucide.createIcons(), 50);
-    }
-    window.app.showToast('🔒 Pocket Lock Active: Screen is black, GPS is streaming 100% live!', 'info');
-  }
-
-  disablePocketLock(e) {
-    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    this.isPocketLockActive = false;
-    const overlay = document.getElementById('pocketLockOverlay');
-    if (overlay) {
-      overlay.style.display = 'none';
-    }
-    try {
-      if (document.fullscreenElement && document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-      }
-    } catch (e) {}
-    this.render();
-  }
-
-  handlePocketLockTap(e) {
-    const now = Date.now();
-    if (this._lastPocketTap && (now - this._lastPocketTap < 400)) {
-      this.disablePocketLock();
-    }
-    this._lastPocketTap = now;
   }
 
   /**
@@ -834,11 +767,6 @@ class BusController {
 
     const badge = document.getElementById('condGpsStatusBadge');
     if (badge && this.isTripActive) badge.innerHTML = '<span class="dot green"></span> GPS TRACKING LIVE';
-
-    if (this.isPocketLockActive) {
-      const speedEl = document.getElementById('pocketLockSpeed');
-      if (speedEl) speedEl.textContent = `${calculatedSpeed} km/h`;
-    }
 
     this.processNewCoordinates(latitude, longitude, calculatedSpeed, calculatedHeading);
   }
