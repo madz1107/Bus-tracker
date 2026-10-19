@@ -499,129 +499,270 @@
     <!-- 3. Bus PORTAL (Mobile First) -->
     <!-- ======================================================== -->
     <section id="portalBus" class="portal-view">
-      <div class="Bus-container">
+      <div class="cockpit-container">
         
-        <!-- Bus Mobile Header Card -->
-        <div class="Bus-top-card">
-          <div class="Bus-profile-strip">
-            <div class="avatar-circle">
-              <i data-lucide="user"></i>
+        <!-- ── Top Cockpit Hero Card ── -->
+        <div class="cockpit-hero-card">
+          <div class="cockpit-driver-row">
+            <div class="cockpit-driver-left">
+              <div class="driver-avatar-ring">
+                <i data-lucide="bus-front"></i>
+              </div>
+              <div class="driver-meta">
+                <div class="driver-role-tag" id="condRoleDisplay">DUTY DRIVER / CONDUCTOR</div>
+                <h2 class="driver-name" id="condNameDisplay">Rajesh Kumar</h2>
+              </div>
             </div>
-            <div class="Bus-meta">
-              <h2 class="Bus-name" id="condNameDisplay">Rajesh Kumar</h2>
-              <p class="Bus-role" id="condRoleDisplay">Duty Bus • ID: BUS-USER-101</p>
-            </div>
-            <div class="bus-assigned-badge" id="condAssignedBusBadge">
-              BUS 101
+
+            <div class="cockpit-driver-right">
+              <div class="cockpit-bus-badge" id="condAssignedBusBadge">BUS 101</div>
+              <div class="cockpit-duty-pill standby" id="condDutyPill">
+                <span class="status-pulse-dot"></span>
+                <span id="condDutyText">OFF DUTY</span>
+              </div>
             </div>
           </div>
 
-          <!-- Route Banner -->
-          <div class="Bus-route-banner" id="condRouteBanner">
-            <div class="banner-route-tag">Assigned Route</div>
-            <select id="condRouteSelect" class="form-control" style="background: white; color: #1e293b; border: 1px solid #cbd5e1; margin: 6px 0; font-weight: 500; padding: 8px;" onchange="Bus.changeActiveRoute()">
-            </select>
-            <div class="banner-route-name" id="condRouteName" style="display: none;">Route 101 - Central Metro Express</div>
-            <div class="banner-stops-count" id="condStopsCount">6 Stops Total</div>
+          <!-- Route Selector Bar -->
+          <div class="cockpit-route-bar">
+            <div class="route-bar-header">
+              <div class="route-bar-label">
+                <i data-lucide="route"></i>
+                <span>ஒதுக்கப்பட்ட வழித்தடம் (Assigned Route)</span>
+              </div>
+              <div class="route-stops-tag" id="condStopsCount">0 Stops</div>
+            </div>
+            
+            <div class="route-select-wrapper">
+              <select id="condRouteSelect" class="cockpit-route-select" onchange="Bus.changeActiveRoute()">
+              </select>
+              <i data-lucide="chevron-down" class="select-chevron-icon"></i>
+            </div>
+            <div class="route-display-name" id="condRouteName" style="display: none;">Route Name</div>
           </div>
         </div>
 
-        <!-- Big Trip Action Controller -->
-        <div class="trip-control-deck">
-          <div class="trip-status-indicator" id="condTripStatusBox">
-            <div class="status-icon-wrap" id="condStatusIconWrap">
-              <i data-lucide="play-circle"></i>
+        <!-- ── Tactile Trip Command Deck ── -->
+        <div class="cockpit-card trip-command-deck">
+          <div class="trip-status-hud" id="condTripStatusBox">
+            <div class="hud-status-icon-wrap" id="condStatusIconWrap">
+              <i data-lucide="radio" id="condStatusIcon"></i>
             </div>
-            <div>
-              <div class="status-title" id="condTripStatusTitle">Trip In Progress</div>
-              <div class="status-subtitle" id="condTripStatusSubtitle">Broadcasting live GPS coordinates</div>
+            <div class="hud-status-info">
+              <div class="hud-status-title" id="condTripStatusTitle">Trip Stopped / Off Duty</div>
+              <div class="hud-status-subtitle" id="condTripStatusSubtitle">Press Start Trip to activate live phone GPS broadcast</div>
+            </div>
+            <div class="hud-duration-box">
+              <span class="duration-label">DURATION</span>
+              <span class="duration-clock" id="condTripDuration">00:00:00</span>
             </div>
           </div>
 
-          <div class="trip-action-buttons">
-            <button class="btn btn-success btn-lg btn-block" id="btnCondStartTrip" onclick="Bus.startTrip()">
-              <i data-lucide="play"></i> Start Trip
+          <div class="trip-actions-grid">
+            <button type="button" class="btn-trip btn-trip-start" id="btnCondStartTrip" onclick="Bus.startTrip()">
+              <i data-lucide="play"></i>
+              <div class="btn-trip-text">
+                <span class="btn-main-label">Start Trip</span>
+                <span class="btn-sub-label">பயணம் தொடங்கு (GPS Live)</span>
+              </div>
             </button>
-            <button class="btn btn-danger btn-lg btn-block" id="btnCondEndTrip" onclick="Bus.endTrip()">
-              <i data-lucide="square"></i> End Trip
+            <button type="button" class="btn-trip btn-trip-end" id="btnCondEndTrip" onclick="Bus.endTrip()" disabled>
+              <i data-lucide="square"></i>
+              <div class="btn-trip-text">
+                <span class="btn-main-label">End Trip</span>
+                <span class="btn-sub-label">பயணம் முடி</span>
+              </div>
             </button>
+          </div>
+        </div>
+
+        <!-- ── Next Station Hopper (1-Tap Station Progress) ── -->
+        <div class="cockpit-card station-hopper-card">
+          <div class="hopper-header">
+            <div class="card-mini-title">
+              <i data-lucide="navigation"></i>
+              <span>நிறுத்த தகவல் (Station Hopper & Radar)</span>
+            </div>
+            <button type="button" class="voice-toggle-btn active" id="btnVoiceToggle" onclick="Bus.toggleVoiceAnnouncement()" title="Toggle Voice Announcements">
+              <i data-lucide="volume-2" id="voiceToggleIcon"></i>
+              <span id="voiceToggleLabel">குரல் அறிவிப்பு: ஆன்</span>
+            </button>
+          </div>
+
+          <!-- Big tactile 1-Tap Reached Stop Button -->
+          <button type="button" class="btn-reach-next-stop" id="btnReachNextStop" onclick="Bus.reachNextStop()">
+            <div class="reach-btn-icon-pulse">
+              <i data-lucide="map-pin"></i>
+            </div>
+            <div class="reach-btn-content">
+              <span class="reach-btn-hint">அடுத்த நிறுத்தம் வந்தடைந்தது • 1-TAP TO REACH</span>
+              <span class="reach-btn-stop" id="condNextStopBtnName">Loading Next Stop...</span>
+            </div>
+            <div class="reach-btn-action-tag">
+              <span>REACHED</span>
+              <i data-lucide="arrow-right"></i>
+            </div>
+          </button>
+
+          <!-- Current & Next Stop Dual Display -->
+          <div class="station-flow-grid">
+            <div class="station-flow-cell current-cell">
+              <span class="flow-cell-label"><i data-lucide="check-circle-2"></i> தற்போதைய நிறுத்தம் (Current)</span>
+              <span class="flow-cell-val" id="condCurrentStop">Waiting...</span>
+            </div>
+            <div class="station-flow-cell next-cell">
+              <span class="flow-cell-label"><i data-lucide="target"></i> அடுத்த நிறுத்தம் (Next Stop)</span>
+              <span class="flow-cell-val text-primary" id="condNextStop">Waiting...</span>
+              <span class="flow-cell-eta" id="condNextEta">-- min</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Expandable Route Stops Checklist ── -->
+        <div class="cockpit-card stops-checklist-card">
+          <div class="checklist-header" onclick="Bus.toggleStopsChecklist()">
+            <div class="card-mini-title">
+              <i data-lucide="list-checks"></i>
+              <span>வழித்தட நிறுத்தங்கள் பட்டியல் (Stops Checklist)</span>
+              <span class="checklist-progress-pill" id="condProgressBadge">0 / 0</span>
+            </div>
+            <div class="checklist-toggle-icon">
+              <span class="toggle-text" id="checklistToggleText">விரிவாக்கு (View All)</span>
+              <i data-lucide="chevron-down" id="stopsChevron"></i>
+            </div>
+          </div>
+
+          <div class="stops-timeline-wrapper" id="condStopsTimelineWrapper" style="display: none;">
+            <p class="checklist-hint">💡 ஏதேனும் நிறுத்தத்தைத் தட்டினால் உடனடியாக அங்கு நிலை புதுப்பிக்கப்படும் (Tap any stop to jump/mark reached).</p>
+            <div class="stops-timeline-list" id="condStopsTimeline">
+              <!-- Dynamically rendered by bus.js -->
+            </div>
           </div>
         </div>
 
         <div id="condActiveTripContent">
-        <!-- Bus Live Bus Crowd & Occupancy Level Controller -->
-        <div class="Bus-crowd-card">
-          <div class="telemetry-header" style="margin-bottom: 0.35rem;">
-            <div class="card-mini-title"><i data-lucide="users"></i> Bus Crowd &amp; Occupancy Status</div>
-            <div class="crowd-pill" id="condCurrentCrowdBadge"><span class="dot green"></span> Low Crowd</div>
-          </div>
-          <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem;">
-            Tap below to update live crowd level. This broadcasts to waiting passengers and admin instantly.
-          </p>
-          <div class="crowd-buttons-grid">
-            <button type="button" class="btn-crowd-option low-opt" id="btnCrowdLow" onclick="Bus.setCrowdLevel('Low')">
-              <div class="crowd-icon-circle" style="background:#D1FAE5; color:#059669;">💺</div>
-              <div class="crowd-btn-title">Low Crowd</div>
-              <div class="crowd-btn-sub">Seats Available</div>
-            </button>
-            <button type="button" class="btn-crowd-option mod-opt active" id="btnCrowdModerate" onclick="Bus.setCrowdLevel('Moderate')">
-              <div class="crowd-icon-circle" style="background:#FEF3C7; color:#D97706;">🚶</div>
-              <div class="crowd-btn-title">Moderate</div>
-              <div class="crowd-btn-sub">Standing Only</div>
-            </button>
-            <button type="button" class="btn-crowd-option heavy-opt" id="btnCrowdHeavy" onclick="Bus.setCrowdLevel('Heavy')">
-              <div class="crowd-icon-circle" style="background:#FEE2E2; color:#DC2626;">👥</div>
-              <div class="crowd-btn-title">Heavy Crowd</div>
-              <div class="crowd-btn-sub">Bus Full / Packed</div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Live GPS & Telemetry Dashboard Card -->
-        <div class="Bus-telemetry-card">
-          <div class="telemetry-header">
-            <div class="card-mini-title"><i data-lucide="activity"></i> Real-Time Telemetry & Stop Radar</div>
-            <div class="gps-badge" id="condGpsStatusBadge">
-              <span class="dot green"></span> GPS LIVE
+          <!-- ── Live Bus Crowd & Occupancy Level Controller ── -->
+          <div class="cockpit-card crowd-deck-card">
+            <div class="card-header-row">
+              <div class="card-mini-title">
+                <i data-lucide="users"></i>
+                <span>பயணிகள் கூட்டம் நிலை (Live Crowd Occupancy)</span>
+              </div>
+              <div class="crowd-pill" id="condCurrentCrowdBadge">
+                <span class="dot green"></span> Low Crowd
+              </div>
+            </div>
+            <p class="cockpit-sub-text">
+              1-முறை தொட்டு பயணிகள் கூட்டம் அளவை மாற்றலாம். இது காத்திருக்கும் பயணிகளுக்கு உடனடியாகத் தெரியும்.
+            </p>
+            <div class="crowd-buttons-grid">
+              <button type="button" class="btn-crowd-card low-opt" id="btnCrowdLow" onclick="Bus.setCrowdLevel('Low')">
+                <div class="crowd-icon-bubble">💺</div>
+                <div class="crowd-title">Low Crowd</div>
+                <div class="crowd-tamil">இருக்கைகள் உள்ளன</div>
+                <div class="crowd-sub">Seats Available</div>
+              </button>
+              <button type="button" class="btn-crowd-card mod-opt active" id="btnCrowdModerate" onclick="Bus.setCrowdLevel('Moderate')">
+                <div class="crowd-icon-bubble">🚶</div>
+                <div class="crowd-title">Moderate</div>
+                <div class="crowd-tamil">நடுத்தர கூட்டம்</div>
+                <div class="crowd-sub">Standing Only</div>
+              </button>
+              <button type="button" class="btn-crowd-card heavy-opt" id="btnCrowdHeavy" onclick="Bus.setCrowdLevel('Heavy')">
+                <div class="crowd-icon-bubble">👥</div>
+                <div class="crowd-title">Heavy Crowd</div>
+                <div class="crowd-tamil">பேருந்து நிரம்பியது</div>
+                <div class="crowd-sub">Bus Full / Packed</div>
+              </button>
             </div>
           </div>
 
-          <div class="telemetry-grid">
-            <div class="telemetry-cell">
-              <span class="t-label">Live Speed</span>
-              <span class="t-val text-blue" id="condLiveSpeed">34 <small>km/h</small></span>
+          <!-- ── Real-Time Telemetry & Digital Speedometer HUD ── -->
+          <div class="cockpit-card telemetry-deck-card">
+            <div class="card-header-row">
+              <div class="card-mini-title">
+                <i data-lucide="activity"></i>
+                <span>வேகமானி & டெலிமெட்ரி (Speedometer & Telemetry)</span>
+              </div>
+              <div class="gps-badge" id="condGpsStatusBadge">
+                <span class="dot green"></span> GPS LIVE
+              </div>
             </div>
-            <div class="telemetry-cell">
-              <span class="t-label">Current Stop</span>
-              <span class="t-val" id="condCurrentStop">Kilpauk College</span>
+
+            <div class="cockpit-telemetry-grid">
+              <!-- Digital Speedometer Box -->
+              <div class="cockpit-speed-box">
+                <div class="speed-label">வேகம் (SPEED)</div>
+                <div class="speed-digits-row">
+                  <span class="speed-value" id="condLiveSpeed">0</span>
+                  <span class="speed-unit">KM/H</span>
+                </div>
+                <div class="speed-bar-track">
+                  <div class="speed-bar-fill" id="condSpeedBar" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <!-- Passenger Counter Box -->
+              <div class="cockpit-counter-box">
+                <div class="counter-label"><i data-lucide="ticket"></i> பயணிகளின் எண்ணிக்கை</div>
+                <div class="counter-stepper">
+                  <button type="button" class="btn-stepper minus" onclick="Bus.changePassengerCount(-1)" aria-label="Decrease Passengers">−</button>
+                  <span class="stepper-count" id="condPassengerCount">0</span>
+                  <button type="button" class="btn-stepper plus" onclick="Bus.changePassengerCount(1)" aria-label="Increase Passengers">+</button>
+                </div>
+                <div class="counter-sub">Tap + / − to update</div>
+              </div>
             </div>
-            <div class="telemetry-cell">
-              <span class="t-label">Next Stop</span>
-              <span class="t-val text-primary" id="condNextStop">Central Junction</span>
-            </div>
-            <div class="telemetry-cell">
-              <span class="t-label">ETA to Next</span>
-              <span class="t-val text-emerald" id="condNextEta">5 min (2.4 km)</span>
+
+            <!-- Stop Geofence Radar Box -->
+            <div class="geofence-radar-box">
+              <div class="radar-ping-anim"></div>
+              <div class="radar-info">
+                <div class="radar-title" id="condGeofenceTitle">Approaching Station</div>
+                <div class="radar-desc" id="condGeofenceDesc">Automatic Geofence Active (Radius: 80m) • Reached stops are logged automatically.</div>
+              </div>
             </div>
           </div>
 
-          <!-- Stop Geofence Radar Box -->
-          <div class="geofence-radar-box">
-            <div class="radar-ping-anim"></div>
-            <div class="radar-info">
-              <div class="radar-title" id="condGeofenceTitle">Approaching Central Railway Junction</div>
-              <div class="radar-desc" id="condGeofenceDesc">Automatic Geofence Active (Radius: 80m) • Reached stops are logged automatically.</div>
+          <!-- ── Quick Passenger Delay / Alert Broadcast ── -->
+          <div class="cockpit-card delay-broadcast-card">
+            <div class="card-mini-title">
+              <i data-lucide="megaphone"></i>
+              <span>பயணிகளுக்கு விரைவு அறிவிப்பு (Quick Delay & Traffic Alert)</span>
             </div>
+            <p class="cockpit-sub-text">
+              போக்குவரத்து நெரிசல் அல்லது தாமதம் ஏற்பட்டால் உடனே பயணிகளுக்கு செய்தி அனுப்பலாம்:
+            </p>
+            <div class="delay-quick-grid">
+              <button type="button" class="btn-delay-chip" onclick="Bus.broadcastDelay('Heavy Traffic • 10m Delay')">
+                <span>🚦 Heavy Traffic (+10m)</span>
+              </button>
+              <button type="button" class="btn-delay-chip" onclick="Bus.broadcastDelay('Rain Slowdown • Driving Safely')">
+                <span>🌧️ Rain Slowdown</span>
+              </button>
+              <button type="button" class="btn-delay-chip" onclick="Bus.broadcastDelay('Breakdown • Maintenance Check')">
+                <span>🛑 Breakdown / Pause</span>
+              </button>
+              <button type="button" class="btn-delay-chip clear-chip" onclick="Bus.clearDelayAlert()">
+                <span>🟢 All Clear (சரியான நேரம்)</span>
+              </button>
+            </div>
+            <div id="condActiveDelayNotice" class="active-delay-notice" style="display: none;"></div>
           </div>
-        </div>
 
-
-
-        <!-- Bus Route Stops Mini-Map -->
-        <div class="Bus-map-card">
-          <div class="card-mini-title"><i data-lucide="map"></i> Route Live Map</div>
-          <div id="condMap" class="cond-map-canvas"></div>
-        </div>
+          <!-- ── Bus Route Stops Mini-Map ── -->
+          <div class="cockpit-card map-card">
+            <div class="card-header-row">
+              <div class="card-mini-title">
+                <i data-lucide="map"></i>
+                <span>வழித்தட வரைபடம் (Route Live Map)</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline" onclick="Bus.centerMapOnBus()">
+                <i data-lucide="crosshair"></i> பேருந்தை மையப்படுத்து (Center)
+              </button>
+            </div>
+            <div id="condMap" class="cond-map-canvas"></div>
+          </div>
         </div>
 
       </div>

@@ -3159,5 +3159,1159 @@ h1, h2, h3, h4, h5, h6 {
   color: #64748b;
 }
 
+/* ========================================================
+   SMART BUS DRIVER COCKPIT DESIGN SYSTEM (Mobile First)
+   ======================================================== */
+.cockpit-container {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0.5rem 0.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cockpit-card {
+  background: var(--white);
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.cockpit-card:hover {
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.08);
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  gap: 8px;
+}
+
+.card-mini-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.card-mini-title i {
+  color: #2563eb;
+  width: 18px;
+  height: 18px;
+}
+
+.cockpit-sub-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 0.85rem;
+  line-height: 1.4;
+}
+
+/* ── Top Hero Cockpit Card ── */
+.cockpit-hero-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  color: white;
+  border-radius: 20px;
+  padding: 1.35rem 1.4rem;
+  box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.cockpit-hero-card::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.cockpit-driver-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cockpit-driver-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.driver-avatar-ring {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
+  flex-shrink: 0;
+}
+
+.driver-avatar-ring i {
+  width: 26px;
+  height: 26px;
+}
+
+.driver-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.driver-role-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #93c5fd;
+  text-transform: uppercase;
+}
+
+.driver-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cockpit-driver-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.cockpit-bus-badge {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 1.15rem;
+  padding: 6px 14px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cockpit-duty-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.cockpit-duty-pill.standby {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.cockpit-duty-pill.active {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+}
+
+.status-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulseBeacon 1.5s infinite;
+}
+
+@keyframes pulseBeacon {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+/* Route Bar inside Hero */
+.cockpit-route-bar {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.route-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #bfdbfe;
+}
+
+.route-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.route-bar-label i {
+  width: 15px;
+  height: 15px;
+}
+
+.route-stops-tag {
+  background: rgba(37, 99, 235, 0.5);
+  color: #dbeafe;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.route-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cockpit-route-select {
+  width: 100%;
+  background: #ffffff;
+  color: #0f172a;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 38px 10px 14px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.cockpit-route-select:focus {
+  ring: 2px solid #38bdf8;
+}
+
+.select-chevron-icon {
+  position: absolute;
+  right: 12px;
+  color: #64748b;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+/* ── Trip Command Deck ── */
+.trip-command-deck {
+  background: #ffffff;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.trip-status-hud {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.trip-status-hud.active {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.hud-status-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.trip-status-hud.active .hud-status-icon-wrap {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.hud-status-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hud-status-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.trip-status-hud.active .hud-status-title {
+  color: #065f46;
+}
+
+.hud-status-subtitle {
+  font-size: 0.76rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-duration-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: #0f172a;
+  color: #38bdf8;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-family: monospace;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.duration-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+.duration-clock {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.trip-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-trip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.btn-trip:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-trip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.btn-trip i {
+  width: 24px;
+  height: 24px;
+}
+
+.btn-trip-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.btn-main-label {
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.btn-sub-label {
+  font-size: 0.72rem;
+  opacity: 0.88;
+}
+
+.btn-trip-start {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+}
+
+.btn-trip-start:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.45);
+}
+
+.btn-trip-end {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.3);
+}
+
+.btn-trip-end:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 8px 22px rgba(239, 68, 68, 0.4);
+}
+
+/* ── Station Hopper Card (Big 1-Tap Reached Stop) ── */
+.station-hopper-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-left: 5px solid #2563eb;
+}
+
+.hopper-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.voice-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voice-toggle-btn.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.voice-toggle-btn i {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-reach-next-stop {
+  width: 100%;
+  min-height: 78px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+}
+
+.btn-reach-next-stop:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.45);
+}
+
+.btn-reach-next-stop:active {
+  transform: scale(0.98);
+}
+
+.reach-btn-icon-pulse {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.reach-btn-icon-pulse i {
+  width: 26px;
+  height: 26px;
+}
+
+.reach-btn-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.reach-btn-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #bfdbfe;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.reach-btn-stop {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  margin-top: 2px;
+}
+
+.reach-btn-action-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.reach-btn-action-tag i {
+  width: 14px;
+  height: 14px;
+}
+
+.station-flow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.station-flow-cell {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.flow-cell-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.flow-cell-label i {
+  width: 13px;
+  height: 13px;
+}
+
+.flow-cell-val {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-cell-eta {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #059669;
+  margin-top: 2px;
+}
+
+/* ── Expandable Stops Checklist ── */
+.stops-checklist-card {
+  padding: 1rem 1.25rem;
+}
+
+.checklist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checklist-progress-pill {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 6px;
+}
+
+.checklist-toggle-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.checklist-toggle-icon i {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.25s ease;
+}
+
+.checklist-hint {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin: 0.75rem 0;
+  background: #eff6ff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+}
+
+.stops-timeline-wrapper {
+  margin-top: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.5rem;
+}
+
+.stops-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.stop-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stop-checklist-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateX(2px);
+}
+
+.stop-checklist-item.reached {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.stop-checklist-item.current {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.stop-seq-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.74rem;
+  font-weight: 800;
+  background: #e2e8f0;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.stop-checklist-item.reached .stop-seq-badge {
+  background: #10b981;
+  color: white;
+}
+
+.stop-checklist-item.current .stop-seq-badge {
+  background: #2563eb;
+  color: white;
+}
+
+.stop-item-name {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.stop-checklist-item.reached .stop-item-name {
+  color: #065f46;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+.stop-status-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.stop-checklist-item.reached .stop-status-tag {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.stop-checklist-item.current .stop-status-tag {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.stop-checklist-item.upcoming .stop-status-tag {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ── Crowd Controller Deck ── */
+.crowd-deck-card {
+  border-top: 3px solid #f59e0b;
+}
+
+.crowd-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.btn-crowd-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 14px 10px;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.btn-crowd-card:hover {
+  transform: translateY(-2px);
+}
+
+.btn-crowd-card:active {
+  transform: scale(0.97);
+}
+
+.crowd-icon-bubble {
+  font-size: 1.8rem;
+  margin-bottom: 6px;
+  line-height: 1;
+}
+
+.crowd-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.crowd-tamil {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  margin: 2px 0;
+}
+
+.crowd-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+/* Low Crowd Option */
+.btn-crowd-card.low-opt {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.btn-crowd-card.low-opt.active {
+  background: #dcfce7;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+}
+
+.btn-crowd-card.low-opt.active .crowd-title {
+  color: #15803d;
+}
+
+/* Moderate Crowd Option */
+.btn-crowd-card.mod-opt {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.btn-crowd-card.mod-opt.active {
+  background: #fef3c7;
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25);
+}
+
+.btn-crowd-card.mod-opt.active .crowd-title {
+  color: #b45309;
+}
+
+/* Heavy Crowd Option */
+.btn-crowd-card.heavy-opt {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.btn-crowd-card.heavy-opt.active {
+  background: #fee2e2;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+}
+
+.btn-crowd-card.heavy-opt.active .crowd-title {
+  color: #b91c1c;
+}
+
+/* ── Telemetry & Speedometer Deck ── */
+.cockpit-telemetry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cockpit-speed-box {
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.speed-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+.speed-digits-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.speed-value {
+  font-size: 2.4rem;
+  font-weight: 900;
+  font-family: monospace;
+  color: #38bdf8;
+  line-height: 1;
+}
+
+.speed-unit {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.speed-bar-track {
+  width: 100%;
+  height: 6px;
+  background: #334155;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.speed-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8 0%, #10b981 60%, #ef4444 100%);
+  transition: width 0.3s ease;
+}
+
+.cockpit-counter-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.counter-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.counter-label i {
+  width: 14px;
+  height: 14px;
+  color: #2563eb;
+}
+
+.counter-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
+}
+
+.btn-stepper {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-stepper:active {
+  transform: scale(0.92);
+  background: #e2e8f0;
+}
+
+.stepper-count {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1e293b;
+  min-width: 44px;
+}
+
+.counter-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+/* Geofence Radar Box */
+.geofence-radar-box {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.radar-ping-anim {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2563eb;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.radar-ping-anim::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  animation: radarWave 1.8s infinite;
+}
+
+@keyframes radarWave {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.radar-info {
+  flex: 1;
+}
+
+.radar-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.radar-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+/* ── Quick Delay / Alert Broadcast ── */
+.delay-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.btn-delay-chip {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.btn-delay-chip:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.btn-delay-chip.clear-chip {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.btn-delay-chip.clear-chip:hover {
+  background: #d1fae5;
+}
+
+.active-delay-notice {
+  margin-top: 10px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Mini Route Map ── */
+.cond-map-canvas {
+  width: 100%;
+  height: 280px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .cockpit-container {
+    padding: 0.25rem 0.25rem 2rem;
+  }
+  
+  .cockpit-driver-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .cockpit-driver-right {
+    align-items: flex-start;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .crowd-buttons-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .btn-crowd-card {
+    flex-direction: row;
+    gap: 12px;
+    text-align: left;
+    padding: 10px 14px;
+  }
+
+  .crowd-icon-bubble {
+    margin-bottom: 0;
+  }
+
+  .trip-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cockpit-telemetry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .station-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .delay-quick-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 

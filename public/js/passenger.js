@@ -462,6 +462,11 @@ class PassengerController {
           </div>
 
           <!-- Key Telemetry Metrics -->
+          ${item.bus.delayAlert ? `
+            <div style="background: #fef3c7; color: #92400e; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #fde68a; display: flex; align-items: center; gap: 6px;">
+              ⚠️ <span>Driver Notice: <strong>${item.bus.delayAlert}</strong></span>
+            </div>
+          ` : ''}
           <div class="priority-metrics-row">
             <div class="metric-item">
               <span class="lbl">Distance to Stop</span>
@@ -608,6 +613,12 @@ class PassengerController {
             <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 0.85rem;">
               Reg: ${bus.regNumber} • Bus: ${bus.BusName}
             </div>
+
+            ${bus.delayAlert ? `
+              <div style="background: #fef3c7; color: #92400e; font-size: 0.74rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #fde68a;">
+                ⚠️ Notice: ${bus.delayAlert}
+              </div>
+            ` : ''}
 
             <div class="priority-metrics-row mb-2">
               <div class="metric-item">
