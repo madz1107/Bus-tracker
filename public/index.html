@@ -528,7 +528,7 @@
             <div class="route-bar-header">
               <div class="route-bar-label">
                 <i data-lucide="route"></i>
-                <span>ஒதுக்கப்பட்ட வழித்தடம் (Assigned Route)</span>
+                <span>Assigned Route</span>
               </div>
               <div class="route-stops-tag" id="condStopsCount">0 Stops</div>
             </div>
@@ -563,14 +563,14 @@
               <i data-lucide="play"></i>
               <div class="btn-trip-text">
                 <span class="btn-main-label">Start Trip</span>
-                <span class="btn-sub-label">பயணம் தொடங்கு (GPS Live)</span>
+                <span class="btn-sub-label">Broadcast Live GPS</span>
               </div>
             </button>
-            <button type="button" class="btn-trip btn-trip-end" id="btnCondEndTrip" onclick="Bus.endTrip()" disabled>
+            <button type="button" class="btn-trip btn-trip-end" id="btnCondEndTrip" onclick="Bus.endTrip()">
               <i data-lucide="square"></i>
               <div class="btn-trip-text">
                 <span class="btn-main-label">End Trip</span>
-                <span class="btn-sub-label">பயணம் முடி</span>
+                <span class="btn-sub-label">Stop Live Broadcast</span>
               </div>
             </button>
           </div>
@@ -581,11 +581,11 @@
           <div class="hopper-header">
             <div class="card-mini-title">
               <i data-lucide="navigation"></i>
-              <span>நிறுத்த தகவல் (Station Hopper & Radar)</span>
+              <span>Station Radar &amp; Hopper</span>
             </div>
             <button type="button" class="voice-toggle-btn active" id="btnVoiceToggle" onclick="Bus.toggleVoiceAnnouncement()" title="Toggle Voice Announcements">
               <i data-lucide="volume-2" id="voiceToggleIcon"></i>
-              <span id="voiceToggleLabel">குரல் அறிவிப்பு: ஆன்</span>
+              <span id="voiceToggleLabel">Voice Announcement: ON</span>
             </button>
           </div>
 
@@ -595,7 +595,7 @@
               <i data-lucide="map-pin"></i>
             </div>
             <div class="reach-btn-content">
-              <span class="reach-btn-hint">அடுத்த நிறுத்தம் வந்தடைந்தது • 1-TAP TO REACH</span>
+              <span class="reach-btn-hint">Reached Next Stop • 1-TAP TO UPDATE</span>
               <span class="reach-btn-stop" id="condNextStopBtnName">Loading Next Stop...</span>
             </div>
             <div class="reach-btn-action-tag">
@@ -607,11 +607,11 @@
           <!-- Current & Next Stop Dual Display -->
           <div class="station-flow-grid">
             <div class="station-flow-cell current-cell">
-              <span class="flow-cell-label"><i data-lucide="check-circle-2"></i> தற்போதைய நிறுத்தம் (Current)</span>
+              <span class="flow-cell-label"><i data-lucide="check-circle-2"></i> Current Stop</span>
               <span class="flow-cell-val" id="condCurrentStop">Waiting...</span>
             </div>
             <div class="station-flow-cell next-cell">
-              <span class="flow-cell-label"><i data-lucide="target"></i> அடுத்த நிறுத்தம் (Next Stop)</span>
+              <span class="flow-cell-label"><i data-lucide="target"></i> Next Stop</span>
               <span class="flow-cell-val text-primary" id="condNextStop">Waiting...</span>
               <span class="flow-cell-eta" id="condNextEta">-- min</span>
             </div>
@@ -623,17 +623,17 @@
           <div class="checklist-header" onclick="Bus.toggleStopsChecklist()">
             <div class="card-mini-title">
               <i data-lucide="list-checks"></i>
-              <span>வழித்தட நிறுத்தங்கள் பட்டியல் (Stops Checklist)</span>
+              <span>Route Stops Checklist</span>
               <span class="checklist-progress-pill" id="condProgressBadge">0 / 0</span>
             </div>
             <div class="checklist-toggle-icon">
-              <span class="toggle-text" id="checklistToggleText">விரிவாக்கு (View All)</span>
+              <span class="toggle-text" id="checklistToggleText">View All</span>
               <i data-lucide="chevron-down" id="stopsChevron"></i>
             </div>
           </div>
 
           <div class="stops-timeline-wrapper" id="condStopsTimelineWrapper" style="display: none;">
-            <p class="checklist-hint">💡 ஏதேனும் நிறுத்தத்தைத் தட்டினால் உடனடியாக அங்கு நிலை புதுப்பிக்கப்படும் (Tap any stop to jump/mark reached).</p>
+            <p class="checklist-hint">💡 Tap any stop along the route to immediately update the bus location.</p>
             <div class="stops-timeline-list" id="condStopsTimeline">
               <!-- Dynamically rendered by bus.js -->
             </div>
@@ -646,32 +646,29 @@
             <div class="card-header-row">
               <div class="card-mini-title">
                 <i data-lucide="users"></i>
-                <span>பயணிகள் கூட்டம் நிலை (Live Crowd Occupancy)</span>
+                <span>Live Passenger Crowd Occupancy</span>
               </div>
               <div class="crowd-pill" id="condCurrentCrowdBadge">
                 <span class="dot green"></span> Low Crowd
               </div>
             </div>
             <p class="cockpit-sub-text">
-              1-முறை தொட்டு பயணிகள் கூட்டம் அளவை மாற்றலாம். இது காத்திருக்கும் பயணிகளுக்கு உடனடியாகத் தெரியும்.
+              Tap to update live occupancy. Broadcasts to waiting passengers and admin instantly.
             </p>
             <div class="crowd-buttons-grid">
               <button type="button" class="btn-crowd-card low-opt" id="btnCrowdLow" onclick="Bus.setCrowdLevel('Low')">
                 <div class="crowd-icon-bubble">💺</div>
                 <div class="crowd-title">Low Crowd</div>
-                <div class="crowd-tamil">இருக்கைகள் உள்ளன</div>
                 <div class="crowd-sub">Seats Available</div>
               </button>
               <button type="button" class="btn-crowd-card mod-opt active" id="btnCrowdModerate" onclick="Bus.setCrowdLevel('Moderate')">
                 <div class="crowd-icon-bubble">🚶</div>
                 <div class="crowd-title">Moderate</div>
-                <div class="crowd-tamil">நடுத்தர கூட்டம்</div>
                 <div class="crowd-sub">Standing Only</div>
               </button>
               <button type="button" class="btn-crowd-card heavy-opt" id="btnCrowdHeavy" onclick="Bus.setCrowdLevel('Heavy')">
                 <div class="crowd-icon-bubble">👥</div>
                 <div class="crowd-title">Heavy Crowd</div>
-                <div class="crowd-tamil">பேருந்து நிரம்பியது</div>
                 <div class="crowd-sub">Bus Full / Packed</div>
               </button>
             </div>
@@ -682,7 +679,7 @@
             <div class="card-header-row">
               <div class="card-mini-title">
                 <i data-lucide="activity"></i>
-                <span>வேகமானி & டெலிமெட்ரி (Speedometer & Telemetry)</span>
+                <span>Live Speedometer &amp; Telemetry</span>
               </div>
               <div class="gps-badge" id="condGpsStatusBadge">
                 <span class="dot green"></span> GPS LIVE
@@ -692,7 +689,7 @@
             <div class="cockpit-telemetry-grid">
               <!-- Digital Speedometer Box -->
               <div class="cockpit-speed-box">
-                <div class="speed-label">வேகம் (SPEED)</div>
+                <div class="speed-label">CURRENT SPEED</div>
                 <div class="speed-digits-row">
                   <span class="speed-value" id="condLiveSpeed">0</span>
                   <span class="speed-unit">KM/H</span>
@@ -704,7 +701,7 @@
 
               <!-- Passenger Counter Box -->
               <div class="cockpit-counter-box">
-                <div class="counter-label"><i data-lucide="ticket"></i> பயணிகளின் எண்ணிக்கை</div>
+                <div class="counter-label"><i data-lucide="ticket"></i> On-Board Passengers</div>
                 <div class="counter-stepper">
                   <button type="button" class="btn-stepper minus" onclick="Bus.changePassengerCount(-1)" aria-label="Decrease Passengers">−</button>
                   <span class="stepper-count" id="condPassengerCount">0</span>
@@ -728,10 +725,10 @@
           <div class="cockpit-card delay-broadcast-card">
             <div class="card-mini-title">
               <i data-lucide="megaphone"></i>
-              <span>பயணிகளுக்கு விரைவு அறிவிப்பு (Quick Delay & Traffic Alert)</span>
+              <span>Quick Delay &amp; Traffic Alert Broadcast</span>
             </div>
             <p class="cockpit-sub-text">
-              போக்குவரத்து நெரிசல் அல்லது தாமதம் ஏற்பட்டால் உடனே பயணிகளுக்கு செய்தி அனுப்பலாம்:
+              Broadcast instant delay notices directly to passenger screens:
             </p>
             <div class="delay-quick-grid">
               <button type="button" class="btn-delay-chip" onclick="Bus.broadcastDelay('Heavy Traffic • 10m Delay')">
@@ -744,7 +741,7 @@
                 <span>🛑 Breakdown / Pause</span>
               </button>
               <button type="button" class="btn-delay-chip clear-chip" onclick="Bus.clearDelayAlert()">
-                <span>🟢 All Clear (சரியான நேரம்)</span>
+                <span>🟢 All Clear (On Schedule)</span>
               </button>
             </div>
             <div id="condActiveDelayNotice" class="active-delay-notice" style="display: none;"></div>
@@ -755,10 +752,10 @@
             <div class="card-header-row">
               <div class="card-mini-title">
                 <i data-lucide="map"></i>
-                <span>வழித்தட வரைபடம் (Route Live Map)</span>
+                <span>Route Live Map</span>
               </div>
               <button type="button" class="btn btn-sm btn-outline" onclick="Bus.centerMapOnBus()">
-                <i data-lucide="crosshair"></i> பேருந்தை மையப்படுத்து (Center)
+                <i data-lucide="crosshair"></i> Center on Bus
               </button>
             </div>
             <div id="condMap" class="cond-map-canvas"></div>
