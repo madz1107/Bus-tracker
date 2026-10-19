@@ -149,7 +149,7 @@ class BusController {
     const dutyText = document.getElementById('condDutyText');
     if (dutyPill && dutyText) {
       dutyPill.className = this.isTripActive ? 'cockpit-duty-pill active' : 'cockpit-duty-pill standby';
-      dutyText.textContent = this.isTripActive ? 'LIVE ON DUTY' : 'OFF DUTY';
+      dutyText.textContent = this.isTripActive ? 'LIVE ON DUTY' : 'OFFLINE';
     }
 
     const btnStart = document.getElementById('btnCondStartTrip');
@@ -158,9 +158,9 @@ class BusController {
       btnStart.disabled = this.isTripActive;
     }
     if (btnEnd) {
-      btnEnd.disabled = false;
-      btnEnd.style.opacity = this.isTripActive ? '1' : '0.85';
-      btnEnd.style.cursor = 'pointer';
+      btnEnd.disabled = !this.isTripActive;
+      btnEnd.style.opacity = this.isTripActive ? '1' : '0.5';
+      btnEnd.style.cursor = this.isTripActive ? 'pointer' : 'not-allowed';
     }
 
     const tripStatusBox = document.getElementById('condTripStatusBox');
@@ -173,9 +173,32 @@ class BusController {
         statusSubtitle.textContent = 'Streaming coordinates to passengers & control room';
       } else {
         tripStatusBox.classList.remove('active');
-        statusTitle.textContent = 'Trip Stopped / Off Duty';
-        statusSubtitle.textContent = 'Press Start Trip to activate live phone GPS broadcast';
+        statusTitle.textContent = 'Trip Stopped / Offline';
+        statusSubtitle.textContent = 'Bus is offline. Press Start Trip to activate live phone GPS broadcast';
       }
+    }
+
+    // Toggle active trip console panels vs offline standby notice
+    const activeContent = document.getElementById('condActiveTripContent');
+    const offlineNotice = document.getElementById('condOfflineNotice');
+    if (activeContent) {
+      activeContent.style.display = this.isTripActive ? 'block' : 'none';
+    }
+    if (offlineNotice) {
+      offlineNotice.style.display = this.isTripActive ? 'none' : 'flex';
+    }
+
+    // Refresh map viewport when activating
+    if (this.isTripActive && this.mapManager && this.mapManager.map) {
+      setTimeout(() => {
+        try {
+          this.mapManager.map.invalidateSize();
+          const bus = this.getBus();
+          if (bus && bus.lat && bus.lng) {
+            this.mapManager.centerOnLocation(bus.lat, bus.lng, 15);
+          }
+        } catch (e) {}
+      }, 150);
     }
   }
 
@@ -215,7 +238,7 @@ class BusController {
 
   /**
    * Ends trip and stops GPS Geolocation
-   * ALWAYS clickable and works smoothly.
+   * Transitions immediately to Offline state.
    */
   endTrip() {
     this.isTripActive = false;
@@ -241,7 +264,7 @@ class BusController {
 
     this.playChime();
     this.render();
-    window.app.showToast('Trip Ended. GPS broadcast stopped.', 'info');
+    window.app.showToast('Trip Ended. Bus is now Offline.', 'info');
   }
 
   startTripTimer() {}
