@@ -552,10 +552,6 @@
               <div class="hud-status-title" id="condTripStatusTitle">Trip Stopped / Off Duty</div>
               <div class="hud-status-subtitle" id="condTripStatusSubtitle">Press Start Trip to activate live phone GPS broadcast</div>
             </div>
-            <div class="hud-duration-box">
-              <span class="duration-label">DURATION</span>
-              <span class="duration-clock" id="condTripDuration">00:00:00</span>
-            </div>
           </div>
 
           <div class="trip-actions-grid">
@@ -576,33 +572,14 @@
           </div>
         </div>
 
-        <!-- ── Next Station Hopper (1-Tap Station Progress) ── -->
+        <!-- ── Live Station Radar ── -->
         <div class="cockpit-card station-hopper-card">
           <div class="hopper-header">
             <div class="card-mini-title">
               <i data-lucide="navigation"></i>
-              <span>Station Radar &amp; Hopper</span>
+              <span>Live Station Radar</span>
             </div>
-            <button type="button" class="voice-toggle-btn active" id="btnVoiceToggle" onclick="Bus.toggleVoiceAnnouncement()" title="Toggle Voice Announcements">
-              <i data-lucide="volume-2" id="voiceToggleIcon"></i>
-              <span id="voiceToggleLabel">Voice Announcement: ON</span>
-            </button>
           </div>
-
-          <!-- Big tactile 1-Tap Reached Stop Button -->
-          <button type="button" class="btn-reach-next-stop" id="btnReachNextStop" onclick="Bus.reachNextStop()">
-            <div class="reach-btn-icon-pulse">
-              <i data-lucide="map-pin"></i>
-            </div>
-            <div class="reach-btn-content">
-              <span class="reach-btn-hint">Reached Next Stop • 1-TAP TO UPDATE</span>
-              <span class="reach-btn-stop" id="condNextStopBtnName">Loading Next Stop...</span>
-            </div>
-            <div class="reach-btn-action-tag">
-              <span>REACHED</span>
-              <i data-lucide="arrow-right"></i>
-            </div>
-          </button>
 
           <!-- Current & Next Stop Dual Display -->
           <div class="station-flow-grid">
