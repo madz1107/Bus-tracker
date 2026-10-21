@@ -237,6 +237,18 @@ class BusController {
       });
     } catch (e) {}
 
+    // 1. Native Android Background Location Foreground Service (Runs continuously when screen is locked/minimized)
+    if (window.Capacitor?.isNativePlatform?.() && window.Capacitor?.Plugins?.BackgroundLocation) {
+      try {
+        window.Capacitor.Plugins.BackgroundLocation.start({ busId: this.busId });
+        window.Capacitor.Plugins.BackgroundLocation.addListener('onLocation', (loc) => {
+          this.processNewCoordinates(loc.lat, loc.lng, loc.speed, loc.bearing);
+        });
+      } catch (nativeErr) {
+        console.warn('Native background location init notice:', nativeErr);
+      }
+    }
+
     try {
       this.startPhoneGps();
     } catch (e) {
@@ -245,7 +257,7 @@ class BusController {
 
     this.playChime();
     this.render();
-    window.app.showToast('Trip Started! Screen will stay awake and live GPS is broadcasting.', 'success');
+    window.app.showToast('Trip Started! Screen will stay awake and live GPS is broadcasting in background.', 'success');
   }
 
   /**
@@ -258,6 +270,13 @@ class BusController {
     try {
       localStorage.removeItem('citybus_active_trip_' + this.busId);
     } catch (e) {}
+
+    // Stop native Android background location foreground service
+    if (window.Capacitor?.isNativePlatform?.() && window.Capacitor?.Plugins?.BackgroundLocation) {
+      try {
+        window.Capacitor.Plugins.BackgroundLocation.stop();
+      } catch (e) {}
+    }
 
     this.updateTripStatusUI(false);
     this.releaseWakeLock();

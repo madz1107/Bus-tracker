@@ -1,9 +1,16 @@
 package com.nellai72.citybus;
 
+import android.os.Bundle;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(BackgroundLocationPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
