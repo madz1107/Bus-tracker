@@ -131,11 +131,20 @@ class AppController {
       guestAction.style.display = role === 'passenger' ? 'block' : 'none';
     }
 
-    // Clear fields so user types fresh
     const emailInput = document.getElementById('fsLoginEmail');
     const passInput  = document.getElementById('fsLoginPassword');
-    if (emailInput) { emailInput.value = ''; emailInput.focus(); }
-    if (passInput)  { passInput.value  = ''; }
+
+    // Auto-fill default demo credentials for Bus and Admin for instant 1-click access
+    if (role === 'admin') {
+      if (emailInput) emailInput.value = 'admin@123';
+      if (passInput) passInput.value = 'admin@123';
+    } else if (role === 'Bus') {
+      if (emailInput) emailInput.value = 'bus@1';
+      if (passInput) passInput.value = '1';
+    } else {
+      if (emailInput) emailInput.value = '';
+      if (passInput) passInput.value = '';
+    }
   }
 
   /**
@@ -207,13 +216,39 @@ class AppController {
     );
     if (fromSaved) return fromSaved;
 
-    // Check appState users
-    const allUsers = window.appState.users || [];
+    // Check appState users (populated from Supabase or data.json)
+    const allUsers = window.appState?.users || [];
     const matched = allUsers.find(u => 
-      (u.email && u.email.toLowerCase() === cleanEmail || u.id === email || u.busId === email) && 
-      u.password === password
+      ((u.email && u.email.toLowerCase() === cleanEmail) || u.id === email || u.busId === email || u.bus_id === email) && 
+      String(u.password) === String(password)
     );
-    return matched || null;
+    if (matched) return matched;
+
+    // Hardcoded built-in offline credentials (guarantees offline access in mobile APK)
+    const defaultAccounts = [
+      {
+        id: 'user-admin',
+        email: 'admin@123',
+        password: 'admin@123',
+        name: 'Nellai Transit Control Officer',
+        role: 'admin'
+      },
+      {
+        id: 'bus-user-870',
+        email: 'bus@1',
+        password: '1',
+        name: '1',
+        role: 'Bus',
+        busId: 'BUS-1',
+        bus_id: 'BUS-1'
+      }
+    ];
+
+    const hardcoded = defaultAccounts.find(u =>
+      (u.email.toLowerCase() === cleanEmail || u.id === email || u.busId === email) &&
+      String(u.password) === String(password)
+    );
+    return hardcoded || null;
   }
 
   /**
@@ -283,6 +318,40 @@ class AppController {
     const password = document.getElementById('fsLoginPassword').value.trim();
     const expectedRole = this.selectedLoginRole || 'passenger';
 
+    // 1. Direct Supabase Cloud Auth Check (Works in APK with live database)
+    if (window.supabaseClient) {
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('users')
+          .select('*')
+          .or(`email.ilike.${email},id.eq.${email}`)
+          .eq('password', password)
+          .limit(1);
+
+        if (!error && data && data.length > 0) {
+          const user = Object.assign({}, data[0]);
+          let userRole = user.role;
+          if (userRole === 'conductor') userRole = 'Bus';
+
+          if (userRole !== expectedRole) {
+            const actualRole = userRole.toUpperCase();
+            this.showToast(`Access Denied: This is a ${actualRole} account. Please click the ${actualRole} tab to sign in.`, 'error');
+            return;
+          }
+          user.role = userRole;
+          if (user.bus_id && !user.busId) user.busId = user.bus_id;
+
+          window.appState.setCurrentUser(user);
+          this.showMainApp(user);
+          this.showToast(`Welcome back, ${user.name}! (${user.role.toUpperCase()})`, 'success');
+          return;
+        }
+      } catch (sbErr) {
+        console.warn('Supabase direct auth attempt notice:', sbErr);
+      }
+    }
+
+    // 2. REST backend fetch (for web/hosted environments)
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -290,30 +359,38 @@ class AppController {
         body: JSON.stringify({ email, password, expectedRole })
       });
 
-      const data = await res.json();
-      if (res.ok && data.success && data.user) {
-        if (data.user.role !== expectedRole) {
-          const actualRole = data.user.role.toUpperCase();
-          this.showToast(`Access Denied: This is a ${actualRole} account. Please click the ${actualRole} tab to sign in.`, 'error');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          if (data.user.role !== expectedRole) {
+            const actualRole = data.user.role.toUpperCase();
+            this.showToast(`Access Denied: This is a ${actualRole} account. Please click the ${actualRole} tab to sign in.`, 'error');
+            return;
+          }
+          window.appState.setCurrentUser(data.user);
+          this.showMainApp(data.user);
+          this.showToast(`Welcome back, ${data.user.name}! (${data.user.role.toUpperCase()})`, 'success');
           return;
         }
-        window.appState.setCurrentUser(data.user);
-        this.showMainApp(data.user);
-        this.showToast(`Welcome back, ${data.user.name}! (${data.user.role.toUpperCase()})`, 'success');
-        return;
       }
     } catch (err) {
       console.warn('Network auth error, attempting local lookup:', err);
     }
 
-    // Local persistent account fallback (for serverless environments or offline)
+    // 3. Local persistent account fallback (Works 100% offline in APK)
     const localUser = this.findLocalUser(email, password, expectedRole);
     if (localUser) {
-      if (localUser.role !== expectedRole) {
-        const actualRole = localUser.role.toUpperCase();
+      let userRole = localUser.role;
+      if (userRole === 'conductor') userRole = 'Bus';
+
+      if (userRole !== expectedRole) {
+        const actualRole = userRole.toUpperCase();
         this.showToast(`Access Denied: This is a ${actualRole} account. Please click the ${actualRole} tab to sign in.`, 'error');
         return;
       }
+      localUser.role = userRole;
+      if (localUser.bus_id && !localUser.busId) localUser.busId = localUser.bus_id;
+
       window.appState.setCurrentUser(localUser);
       this.showMainApp(localUser);
       this.showToast(`Welcome back, ${localUser.name}! (${localUser.role.toUpperCase()})`, 'success');

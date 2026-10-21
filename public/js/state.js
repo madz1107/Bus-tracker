@@ -51,15 +51,19 @@ class StateManager {
     // 2. Direct Supabase Fallback (Crucial for Capacitor native app when standalone)
     if (!loaded && window.supabaseClient) {
       try {
-        const [busesRes, routesRes] = await Promise.all([
+        const [busesRes, routesRes, usersRes] = await Promise.all([
           window.supabaseClient.from('buses').select('*'),
-          window.supabaseClient.from('routes').select('*')
+          window.supabaseClient.from('routes').select('*'),
+          window.supabaseClient.from('users').select('*')
         ]);
         if (busesRes.data && busesRes.data.length > 0) {
           this.buses = busesRes.data.map(r => window.CloudDB ? window.CloudDB.rowToBus(r) : r);
         }
         if (routesRes.data && routesRes.data.length > 0) {
           this.routes = routesRes.data;
+        }
+        if (usersRes.data && usersRes.data.length > 0) {
+          this.users = usersRes.data;
         }
         loaded = (this.routes.length > 0 || this.buses.length > 0);
       } catch (sbErr) {
@@ -75,6 +79,7 @@ class StateManager {
           const dj = await djRes.json();
           this.routes = dj.routes || [];
           this.buses = dj.buses || [];
+          this.users = dj.users || [];
         }
       } catch (djErr) {}
     }
