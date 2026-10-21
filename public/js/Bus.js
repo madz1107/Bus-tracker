@@ -782,6 +782,13 @@ class BusController {
 
     this.stopPhoneGps();
 
+    // Check & request native Android GPS permission if running in Capacitor
+    if (window.Capacitor?.isNativePlatform?.() && window.Capacitor?.Plugins?.Geolocation) {
+      try {
+        window.Capacitor.Plugins.Geolocation.requestPermissions().catch(() => {});
+      } catch (e) {}
+    }
+
     const badge = document.getElementById('condGpsStatusBadge');
     if (badge) badge.innerHTML = '<span class="dot green"></span> GPS TRACKING LIVE';
 

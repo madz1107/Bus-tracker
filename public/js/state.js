@@ -34,6 +34,7 @@ class StateManager {
   }
 
   async init() {
+    let loaded = false;
     try {
       const res = await fetch('/api/state');
       if (res.ok) {
@@ -41,18 +42,50 @@ class StateManager {
         this.routes = data.routes || [];
         this.buses = data.buses || [];
         this.users = data.users || [];
-        
-        if ((!this.selectedRouteId || !this.getRouteById(this.selectedRouteId)) && this.routes.length > 0) {
-          this.selectedRouteId = this.routes[0].id;
-        }
-        if ((!this.selectedBusId || !this.getBusById(this.selectedBusId)) && this.buses.length > 0) {
-          this.selectedBusId = this.buses[0].id;
-        }
-        this.notify();
+        loaded = (this.routes.length > 0 || this.buses.length > 0);
       }
     } catch (e) {
       console.warn('Backend fetch fallback to cached state', e);
     }
+
+    // 2. Direct Supabase Fallback (Crucial for Capacitor native app when standalone)
+    if (!loaded && window.supabaseClient) {
+      try {
+        const [busesRes, routesRes] = await Promise.all([
+          window.supabaseClient.from('buses').select('*'),
+          window.supabaseClient.from('routes').select('*')
+        ]);
+        if (busesRes.data && busesRes.data.length > 0) {
+          this.buses = busesRes.data.map(r => window.CloudDB ? window.CloudDB.rowToBus(r) : r);
+        }
+        if (routesRes.data && routesRes.data.length > 0) {
+          this.routes = routesRes.data;
+        }
+        loaded = (this.routes.length > 0 || this.buses.length > 0);
+      } catch (sbErr) {
+        console.warn('Supabase direct query fallback notice:', sbErr);
+      }
+    }
+
+    // 3. Bundled data.json fallback
+    if (!loaded) {
+      try {
+        const djRes = await fetch('data.json');
+        if (djRes.ok) {
+          const dj = await djRes.json();
+          this.routes = dj.routes || [];
+          this.buses = dj.buses || [];
+        }
+      } catch (djErr) {}
+    }
+
+    if ((!this.selectedRouteId || !this.getRouteById(this.selectedRouteId)) && this.routes.length > 0) {
+      this.selectedRouteId = this.routes[0].id;
+    }
+    if ((!this.selectedBusId || !this.getBusById(this.selectedBusId)) && this.buses.length > 0) {
+      this.selectedBusId = this.buses[0].id;
+    }
+    this.notify();
 
     // Start live polling for real-time GPS location accuracy across devices
     this.startLivePolling();
