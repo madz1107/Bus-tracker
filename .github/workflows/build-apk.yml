@@ -38,9 +38,30 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload Debug APK
+      - name: Upload Passenger APK
         uses: actions/upload-artifact@v4
         with:
-          name: Nellai72-CityBus-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Nellai72-Passenger-APK
+          path: android/app/build/outputs/apk/passenger/debug/app-passenger-debug.apk
+          retention-days: 14
+
+      - name: Upload Driver APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nellai72-Driver-APK
+          path: android/app/build/outputs/apk/driver/debug/app-driver-debug.apk
+          retention-days: 14
+
+      - name: Upload Admin APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nellai72-Admin-APK
+          path: android/app/build/outputs/apk/admin/debug/app-admin-debug.apk
+          retention-days: 14
+
+      - name: Upload All 3 APKs Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nellai72-All-3-APKs-Bundle
+          path: android/app/build/outputs/apk/**/debug/*.apk
           retention-days: 14

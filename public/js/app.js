@@ -28,8 +28,42 @@ class AppController {
       this.showInitialLoginScreen();
     }
 
+    if (window.APP_FLAVOR) {
+      this.applyAppFlavor(window.APP_FLAVOR);
+    }
+
     if (window.lucide) {
       lucide.createIcons();
+    }
+  }
+
+  /**
+   * Applies dedicated UI mode when running as a dedicated flavor (Passenger, Driver, or Admin app)
+   */
+  applyAppFlavor(flavor) {
+    if (!flavor || flavor === 'all') return;
+    this.appFlavor = flavor;
+
+    // Filter role-selector buttons on login screen so only the relevant role is shown
+    const roleBtns = document.querySelectorAll('.role-select-btn');
+    roleBtns.forEach(btn => {
+      const btnRole = btn.getAttribute('data-role');
+      if (btnRole === flavor) {
+        btn.style.display = 'inline-flex';
+        btn.classList.add('active');
+      } else {
+        btn.style.display = 'none';
+        btn.classList.remove('active');
+      }
+    });
+
+    // Auto-select this flavor's role
+    this.selectLoginRole(flavor);
+
+    // If user is already logged in, enforce role tab visibility
+    const user = window.appState.currentUser;
+    if (user) {
+      this.syncRoleBasedTabs(user);
     }
   }
 
@@ -43,10 +77,13 @@ class AppController {
     if (loginOverlay) loginOverlay.classList.add('active');
     if (mainWrapper) mainWrapper.style.display = 'none';
 
-    // Just highlight passenger tab by default, fields stay empty for manual input
-    document.querySelectorAll('.role-select-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.getAttribute('data-role') === 'passenger');
-    });
+    if (this.appFlavor && this.appFlavor !== 'all') {
+      this.applyAppFlavor(this.appFlavor);
+    } else {
+      document.querySelectorAll('.role-select-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-role') === 'passenger');
+      });
+    }
     if (window.lucide) lucide.createIcons();
   }
 
@@ -131,20 +168,11 @@ class AppController {
       guestAction.style.display = role === 'passenger' ? 'block' : 'none';
     }
 
+    // Clear fields across all portals - no auto-fill
     const emailInput = document.getElementById('fsLoginEmail');
     const passInput  = document.getElementById('fsLoginPassword');
-
-    // Auto-fill default demo credentials for Bus and Admin for instant 1-click access
-    if (role === 'admin') {
-      if (emailInput) emailInput.value = 'admin@123';
-      if (passInput) passInput.value = 'admin@123';
-    } else if (role === 'Bus') {
-      if (emailInput) emailInput.value = 'bus@1';
-      if (passInput) passInput.value = '1';
-    } else {
-      if (emailInput) emailInput.value = '';
-      if (passInput) passInput.value = '';
-    }
+    if (emailInput) { emailInput.value = ''; emailInput.focus(); }
+    if (passInput)  { passInput.value  = ''; }
   }
 
   /**

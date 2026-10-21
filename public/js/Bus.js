@@ -43,18 +43,14 @@ class BusController {
       this.mapManager = new MapManager('condMap', { zoom: 14 });
     }
 
+    // Trips must ONLY start when the user explicitly clicks the "Start Trip" button.
+    // Page load / refresh must always stay in standby / offline mode.
+    this.isTripActive = false;
+    this._hasExplicitTripState = true;
+
     const bus = this.getBus();
     if (bus) {
-      const savedActive = localStorage.getItem('citybus_active_trip_' + bus.id) === 'true';
-      if (savedActive || bus.isTripActive === true) {
-        this.isTripActive = true;
-        this._hasExplicitTripState = true;
-        bus.isTripActive = true;
-      } else if (this._hasExplicitTripState) {
-        bus.isTripActive = this.isTripActive;
-      } else {
-        this.isTripActive = bus.isTripActive === true;
-      }
+      bus.isTripActive = false;
 
       const route = window.appState.getRouteById(bus.routeId);
       if (route && this.mapManager) {
@@ -67,15 +63,7 @@ class BusController {
       }
     }
 
-    // If trip was already marked active, start live phone GPS, background service & worker immediately
-    if (this.isTripActive) {
-      this.startBackgroundMediaService();
-      this.startBackgroundWorker();
-      this.startGpsWatchdog();
-      this.requestWakeLock();
-      this.startPhoneGps();
-    }
-
+    this.updateTripStatusUI(false);
     this.render();
     if (window.lucide) {
       setTimeout(() => lucide.createIcons(), 50);
@@ -95,11 +83,7 @@ class BusController {
 
     const bus = this.getBus();
     if (bus) {
-      if (this._hasExplicitTripState) {
-        bus.isTripActive = this.isTripActive;
-      } else {
-        this.isTripActive = bus.isTripActive === true;
-      }
+      bus.isTripActive = this.isTripActive;
 
       const badge = document.getElementById('condAssignedBusBadge');
       if (badge) badge.textContent = `BUS ${bus.busNumber}`;
