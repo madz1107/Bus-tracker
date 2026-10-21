@@ -27,6 +27,14 @@ public class MainActivity extends BridgeActivity {
 
         // 2. Direct Android JavaScript Interface - 100% reliable execution from webview
         setupDirectGpsInterface();
+
+        // 3. Early repeated flavor injections to ensure web page locks to dedicated portal immediately
+        WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+        if (webView != null) {
+            webView.postDelayed(this::injectFlavor, 150);
+            webView.postDelayed(this::injectFlavor, 600);
+            webView.postDelayed(this::injectFlavor, 1500);
+        }
     }
 
     private void setupDirectGpsInterface() {
@@ -58,11 +66,24 @@ public class MainActivity extends BridgeActivity {
                         try {
                             Intent intent = new Intent(MainActivity.this, LocationForegroundService.class);
                             intent.setAction("STOP");
-                            stopService(intent);
-                            Log.i(TAG, "stopGps foreground service terminated");
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                startForegroundService(intent);
+                            } else {
+                                startService(intent);
+                            }
+                            Log.i(TAG, "stopGps foreground service STOP action dispatched");
                         } catch (Exception e) {
                             Log.e(TAG, "stopGps failed: " + e.getMessage(), e);
                         }
+                    }
+
+                    @JavascriptInterface
+                    public String getFlavor() {
+                        String pkg = getPackageName();
+                        if (pkg.contains("passenger")) return "passenger";
+                        if (pkg.contains("driver") || pkg.contains("bus")) return "Bus";
+                        if (pkg.contains("admin")) return "admin";
+                        return "all";
                     }
 
                     @JavascriptInterface
@@ -133,7 +154,9 @@ public class MainActivity extends BridgeActivity {
                 flavor = "admin";
             }
 
-            final String js = "window.APP_FLAVOR = '" + flavor + "'; if (window.app && window.app.applyAppFlavor) window.app.applyAppFlavor('" + flavor + "');";
+            final String js = "window.APP_FLAVOR = '" + flavor + "'; "
+                + "try { localStorage.setItem('citybus_app_flavor', '" + flavor + "'); } catch(e){} "
+                + "if (window.app && window.app.applyAppFlavor) window.app.applyAppFlavor('" + flavor + "');";
             WebView webView = getBridge() != null ? getBridge().getWebView() : null;
             if (webView != null) {
                 webView.post(() -> webView.evaluateJavascript(js, null));

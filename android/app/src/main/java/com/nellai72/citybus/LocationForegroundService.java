@@ -13,6 +13,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
@@ -73,8 +74,6 @@ public class LocationForegroundService extends Service {
             String action = intent.getAction();
             if ("STOP".equals(action)) {
                 stopTracking();
-                stopForeground(true);
-                stopSelf();
                 return START_NOT_STICKY;
             }
 
@@ -150,6 +149,10 @@ public class LocationForegroundService extends Service {
         if (isTracking) return;
         isTracking = true;
 
+        if (networkExecutor == null || networkExecutor.isShutdown()) {
+            networkExecutor = Executors.newSingleThreadExecutor();
+        }
+
         if (wakeLock != null && !wakeLock.isHeld()) {
             wakeLock.acquire();
         }
@@ -195,26 +198,40 @@ public class LocationForegroundService extends Service {
     }
 
     private void stopTracking() {
+        if (!isTracking) return;
         isTracking = false;
 
         if (fusedLocationClient != null && locationCallback != null) {
-            fusedLocationClient.removeLocationUpdates(locationCallback);
+            try { fusedLocationClient.removeLocationUpdates(locationCallback); } catch (Exception ignored) {}
         }
 
         if (locationManager != null && fallbackListener != null) {
-            locationManager.removeUpdates(fallbackListener);
+            try { locationManager.removeUpdates(fallbackListener); } catch (Exception ignored) {}
         }
 
         if (wakeLock != null && wakeLock.isHeld()) {
-            wakeLock.release();
+            try { wakeLock.release(); } catch (Exception ignored) {}
         }
 
-        // Send trip ended status to Supabase
-        sendOfflineStatusToSupabase();
+        // Cancel and purge any pending location updates from executor immediately
+        if (networkExecutor != null) {
+            try { networkExecutor.shutdownNow(); } catch (Exception ignored) {}
+        }
+
+        // Broadcast offline status directly to Supabase, then stop foreground notification and service
+        new Thread(() -> {
+            sendOfflineStatusDirectly();
+            new Handler(Looper.getMainLooper()).post(() -> {
+                try {
+                    stopForeground(true);
+                    stopSelf();
+                } catch (Exception ignored) {}
+            });
+        }).start();
     }
 
     private void handleNewLocation(Location location) {
-        if (location == null) return;
+        if (!isTracking || location == null) return;
 
         double lat = location.getLatitude();
         double lng = location.getLongitude();
@@ -268,40 +285,40 @@ public class LocationForegroundService extends Service {
         }
     }
 
-    private void sendOfflineStatusToSupabase() {
-        if (networkExecutor == null || networkExecutor.isShutdown()) return;
-        networkExecutor.execute(() -> {
-            try {
-                String isoTimestamp = getIsoTimestamp();
-                String jsonPayload = "{"
-                    + "\"status\":\"Offline\","
-                    + "\"is_trip_active\":false,"
-                    + "\"speed\":0,"
-                    + "\"last_updated\":\"" + isoTimestamp + "\""
-                    + "}";
+    private void sendOfflineStatusDirectly() {
+        try {
+            String isoTimestamp = getIsoTimestamp();
+            String jsonPayload = "{"
+                + "\"status\":\"Offline\","
+                + "\"is_trip_active\":false,"
+                + "\"speed\":0,"
+                + "\"last_updated\":\"" + isoTimestamp + "\""
+                + "}";
 
-                String urlStr = SUPABASE_BASE_URL + "?id=eq." + currentBusId;
-                URL url = new URL(urlStr);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("X-HTTP-Method-Override", "PATCH");
-                conn.setRequestProperty("apikey", SUPABASE_ANON_KEY);
-                conn.setRequestProperty("Authorization", "Bearer " + SUPABASE_ANON_KEY);
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("Prefer", "return=minimal");
-                conn.setDoOutput(true);
-                conn.setConnectTimeout(6000);
-                conn.setReadTimeout(6000);
+            String urlStr = SUPABASE_BASE_URL + "?id=eq." + currentBusId;
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("X-HTTP-Method-Override", "PATCH");
+            conn.setRequestProperty("apikey", SUPABASE_ANON_KEY);
+            conn.setRequestProperty("Authorization", "Bearer " + SUPABASE_ANON_KEY);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Prefer", "return=minimal");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
 
-                try (OutputStream os = conn.getOutputStream()) {
-                    byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
-                    os.write(input, 0, input.length);
-                }
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
 
-                conn.getResponseCode();
-                conn.disconnect();
-            } catch (Exception ignored) {}
-        });
+            int code = conn.getResponseCode();
+            Log.i(TAG, "Sent Offline status to Supabase for " + currentBusId + ", HTTP " + code);
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.w(TAG, "Error sending offline status to Supabase: " + e.getMessage());
+        }
     }
 
     private String getIsoTimestamp() {

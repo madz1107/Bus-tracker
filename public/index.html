@@ -20,6 +20,31 @@
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
 
+  <!-- Instant Flavor Preloader Script: Guarantees ONLY the dedicated flavor portal shows with ZERO flashing -->
+  <script>
+    (function() {
+      var flavor = null;
+      try {
+        if (window.AndroidGpsService && typeof window.AndroidGpsService.getFlavor === 'function') {
+          flavor = window.AndroidGpsService.getFlavor();
+        }
+      } catch (e) {}
+      if (!flavor) {
+        try {
+          flavor = localStorage.getItem('citybus_app_flavor');
+        } catch (e) {}
+      }
+      if (flavor && flavor !== 'all') {
+        window.APP_FLAVOR = flavor;
+        try { localStorage.setItem('citybus_app_flavor', flavor); } catch (e) {}
+        var style = document.createElement('style');
+        style.id = 'flavorPreloadStyle';
+        style.innerHTML = '.role-select-btn:not([data-role="' + flavor + '"]) { display: none !important; } .role-select-btn[data-role="' + flavor + '"] { display: inline-flex !important; }';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
 </head>

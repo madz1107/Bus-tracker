@@ -8,6 +8,27 @@ class AppController {
   }
 
   init() {
+    // 1. Detect flavor immediately on startup from window, Android service, or localStorage
+    let flavor = window.APP_FLAVOR;
+    if (!flavor && window.AndroidGpsService && typeof window.AndroidGpsService.getFlavor === 'function') {
+      try {
+        const f = window.AndroidGpsService.getFlavor();
+        if (f && f !== 'all') flavor = f;
+      } catch (e) {}
+    }
+    if (!flavor) {
+      try {
+        const cached = localStorage.getItem('citybus_app_flavor');
+        if (cached && cached !== 'all') flavor = cached;
+      } catch (e) {}
+    }
+
+    if (flavor && flavor !== 'all') {
+      this.appFlavor = flavor;
+      window.APP_FLAVOR = flavor;
+      try { localStorage.setItem('citybus_app_flavor', flavor); } catch (e) {}
+    }
+
     try {
       const savedPassengers = JSON.parse(localStorage.getItem('citybus_registered_passengers') || '[]');
       if (Array.isArray(savedPassengers) && savedPassengers.length > 0) {
@@ -28,8 +49,8 @@ class AppController {
       this.showInitialLoginScreen();
     }
 
-    if (window.APP_FLAVOR) {
-      this.applyAppFlavor(window.APP_FLAVOR);
+    if (this.appFlavor && this.appFlavor !== 'all') {
+      this.applyAppFlavor(this.appFlavor);
     }
 
     if (window.lucide) {
@@ -43,16 +64,17 @@ class AppController {
   applyAppFlavor(flavor) {
     if (!flavor || flavor === 'all') return;
     this.appFlavor = flavor;
+    try { localStorage.setItem('citybus_app_flavor', flavor); } catch (e) {}
 
     // Filter role-selector buttons on login screen so only the relevant role is shown
     const roleBtns = document.querySelectorAll('.role-select-btn');
     roleBtns.forEach(btn => {
       const btnRole = btn.getAttribute('data-role');
       if (btnRole === flavor) {
-        btn.style.display = 'inline-flex';
+        btn.style.setProperty('display', 'inline-flex', 'important');
         btn.classList.add('active');
       } else {
-        btn.style.display = 'none';
+        btn.style.setProperty('display', 'none', 'important');
         btn.classList.remove('active');
       }
     });

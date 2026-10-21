@@ -1847,9 +1847,16 @@ h1, h2, h3, h4, h5, h6 {
 
 .login-card-brand {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.85rem;
+  justify-content: center;
+  text-align: center;
+  gap: 0.75rem;
   margin-bottom: 1.25rem;
+}
+
+.login-welcome-text {
+  text-align: center;
 }
 
 .login-welcome-text h2 {
@@ -1857,6 +1864,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 800;
   color: var(--slate-900);
   margin-bottom: 0.35rem;
+  text-align: center;
 }
 
 .login-welcome-text p {
@@ -1864,30 +1872,37 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--slate-500);
   margin-bottom: 1.5rem;
   line-height: 1.45;
+  text-align: center;
 }
 
 .login-role-selector {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 0.5rem;
   background: var(--slate-100);
   padding: 0.35rem;
   border-radius: var(--radius-md);
-  margin-bottom: 1.25rem;
+  margin: 0 auto 1.25rem auto;
   border: 1px solid var(--slate-200);
+  width: fit-content;
+  max-width: 100%;
 }
 
 .role-select-btn {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 0.35rem;
-  padding: 0.65rem 0.5rem;
+  padding: 0.65rem 1.25rem;
+  min-width: 90px;
   border: none;
   background: transparent;
   color: var(--slate-600);
   font-family: var(--font-sans);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -1895,8 +1910,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .role-select-btn i {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
+  margin: 0 auto;
 }
 
 .role-select-btn.active {

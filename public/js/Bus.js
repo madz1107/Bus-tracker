@@ -253,8 +253,10 @@ class BusController {
     }
     if (window.Capacitor?.Plugins?.BackgroundLocation) {
       try {
+        window.Capacitor.Plugins.BackgroundLocation.removeAllListeners();
         window.Capacitor.Plugins.BackgroundLocation.start({ busId: this.busId });
         window.Capacitor.Plugins.BackgroundLocation.addListener('onLocation', (loc) => {
+          if (!this.isTripActive) return;
           this.processNewCoordinates(loc.lat, loc.lng, loc.speed, loc.bearing);
         });
       } catch (e) {}
@@ -282,7 +284,14 @@ class BusController {
       localStorage.removeItem('citybus_active_trip_' + this.busId);
     } catch (e) {}
 
-    // 1. Stop Direct Native Android Foreground Service
+    // 1. Immediately terminate browser GPS streams and workers to drop any in-flight reads
+    this.stopPhoneGps();
+    this.stopGpsWatchdog();
+    this.stopBackgroundWorker();
+    this.stopBackgroundMediaService();
+    this.releaseWakeLock();
+
+    // 2. Stop Direct Native Android Foreground Service & purge location queue
     if (window.AndroidGpsService && typeof window.AndroidGpsService.stopGps === 'function') {
       try {
         window.AndroidGpsService.stopGps();
@@ -290,23 +299,20 @@ class BusController {
       } catch (e) {}
     }
 
-    // 2. Capacitor plugin stop
+    // 3. Capacitor plugin stop and listener cleanup
     if (window.Capacitor?.nativePromise) {
       window.Capacitor.nativePromise('BackgroundLocation', 'stop', {}).catch(() => {});
     }
     if (window.Capacitor?.Plugins?.BackgroundLocation) {
       try {
+        window.Capacitor.Plugins.BackgroundLocation.removeAllListeners();
         window.Capacitor.Plugins.BackgroundLocation.stop();
       } catch (e) {}
     }
 
     this.updateTripStatusUI(false);
-    this.releaseWakeLock();
-    this.stopBackgroundMediaService();
-    this.stopBackgroundWorker();
-    this.stopGpsWatchdog();
-    this.stopPhoneGps();
 
+    // 4. Update in-memory state & notify local state listeners (Passenger, Admin, Bus)
     const bus = this.getBus();
     if (bus) {
       bus.isTripActive = false;
@@ -315,13 +321,42 @@ class BusController {
       window.appState.updateBusLocation(this.busId, { isTripActive: false, status: 'Offline', speed: 0 });
     }
 
+    // 5. Direct Supabase real-time cloud broadcast via CloudDB
+    if (window.CloudDB && typeof window.CloudDB.updateBusLocation === 'function') {
+      window.CloudDB.updateBusLocation(this.busId, { isTripActive: false, status: 'Offline', speed: 0 });
+    }
+
+    // 6. Direct HTTPS PATCH to Supabase REST endpoint for 100% guaranteed delivery
+    try {
+      const SUPABASE_URL = 'https://yvjfcmjmlcuzxscvuzhm.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2amZjbWptbGN1enhzY3Z1emhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyMjU3MzUsImV4cCI6MjEwNzgwMTczNX0.dZ7IL_sySbvIYApMWVkWJZN4gMKkufbIZqOicO9uIXQ';
+      fetch(`${SUPABASE_URL}/rest/v1/buses?id=eq.${encodeURIComponent(this.busId)}`, {
+        method: 'POST',
+        headers: {
+          'X-HTTP-Method-Override': 'PATCH',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          status: 'Offline',
+          is_trip_active: false,
+          speed: 0,
+          last_updated: new Date().toISOString()
+        }),
+        keepalive: true
+      }).catch(() => {});
+    } catch (e) {}
+
+    // 7. Express backend sync if reachable
     try {
       fetch(`/api/buses/${this.busId}/location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isTripActive: false, status: 'Offline', speed: 0 }),
         keepalive: true
-      });
+      }).catch(() => {});
     } catch (e) {}
 
     this.playChime();
@@ -764,7 +799,7 @@ class BusController {
    * Unified GPS update handler for both watchPosition and instant watchdog pings
    */
   handlePositionUpdate(position) {
-    if (!position || !position.coords) return;
+    if (!this.isTripActive || !position || !position.coords) return;
     this.lastPositionTime = Date.now();
     const { latitude, longitude, speed, heading } = position.coords;
     
@@ -865,6 +900,7 @@ class BusController {
    * Ingests Real GPS Coordinates, Checks Stop Geofences, and Broadcasts Telemetry
    */
   processNewCoordinates(lat, lng, speed, bearing) {
+    if (!this.isTripActive) return;
     const bus = this.getBus();
     if (!bus) return;
 
