@@ -237,16 +237,27 @@ class BusController {
       });
     } catch (e) {}
 
-    // 1. Native Android Background Location Foreground Service (Runs continuously when screen is locked/minimized)
-    if (window.Capacitor?.isNativePlatform?.() && window.Capacitor?.Plugins?.BackgroundLocation) {
+    // 1. Direct Native Android Background Service (Rock-solid foreground service with persistent status bar notification)
+    if (window.AndroidGpsService && typeof window.AndroidGpsService.startGps === 'function') {
+      try {
+        window.AndroidGpsService.startGps(this.busId);
+        console.log('🚀 Direct Native AndroidGpsService.startGps called for bus:', this.busId);
+      } catch (nativeErr) {
+        console.warn('AndroidGpsService error:', nativeErr);
+      }
+    }
+
+    // 2. Capacitor native plugin invocation
+    if (window.Capacitor?.nativePromise) {
+      window.Capacitor.nativePromise('BackgroundLocation', 'start', { busId: this.busId }).catch(() => {});
+    }
+    if (window.Capacitor?.Plugins?.BackgroundLocation) {
       try {
         window.Capacitor.Plugins.BackgroundLocation.start({ busId: this.busId });
         window.Capacitor.Plugins.BackgroundLocation.addListener('onLocation', (loc) => {
           this.processNewCoordinates(loc.lat, loc.lng, loc.speed, loc.bearing);
         });
-      } catch (nativeErr) {
-        console.warn('Native background location init notice:', nativeErr);
-      }
+      } catch (e) {}
     }
 
     try {
@@ -271,8 +282,19 @@ class BusController {
       localStorage.removeItem('citybus_active_trip_' + this.busId);
     } catch (e) {}
 
-    // Stop native Android background location foreground service
-    if (window.Capacitor?.isNativePlatform?.() && window.Capacitor?.Plugins?.BackgroundLocation) {
+    // 1. Stop Direct Native Android Foreground Service
+    if (window.AndroidGpsService && typeof window.AndroidGpsService.stopGps === 'function') {
+      try {
+        window.AndroidGpsService.stopGps();
+        console.log('🛑 Direct Native AndroidGpsService.stopGps called');
+      } catch (e) {}
+    }
+
+    // 2. Capacitor plugin stop
+    if (window.Capacitor?.nativePromise) {
+      window.Capacitor.nativePromise('BackgroundLocation', 'stop', {}).catch(() => {});
+    }
+    if (window.Capacitor?.Plugins?.BackgroundLocation) {
       try {
         window.Capacitor.Plugins.BackgroundLocation.stop();
       } catch (e) {}

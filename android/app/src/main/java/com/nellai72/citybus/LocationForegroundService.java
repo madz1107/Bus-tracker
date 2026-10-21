@@ -63,6 +63,7 @@ public class LocationForegroundService extends Service {
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (powerManager != null) {
             wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Nellai72:LocationWakeLock");
+            wakeLock.setReferenceCounted(false);
         }
     }
 
@@ -111,10 +112,20 @@ public class LocationForegroundService extends Service {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
-        } else {
-            startForeground(NOTIFICATION_ID, notification);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            } else {
+                startForeground(NOTIFICATION_ID, notification);
+            }
+            Log.i(TAG, "startForeground initialized successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "startForeground error: " + e.getMessage(), e);
+            try {
+                startForeground(NOTIFICATION_ID, notification);
+            } catch (Exception e2) {
+                Log.e(TAG, "Fallback startForeground failed: " + e2.getMessage(), e2);
+            }
         }
     }
 
