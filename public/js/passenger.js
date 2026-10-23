@@ -9,6 +9,7 @@ class PassengerController {
     this.searchQuery = '';
     this.activeFilter = 'all';
     this.favoriteCommutes = [];
+    this.gender = localStorage.getItem('citybus_passenger_gender') || 'male';
 
     this.loadFavorites();
 
@@ -18,8 +19,29 @@ class PassengerController {
       this.populateRouteDropdown();
       this.populateStopDropdown();
       this.populateDestDropdown();
+      this.updateGenderToggleUi();
       this.render();
     });
+  }
+
+  setGender(gender) {
+    this.gender = gender === 'female' ? 'female' : 'male';
+    localStorage.setItem('citybus_passenger_gender', this.gender);
+    this.updateGenderToggleUi();
+    this.populateDestDropdown();
+    this.render();
+    if (window.wimb && window.wimb.currentBusId) {
+      window.wimb.loadBus(window.wimb.currentBusId);
+    }
+  }
+
+  updateGenderToggleUi() {
+    const btnMale = document.getElementById('genderBtnMale');
+    const btnFemale = document.getElementById('genderBtnFemale');
+    if (btnMale && btnFemale) {
+      btnMale.classList.toggle('active', this.gender === 'male');
+      btnFemale.classList.toggle('active', this.gender === 'female');
+    }
   }
 
   syncSelectedRoute() {
@@ -35,6 +57,7 @@ class PassengerController {
     this.populateStopDropdown();
     this.populateDestDropdown();
     this.loadFavorites();
+    this.updateGenderToggleUi();
     this.render();
   }
 
@@ -132,7 +155,7 @@ class PassengerController {
         const priceKey = `${this.selectedStopId}_${s.id}`;
         const price = route.fareMatrix[priceKey];
         if (price !== undefined) {
-          priceText = ` (₹${price})`;
+          priceText = this.gender === 'female' ? ` (₹${price} / Free on Vetri Payanam)` : ` (₹${price})`;
         }
       }
       return `
@@ -434,12 +457,23 @@ class PassengerController {
       const crowdClass = crowdLvl.toLowerCase();
       const isLowCrowdRecommended = lowCrowdBus && item.bus.id === lowCrowdBus.bus.id && ranked.length > 1;
 
+      const isVetriBus = item.bus && item.bus.isVetriPayanam;
+
       return `
       <div class="priority-card ${item.rankClass}">
         <div>
           <div class="priority-card-header">
-            <div class="bus-num-badge">
-              BUS ${item.busNumber}
+            <div>
+              <div class="bus-num-badge">
+                BUS ${item.busNumber}
+              </div>
+              ${this.gender === 'female' && isVetriBus ? `
+                <div style="margin-top: 4px;">
+                  <span class="badge" style="display: inline-block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                    Vetri Payanam • FREE
+                  </span>
+                </div>
+              ` : ''}
             </div>
             <div style="text-align: right;">
               <span class="crowd-pill ${crowdClass}">
@@ -484,6 +518,14 @@ class PassengerController {
               <span class="lbl">Next Stop</span>
               <span class="val text-emerald">${item.nextStopName || 'En route'}</span>
             </div>
+            ${this.gender === 'female' ? `
+              <div class="metric-item">
+                <span class="lbl">Ticket Fare</span>
+                <span class="val ${isVetriBus ? 'text-emerald' : ''}" style="font-weight: 700;">
+                  ${isVetriBus ? '₹0 FREE' : 'Standard Fare'}
+                </span>
+              </div>
+            ` : ''}
           </div>
         </div>
 
@@ -505,19 +547,43 @@ class PassengerController {
       const price = route.fareMatrix[priceKey];
       if (price !== undefined) {
         const destStop = route.stops.find(s => s.id === this.selectedDestId);
-        ticketPriceHtml = `
-          <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 12px 16px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-            <div>
-              <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">Ticket Price Info</div>
-              <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
-                From <strong>${targetStop.name}</strong> to <strong>${destStop.name}</strong>
+        const hasVetriBusOnRoute = ranked.some(r => r.bus && r.bus.isVetriPayanam);
+
+        if (this.gender === 'female' && hasVetriBusOnRoute) {
+          ticketPriceHtml = `
+            <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 12px 16px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <div>
+                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">Ticket Price Info (Vetri Payanam Scheme)</div>
+                <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
+                  From <strong>${targetStop.name}</strong> to <strong>${destStop.name}</strong>
+                </div>
+                <div style="font-size: 0.8rem; color: #047857; margin-top: 3px;">
+                  Vetri Payanam Buses: <strong>₹0 FREE</strong> • Standard Buses: <strong>₹${price}</strong>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
+                  ₹0 FREE
+                </div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: #065f46;">(Women Free Travel)</div>
               </div>
             </div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
-              ₹${price}
+          `;
+        } else {
+          ticketPriceHtml = `
+            <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 12px 16px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <div>
+                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">Ticket Price Info</div>
+                <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
+                  From <strong>${targetStop.name}</strong> to <strong>${destStop.name}</strong>
+                </div>
+              </div>
+              <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
+                ₹${price}
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        }
       }
     }
 

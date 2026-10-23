@@ -217,7 +217,10 @@ class AdminController {
 
       return `
         <tr>
-          <td><strong style="color: #2563eb;">BUS ${bus.busNumber}</strong></td>
+          <td>
+            <strong style="color: #2563eb;">BUS ${bus.busNumber}</strong>
+            ${bus.isVetriPayanam ? `<div style="margin-top: 3px;"><span class="status-pill blue" style="font-size: 0.65rem; padding: 1px 6px;">Vetri Payanam</span></div>` : ''}
+          </td>
           <td><code>${bus.regNumber}</code></td>
           <td>
             ${(bus.assignedRouteIds && bus.assignedRouteIds.length > 0)
@@ -367,6 +370,8 @@ class AdminController {
     document.getElementById('busFormPhone').value = '';
     document.getElementById('busFormLoginEmail').value = '';
     document.getElementById('busFormLoginPassword').value = '';
+    const vpCheck = document.getElementById('busFormVetriPayanam');
+    if (vpCheck) vpCheck.checked = false;
     this.populateRouteFormRoutes();
     document.getElementById('busModal').classList.add('active');
   }
@@ -386,6 +391,9 @@ class AdminController {
     const busUser = window.appState.users.find(u => u.busId === bus.id);
     document.getElementById('busFormLoginEmail').value = busUser ? busUser.email : '';
     document.getElementById('busFormLoginPassword').value = '';
+    
+    const vpCheck = document.getElementById('busFormVetriPayanam');
+    if (vpCheck) vpCheck.checked = Boolean(bus.isVetriPayanam);
     
     this.populateRouteFormRoutes();
     const routeSelect = document.getElementById('busFormRoute');
@@ -411,6 +419,7 @@ class AdminController {
     const BusPhone = document.getElementById('busFormPhone').value.trim();
     const loginEmail = document.getElementById('busFormLoginEmail').value.trim();
     const loginPassword = document.getElementById('busFormLoginPassword').value.trim();
+    const isVetriPayanam = document.getElementById('busFormVetriPayanam') ? document.getElementById('busFormVetriPayanam').checked : false;
     
     // Retrieve existing bus or set defaults for tracking info
     const existingBus = window.appState.getBusById(id || `BUS-${busNumber}`);
@@ -431,6 +440,7 @@ class AdminController {
       regNumber,
       routeId,
       assignedRouteIds,
+      isVetriPayanam,
       BusName,
       BusPhone,
       loginEmail,

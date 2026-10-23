@@ -199,8 +199,17 @@
       </button>
     </nav>
 
-    <!-- User Auth Controls -->
+    <!-- User Auth & Gender Controls -->
     <div class="header-right">
+      <div class="gender-toggle-wrap" id="passengerGenderToggle" title="Passenger Gender / Category">
+        <button type="button" class="gender-btn active" id="genderBtnMale" onclick="passenger.setGender('male')">
+          Male
+        </button>
+        <button type="button" class="gender-btn" id="genderBtnFemale" onclick="passenger.setGender('female')">
+          Female
+        </button>
+      </div>
+
       <div class="user-auth-pill" id="userAuthPill">
         <!-- Injected via JavaScript -->
         <button class="btn btn-outline btn-sm" onclick="app.openLoginModal()">
@@ -364,6 +373,11 @@
         
         <!-- Smart Low-Crowd Suggestion Container -->
         <div id="wimbSmartCrowdAlert"></div>
+
+        <!-- Vetri Payanam Scheme Banner -->
+        <div id="wimbVetriPayanamBanner" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 700; font-size: 0.88rem; text-align: center;">
+          Vetri Payanam Scheme Bus — Free Travel for Women Passengers
+        </div>
 
         <!-- Sticky Header Telemetry HUD -->
         <div class="wimb-header-hud">
@@ -1036,6 +1050,12 @@
               <label for="busFormLoginPassword">Bus Login Password</label>
               <input type="text" id="busFormLoginPassword" class="form-control" placeholder="Leave blank to keep current">
             </div>
+          </div>
+          <div class="form-group mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: #0f172a; margin: 0;">
+              <input type="checkbox" id="busFormVetriPayanam" style="width: 17px; height: 17px; accent-color: #2563eb; cursor: pointer;">
+              <span>Enable "Vetri Payanam" Scheme (Free for Women)</span>
+            </label>
           </div>
           <button type="submit" class="btn btn-primary btn-block">Save Bus</button>
         </form>

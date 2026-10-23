@@ -379,6 +379,7 @@ class StateManager {
             bearing: Number(busData.bearing || 0),
             crowd_level: busData.crowdLevel || 'Moderate',
             is_trip_active: Boolean(busData.isTripActive),
+            is_vetri_payanam: Boolean(busData.isVetriPayanam),
             last_updated: new Date().toISOString()
           };
           await window.CloudDB.supabase.from('buses').upsert(row);

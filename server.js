@@ -67,6 +67,7 @@ function rowToBus(row) {
     reachedStopIds: row.reached_stop_ids || [],
     crowdLevel: row.crowd_level || 'Moderate',
     isTripActive: Boolean(row.is_trip_active),
+    isVetriPayanam: Boolean(row.is_vetri_payanam !== undefined ? row.is_vetri_payanam : row.isVetriPayanam),
     simulatorIndex: Number(row.simulator_index || 0),
     lastUpdated: row.last_updated
   };
@@ -104,6 +105,7 @@ function busToRow(bus) {
   if (bus.reachedStopIds !== undefined) row.reached_stop_ids = bus.reachedStopIds;
   if (bus.crowdLevel !== undefined) row.crowd_level = bus.crowdLevel;
   if (bus.isTripActive !== undefined) row.is_trip_active = Boolean(bus.isTripActive);
+  if (bus.isVetriPayanam !== undefined) row.is_vetri_payanam = Boolean(bus.isVetriPayanam);
   if (bus.simulatorIndex !== undefined) row.simulator_index = Number(bus.simulatorIndex);
   row.last_updated = new Date().toISOString();
   return row;

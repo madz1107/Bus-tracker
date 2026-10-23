@@ -73,13 +73,26 @@ class WhereIsMyBusController {
     const busReg = document.getElementById('wimbBusReg');
     const busSelector = document.getElementById('wimbBusSelector');
 
+    // Check passenger gender mode for Vetri Payanam Scheme
+    const currentGender = localStorage.getItem('citybus_passenger_gender') || 'male';
+    const vpBanner = document.getElementById('wimbVetriPayanamBanner');
+    if (vpBanner) {
+      if (currentGender === 'female' && bus.isVetriPayanam) {
+        vpBanner.style.display = 'block';
+        vpBanner.textContent = 'Vetri Payanam Scheme Bus — Free Travel for Women Passengers';
+      } else {
+        vpBanner.style.display = 'none';
+      }
+    }
+
     if (numBadge) numBadge.textContent = `BUS ${bus.busNumber}`;
     if (routeTitle) routeTitle.textContent = route.name;
     if (busReg) {
+      const vpText = (currentGender === 'female' && bus.isVetriPayanam) ? ' • Vetri Payanam: Free for Women' : '';
       if (bus.isTripActive) {
-        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber} • Crowd: ${bus.crowdLevel || 'Moderate'}`;
+        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber} • Crowd: ${bus.crowdLevel || 'Moderate'}${vpText}`;
       } else {
-        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber}`;
+        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber}${vpText}`;
       }
     }
     if (busSelector) busSelector.value = busId;
