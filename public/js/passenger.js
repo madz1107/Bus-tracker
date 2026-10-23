@@ -584,68 +584,6 @@ class PassengerController {
         </div>
       `;
       }).join('');
-    } else if (allRouteBuses.length > 0) {
-      cardsHtml = allRouteBuses.map((b) => {
-        const isVetriBus = b.isVetriPayanam;
-        return `
-        <div class="priority-card rank-other">
-          <div>
-            <div class="priority-card-header">
-              <div>
-                <div class="bus-num-badge">
-                  BUS ${b.busNumber}
-                </div>
-                ${this.gender === 'female' && isVetriBus ? `
-                  <div style="margin-top: 4px;">
-                    <span class="badge" style="display: inline-block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
-                      Vetri Payanam • FREE
-                    </span>
-                  </div>
-                ` : ''}
-              </div>
-              <div style="text-align: right;">
-                <span class="status-pill amber">${b.status || 'At Terminal'}</span>
-                <div class="bus-meta-title" style="margin-top: 4px;">${b.regNumber}</div>
-              </div>
-            </div>
-
-            <div class="priority-eta-box" style="background: #f8fafc; border-color: #e2e8f0;">
-              <div class="eta-label-tag">Scheduled for ${targetStop.name}</div>
-              <div class="eta-time-val" style="font-size: 1.15rem; color: #64748b;">Scheduled / At Terminal</div>
-            </div>
-
-            <div class="priority-metrics-row">
-              <div class="metric-item">
-                <span class="lbl">Assigned Route</span>
-                <span class="val">${route.name}</span>
-              </div>
-              <div class="metric-item">
-                <span class="lbl">Bus Name</span>
-                <span class="val">${b.BusName || b.busNumber}</span>
-              </div>
-              <div class="metric-item">
-                <span class="lbl">Current Stop</span>
-                <span class="val">${b.currentStopName || targetStop.name}</span>
-              </div>
-              ${this.gender === 'female' ? `
-                <div class="metric-item">
-                  <span class="lbl">Ticket Fare</span>
-                  <span class="val ${isVetriBus ? 'text-emerald' : ''}" style="font-weight: 700;">
-                    ${isVetriBus ? '₹0 FREE' : 'Standard Fare'}
-                  </span>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 8px; margin-top: 1rem;">
-            <button class="btn btn-primary" style="flex: 1;" onclick="passenger.trackSelectedBus('${b.id}')">
-              <i data-lucide="navigation"></i> Where Is My Bus
-            </button>
-          </div>
-        </div>
-        `;
-      }).join('');
     } else {
       cardsHtml = `
         <div style="grid-column: 1 / -1; padding: 2rem; background: #fff; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
