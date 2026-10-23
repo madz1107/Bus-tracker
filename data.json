@@ -106,6 +106,21 @@
         }
       ],
       "roadway": [],
+      "fareMatrix": {
+        "stop-1-1_stop-1-2": 5,
+        "stop-1-1_stop-1-3": 7,
+        "stop-1-1_stop-1-4": 10,
+        "stop-1-1_stop-1-5": 12,
+        "stop-1-1_stop-1-6": 15,
+        "stop-1-1_stop-1-7": 15,
+        "stop-1-1_stop-1-8": 18,
+        "stop-1-1_stop-1-9": 18,
+        "stop-1-1_stop-1-10": 20,
+        "stop-1-1_stop-1-11": 20,
+        "stop-1-1_stop-1-12": 22,
+        "stop-1-1_stop-1-13": 25,
+        "stop-1-1_stop-1-14": 25
+      },
       "created_at": "2026-10-18T16:59:21.741018+00:00"
     }
   ],
@@ -123,24 +138,24 @@
       "conductorId": null,
       "conductorName": null,
       "conductorPhone": null,
-      "status": "Offline",
-      "lat": 8.7719196,
-      "lng": 77.5532612,
-      "speed": 0,
+      "status": "Running",
+      "lat": 8.731296,
+      "lng": 77.708938,
+      "speed": 28,
       "bearing": 117,
       "currentStopId": "stop-1-1",
       "currentStopName": "Junction Railway Station",
       "nextStopId": "stop-1-2",
       "nextStopName": "Junction Bus Stand",
-      "distanceToNextKm": 17.8,
-      "etaMinutes": 38,
-      "routeProgress": 0,
-      "reachedStopIds": [],
+      "distanceToNextKm": 0.8,
+      "etaMinutes": 2,
+      "routeProgress": 10,
+      "reachedStopIds": ["stop-1-1"],
       "crowdLevel": "Low",
-      "isTripActive": false,
+      "isTripActive": true,
       "isVetriPayanam": true,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-19T10:49:34.259+00:00"
+      "lastUpdated": "2026-10-23T15:40:00.000Z"
     }
   ],
   "users": [

@@ -67,7 +67,11 @@ function rowToBus(row) {
     reachedStopIds: row.reached_stop_ids || [],
     crowdLevel: row.crowd_level || 'Moderate',
     isTripActive: Boolean(row.is_trip_active),
-    isVetriPayanam: Boolean(row.is_vetri_payanam !== undefined ? row.is_vetri_payanam : row.isVetriPayanam),
+    isVetriPayanam: Boolean(
+      row.is_vetri_payanam !== undefined && row.is_vetri_payanam !== null
+        ? row.is_vetri_payanam
+        : (row.isVetriPayanam !== undefined ? row.isVetriPayanam : (row.id === 'BUS-1' || row.bus_number === '1'))
+    ),
     simulatorIndex: Number(row.simulator_index || 0),
     lastUpdated: row.last_updated
   };

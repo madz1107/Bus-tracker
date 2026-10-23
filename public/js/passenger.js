@@ -161,7 +161,7 @@ class PassengerController {
         const priceKey = `${this.selectedStopId}_${s.id}`;
         const price = route.fareMatrix[priceKey];
         if (price !== undefined) {
-          priceText = this.gender === 'female' ? ` (₹${price} / Free on Vetri Payanam)` : ` (₹${price})`;
+          priceText = this.gender === 'female' ? ` (₹0 FREE - Women Free Travel)` : ` (₹${price})`;
         }
       }
       return `
@@ -405,9 +405,8 @@ class PassengerController {
     if (!route) return;
 
     const targetStop = route.stops.find((s) => s.id === this.selectedStopId) || route.stops[0];
-    const routeBuses = window.appState.getBusesForRoute(this.selectedRouteId).filter(b => b.isTripActive);
 
-    // If destination is selected, ensure the route has both stops and board is before dest
+    // If destination is selected, validate stop ordering
     let isValidRoute = true;
     if (this.selectedDestId) {
       const boardIdx = route.stops.findIndex((s) => s.id === this.selectedStopId);
@@ -417,154 +416,23 @@ class PassengerController {
       }
     }
 
-    if (!targetStop || routeBuses.length === 0 || !isValidRoute) {
-      container.innerHTML = `
-        <div style="grid-column: 1 / -1; padding: 2rem; background: #fff; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
-          <p style="color: #64748b; font-size: 0.95rem;">No active buses currently operating on this route segment.</p>
-        </div>
-      `;
-      return;
-    }
-
-    // Rank approaching buses by live ETA
-    const ranked = PriorityEngine.rankBusesForStop(route, targetStop, routeBuses);
-
-    // Smart Comfort Recommendation Logic:
-    // If the 1st bus is Moderate or Heavy, check if another approaching bus has Low crowd
-    let smartSuggestionHtml = '';
-    const firstBus = ranked[0];
-    const lowCrowdBus = ranked.find((item) => (item.crowdLevel || 'Moderate').toLowerCase() === 'low');
-
-    if (lowCrowdBus && firstBus && lowCrowdBus.bus.id !== firstBus.bus.id && (firstBus.crowdLevel || 'Moderate').toLowerCase() !== 'low') {
-      smartSuggestionHtml = `
-        <div class="smart-crowd-alert" style="grid-column: 1 / -1;">
-          <div class="smart-crowd-alert-left">
-            <div class="smart-crowd-badge-icon">
-              <i data-lucide="sparkles"></i>
-            </div>
-            <div>
-              <div class="smart-crowd-title">
-                <span>Smart Travel Tip: Low Crowd Bus on Same Route!</span>
-              </div>
-              <div class="smart-crowd-desc">
-                <strong>BUS ${lowCrowdBus.busNumber}</strong> has <strong>🟢 Seats Available (Low Crowd)</strong> arriving in <strong>${lowCrowdBus.etaText}</strong> (${lowCrowdBus.distanceKm} km away). Take this bus for a peaceful ride!
-              </div>
-            </div>
-          </div>
-          <button class="smart-crowd-btn" onclick="passenger.trackSelectedBus('${lowCrowdBus.bus.id}')">
-            <i data-lucide="navigation"></i> Track BUS ${lowCrowdBus.busNumber}
-          </button>
-        </div>
-      `;
-    }
-
-    const cardsHtml = ranked.map((item) => {
-      const crowdLvl = item.crowdLevel || 'Moderate';
-      const crowdClass = crowdLvl.toLowerCase();
-      const isLowCrowdRecommended = lowCrowdBus && item.bus.id === lowCrowdBus.bus.id && ranked.length > 1;
-
-      const isVetriBus = item.bus && item.bus.isVetriPayanam;
-
-      return `
-      <div class="priority-card ${item.rankClass}">
-        <div>
-          <div class="priority-card-header">
-            <div>
-              <div class="bus-num-badge">
-                BUS ${item.busNumber}
-              </div>
-              ${this.gender === 'female' && isVetriBus ? `
-                <div style="margin-top: 4px;">
-                  <span class="badge" style="display: inline-block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
-                    Vetri Payanam • FREE
-                  </span>
-                </div>
-              ` : ''}
-            </div>
-            <div style="text-align: right;">
-              <span class="crowd-pill ${crowdClass}">
-                <span class="dot" style="background: currentColor;"></span> ${crowdLvl} Crowd
-              </span>
-              <div class="bus-meta-title" style="margin-top: 4px;">${item.regNumber}</div>
-            </div>
-          </div>
-
-          ${isLowCrowdRecommended ? `
-            <div class="comfort-recommend-chip">
-              <i data-lucide="thumbs-up" style="width: 12px; height: 12px;"></i> Recommended for Comfort • Seats Available
-            </div>
-          ` : ''}
-
-          <!-- Big ETA Callout -->
-          <div class="priority-eta-box">
-            <div class="eta-label-tag">Estimated Arrival at ${targetStop.name}</div>
-            <div class="eta-time-val">${item.etaText}</div>
-          </div>
-
-          <!-- Key Telemetry Metrics -->
-          ${item.bus.delayAlert ? `
-            <div style="background: #fef3c7; color: #92400e; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #fde68a; display: flex; align-items: center; gap: 6px;">
-              ⚠️ <span>Driver Notice: <strong>${item.bus.delayAlert}</strong></span>
-            </div>
-          ` : ''}
-          <div class="priority-metrics-row">
-            <div class="metric-item">
-              <span class="lbl">Distance to Stop</span>
-              <span class="val">${item.distanceKm} km</span>
-            </div>
-            <div class="metric-item">
-              <span class="lbl">Moving Speed</span>
-              <span class="val text-blue">${item.speed} km/h</span>
-            </div>
-            <div class="metric-item">
-              <span class="lbl">Current Stop</span>
-              <span class="val">${item.currentStopName || 'On Route'}</span>
-            </div>
-            <div class="metric-item">
-              <span class="lbl">Next Stop</span>
-              <span class="val text-emerald">${item.nextStopName || 'En route'}</span>
-            </div>
-            ${this.gender === 'female' ? `
-              <div class="metric-item">
-                <span class="lbl">Ticket Fare</span>
-                <span class="val ${isVetriBus ? 'text-emerald' : ''}" style="font-weight: 700;">
-                  ${isVetriBus ? '₹0 FREE' : 'Standard Fare'}
-                </span>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 8px; margin-top: 1rem;">
-          <button class="btn btn-primary" style="flex: 1;" onclick="passenger.trackSelectedBus('${item.bus.id}')">
-            <i data-lucide="navigation"></i> Where Is My Bus
-          </button>
-          <button class="btn btn-warning" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 0.6rem 0.9rem; display: flex; align-items: center; gap: 4px;" onclick="window.proximityAlarm.openAlarmModal('${item.bus.id}', '${targetStop.id}')" title="Wake Me Up Alarm">
-            <i data-lucide="bell" style="width: 16px; height: 16px;"></i> <span>Alarm</span>
-          </button>
-        </div>
-      </div>
-    `;
-    }).join('');
-
+    // 1. Ticket Price Info Box (Always calculated and shown when destination is selected)
     let ticketPriceHtml = '';
     if (isValidRoute && this.selectedDestId && route.fareMatrix) {
       const priceKey = `${this.selectedStopId}_${this.selectedDestId}`;
       const price = route.fareMatrix[priceKey];
       if (price !== undefined) {
         const destStop = route.stops.find(s => s.id === this.selectedDestId);
-        const hasVetriBusOnRoute = ranked.some(r => r.bus && r.bus.isVetriPayanam);
-
-        if (this.gender === 'female' && hasVetriBusOnRoute) {
+        if (this.gender === 'female') {
           ticketPriceHtml = `
-            <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 12px 16px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
               <div>
-                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">Ticket Price Info (Vetri Payanam Scheme)</div>
+                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">Ticket Price Info</div>
                 <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
                   From <strong>${targetStop.name}</strong> to <strong>${destStop.name}</strong>
                 </div>
-                <div style="font-size: 0.8rem; color: #047857; margin-top: 3px;">
-                  Vetri Payanam Buses: <strong>₹0 FREE</strong> • Standard Buses: <strong>₹${price}</strong>
+                <div style="font-size: 0.82rem; color: #047857; margin-top: 4px;">
+                  Vetri Payanam Buses: <strong style="color: #059669;">₹0 FREE (Women Free Travel)</strong> • Standard Buses: <strong>₹${price}</strong>
                 </div>
               </div>
               <div style="text-align: right;">
@@ -577,7 +445,7 @@ class PassengerController {
           `;
         } else {
           ticketPriceHtml = `
-            <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 12px 16px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
               <div>
                 <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">Ticket Price Info</div>
                 <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
@@ -591,6 +459,199 @@ class PassengerController {
           `;
         }
       }
+    }
+
+    // 2. Bus Cards Generation (Live GPS Ranked or Scheduled Fleet)
+    const allRouteBuses = window.appState.getBusesForRoute(this.selectedRouteId);
+    const activeRouteBuses = allRouteBuses.filter(b => b.isTripActive);
+
+    let smartSuggestionHtml = '';
+    let cardsHtml = '';
+
+    if (activeRouteBuses.length > 0) {
+      // Rank approaching buses by live ETA
+      const ranked = PriorityEngine.rankBusesForStop(route, targetStop, activeRouteBuses);
+      const firstBus = ranked[0];
+      const lowCrowdBus = ranked.find((item) => (item.crowdLevel || 'Moderate').toLowerCase() === 'low');
+
+      if (lowCrowdBus && firstBus && lowCrowdBus.bus.id !== firstBus.bus.id && (firstBus.crowdLevel || 'Moderate').toLowerCase() !== 'low') {
+        smartSuggestionHtml = `
+          <div class="smart-crowd-alert" style="grid-column: 1 / -1;">
+            <div class="smart-crowd-alert-left">
+              <div class="smart-crowd-badge-icon">
+                <i data-lucide="sparkles"></i>
+              </div>
+              <div>
+                <div class="smart-crowd-title">
+                  <span>Smart Travel Tip: Low Crowd Bus on Same Route!</span>
+                </div>
+                <div class="smart-crowd-desc">
+                  <strong>BUS ${lowCrowdBus.busNumber}</strong> has <strong>🟢 Seats Available (Low Crowd)</strong> arriving in <strong>${lowCrowdBus.etaText}</strong> (${lowCrowdBus.distanceKm} km away). Take this bus for a peaceful ride!
+                </div>
+              </div>
+            </div>
+            <button class="smart-crowd-btn" onclick="passenger.trackSelectedBus('${lowCrowdBus.bus.id}')">
+              <i data-lucide="navigation"></i> Track BUS ${lowCrowdBus.busNumber}
+            </button>
+          </div>
+        `;
+      }
+
+      cardsHtml = ranked.map((item) => {
+        const crowdLvl = item.crowdLevel || 'Moderate';
+        const crowdClass = crowdLvl.toLowerCase();
+        const isLowCrowdRecommended = lowCrowdBus && item.bus.id === lowCrowdBus.bus.id && ranked.length > 1;
+        const isVetriBus = item.bus && item.bus.isVetriPayanam;
+
+        return `
+        <div class="priority-card ${item.rankClass}">
+          <div>
+            <div class="priority-card-header">
+              <div>
+                <div class="bus-num-badge">
+                  BUS ${item.busNumber}
+                </div>
+                ${this.gender === 'female' && isVetriBus ? `
+                  <div style="margin-top: 4px;">
+                    <span class="badge" style="display: inline-block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                      Vetri Payanam • FREE
+                    </span>
+                  </div>
+                ` : ''}
+              </div>
+              <div style="text-align: right;">
+                <span class="crowd-pill ${crowdClass}">
+                  <span class="dot" style="background: currentColor;"></span> ${crowdLvl} Crowd
+                </span>
+                <div class="bus-meta-title" style="margin-top: 4px;">${item.regNumber}</div>
+              </div>
+            </div>
+
+            ${isLowCrowdRecommended ? `
+              <div class="comfort-recommend-chip">
+                <i data-lucide="thumbs-up" style="width: 12px; height: 12px;"></i> Recommended for Comfort • Seats Available
+              </div>
+            ` : ''}
+
+            <!-- Big ETA Callout -->
+            <div class="priority-eta-box">
+              <div class="eta-label-tag">Estimated Arrival at ${targetStop.name}</div>
+              <div class="eta-time-val">${item.etaText}</div>
+            </div>
+
+            <!-- Key Telemetry Metrics -->
+            ${item.bus.delayAlert ? `
+              <div style="background: #fef3c7; color: #92400e; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #fde68a; display: flex; align-items: center; gap: 6px;">
+                ⚠️ <span>Driver Notice: <strong>${item.bus.delayAlert}</strong></span>
+              </div>
+            ` : ''}
+            <div class="priority-metrics-row">
+              <div class="metric-item">
+                <span class="lbl">Distance to Stop</span>
+                <span class="val">${item.distanceKm} km</span>
+              </div>
+              <div class="metric-item">
+                <span class="lbl">Moving Speed</span>
+                <span class="val text-blue">${item.speed} km/h</span>
+              </div>
+              <div class="metric-item">
+                <span class="lbl">Current Stop</span>
+                <span class="val">${item.currentStopName || 'On Route'}</span>
+              </div>
+              <div class="metric-item">
+                <span class="lbl">Next Stop</span>
+                <span class="val text-emerald">${item.nextStopName || 'En route'}</span>
+              </div>
+              ${this.gender === 'female' ? `
+                <div class="metric-item">
+                  <span class="lbl">Ticket Fare</span>
+                  <span class="val ${isVetriBus ? 'text-emerald' : ''}" style="font-weight: 700;">
+                    ${isVetriBus ? '₹0 FREE' : 'Standard Fare'}
+                  </span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 1rem;">
+            <button class="btn btn-primary" style="flex: 1;" onclick="passenger.trackSelectedBus('${item.bus.id}')">
+              <i data-lucide="navigation"></i> Where Is My Bus
+            </button>
+            <button class="btn btn-warning" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 0.6rem 0.9rem; display: flex; align-items: center; gap: 4px;" onclick="window.proximityAlarm.openAlarmModal('${item.bus.id}', '${targetStop.id}')" title="Wake Me Up Alarm">
+              <i data-lucide="bell" style="width: 16px; height: 16px;"></i> <span>Alarm</span>
+            </button>
+          </div>
+        </div>
+      `;
+      }).join('');
+    } else if (allRouteBuses.length > 0) {
+      cardsHtml = allRouteBuses.map((b) => {
+        const isVetriBus = b.isVetriPayanam;
+        return `
+        <div class="priority-card rank-other">
+          <div>
+            <div class="priority-card-header">
+              <div>
+                <div class="bus-num-badge">
+                  BUS ${b.busNumber}
+                </div>
+                ${this.gender === 'female' && isVetriBus ? `
+                  <div style="margin-top: 4px;">
+                    <span class="badge" style="display: inline-block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                      Vetri Payanam • FREE
+                    </span>
+                  </div>
+                ` : ''}
+              </div>
+              <div style="text-align: right;">
+                <span class="status-pill amber">${b.status || 'At Terminal'}</span>
+                <div class="bus-meta-title" style="margin-top: 4px;">${b.regNumber}</div>
+              </div>
+            </div>
+
+            <div class="priority-eta-box" style="background: #f8fafc; border-color: #e2e8f0;">
+              <div class="eta-label-tag">Scheduled for ${targetStop.name}</div>
+              <div class="eta-time-val" style="font-size: 1.15rem; color: #64748b;">Scheduled / At Terminal</div>
+            </div>
+
+            <div class="priority-metrics-row">
+              <div class="metric-item">
+                <span class="lbl">Assigned Route</span>
+                <span class="val">${route.name}</span>
+              </div>
+              <div class="metric-item">
+                <span class="lbl">Bus Name</span>
+                <span class="val">${b.BusName || b.busNumber}</span>
+              </div>
+              <div class="metric-item">
+                <span class="lbl">Current Stop</span>
+                <span class="val">${b.currentStopName || targetStop.name}</span>
+              </div>
+              ${this.gender === 'female' ? `
+                <div class="metric-item">
+                  <span class="lbl">Ticket Fare</span>
+                  <span class="val ${isVetriBus ? 'text-emerald' : ''}" style="font-weight: 700;">
+                    ${isVetriBus ? '₹0 FREE' : 'Standard Fare'}
+                  </span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 1rem;">
+            <button class="btn btn-primary" style="flex: 1;" onclick="passenger.trackSelectedBus('${b.id}')">
+              <i data-lucide="navigation"></i> Where Is My Bus
+            </button>
+          </div>
+        </div>
+        `;
+      }).join('');
+    } else {
+      cardsHtml = `
+        <div style="grid-column: 1 / -1; padding: 2rem; background: #fff; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
+          <p style="color: #64748b; font-size: 0.95rem;">No active buses currently operating on this route segment.</p>
+        </div>
+      `;
     }
 
     container.innerHTML = ticketPriceHtml + smartSuggestionHtml + cardsHtml;
