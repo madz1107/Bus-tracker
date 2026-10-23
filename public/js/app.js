@@ -145,24 +145,31 @@ class AppController {
 
     if (!user) return;
 
+    const genderToggle = document.getElementById('passengerGenderToggle');
+
     if (user.role === 'passenger') {
       // Passenger only sees Passenger search and Where Is My Bus (initially hidden)
       if (tabPassenger) tabPassenger.style.display = 'inline-flex';
       if (tabWimb) tabWimb.style.display = 'none';
       if (tabBus) tabBus.style.display = 'none';
       if (tabAdmin) tabAdmin.style.display = 'none';
+      if (genderToggle) genderToggle.style.display = 'inline-flex';
     } else if (user.role === 'Bus') {
-      // Bus only sees Bus console
+      // Bus only sees Bus console - NO male/female controls
       if (tabPassenger) tabPassenger.style.display = 'none';
       if (tabWimb) tabWimb.style.display = 'none';
       if (tabBus) tabBus.style.display = 'inline-flex';
       if (tabAdmin) tabAdmin.style.display = 'none';
+      if (genderToggle) genderToggle.style.display = 'none';
+      document.body.classList.remove('female-mode');
     } else if (user.role === 'admin') {
-      // Admin sees Fleet Admin control center
+      // Admin sees Fleet Admin control center - NO male/female controls
       if (tabPassenger) tabPassenger.style.display = 'none';
       if (tabWimb) tabWimb.style.display = 'none';
       if (tabBus) tabBus.style.display = 'none';
       if (tabAdmin) tabAdmin.style.display = 'inline-flex';
+      if (genderToggle) genderToggle.style.display = 'none';
+      document.body.classList.remove('female-mode');
     }
   }
 
@@ -501,6 +508,24 @@ class AppController {
     const tabWimb = document.getElementById('navTabWimb');
     if (tabWimb && portalName !== 'where-is-my-bus') {
       tabWimb.style.display = 'none';
+    }
+
+    // Gender toggle is ONLY visible in Passenger portal (never in Bus or Admin)
+    const genderToggle = document.getElementById('passengerGenderToggle');
+    if (genderToggle) {
+      genderToggle.style.display = (portalName === 'passenger') ? 'inline-flex' : 'none';
+    }
+
+    // Apply female-mode theme only while on passenger portal
+    if (portalName !== 'passenger') {
+      document.body.classList.remove('female-mode');
+    } else {
+      const g = localStorage.getItem('citybus_passenger_gender') || 'male';
+      if (g === 'female') {
+        document.body.classList.add('female-mode');
+      } else {
+        document.body.classList.remove('female-mode');
+      }
     }
 
     // Trigger subsystem init

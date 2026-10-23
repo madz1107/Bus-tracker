@@ -335,6 +335,158 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ========================================================
+   VETRI PAYANAM / FEMALE THEME (MATCHING USER REFERENCE DESIGN)
+   Applies only when Female mode is active in Passenger Portal
+   ======================================================== */
+body.female-mode #appHeader .logo-icon-wrap {
+  background: linear-gradient(135deg, #f472b6, #fb7185);
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35);
+}
+
+body.female-mode #appHeader .brand-highlight {
+  color: #f472b6;
+}
+
+body.female-mode #appHeader .live-network-badge {
+  background: rgba(244, 114, 182, 0.1);
+  border-color: rgba(244, 114, 182, 0.3);
+  color: #db2777;
+}
+
+body.female-mode #appHeader .live-network-badge .pulse-dot {
+  background: #f472b6;
+  box-shadow: 0 0 8px #f472b6;
+}
+
+body.female-mode #appHeader .nav-tab.active {
+  color: #db2777;
+  background: #ffffff;
+}
+
+body.female-mode #appHeader .nav-tab.active i {
+  color: #db2777;
+}
+
+body.female-mode #appHeader .gender-btn#genderBtnFemale.active {
+  background: linear-gradient(135deg, #f472b6, #fb7185);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(244, 114, 182, 0.35);
+}
+
+body.female-mode #appHeader .role-tag {
+  background: rgba(244, 114, 182, 0.15);
+  color: #db2777;
+}
+
+/* Passenger Portal Elements in Female Theme */
+body.female-mode #portalPassenger .hero-chip {
+  background: rgba(244, 114, 182, 0.09) !important;
+  border-color: rgba(244, 114, 182, 0.35) !important;
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .hero-chip i {
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .passenger-hero button.btn-outline {
+  border-color: rgba(244, 114, 182, 0.35);
+  color: #db2777;
+}
+
+body.female-mode #portalPassenger .passenger-hero button.btn-outline i {
+  color: #f472b6;
+}
+
+body.female-mode #portalPassenger .search-card {
+  border: 1px solid rgba(244, 114, 182, 0.28);
+  box-shadow: 0 4px 20px rgba(244, 114, 182, 0.07);
+}
+
+body.female-mode #portalPassenger .search-card h3 i {
+  color: #f472b6 !important;
+}
+
+body.female-mode #portalPassenger .search-field label i {
+  color: #f472b6;
+}
+
+body.female-mode #portalPassenger .search-field .form-control {
+  border-color: rgba(244, 114, 182, 0.35);
+}
+
+body.female-mode #portalPassenger .search-field .form-control:focus {
+  border-color: #f472b6;
+  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.2);
+}
+
+body.female-mode #portalPassenger .star-commute-btn {
+  border-color: rgba(244, 114, 182, 0.35);
+  color: #db2777;
+}
+
+body.female-mode #portalPassenger .star-commute-btn i {
+  color: #f472b6;
+}
+
+body.female-mode #portalPassenger .btn-search {
+  background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(244, 114, 182, 0.35) !important;
+}
+
+body.female-mode #portalPassenger .btn-search:hover {
+  background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%) !important;
+  box-shadow: 0 6px 18px rgba(244, 114, 182, 0.45) !important;
+  transform: translateY(-1px);
+}
+
+body.female-mode #portalPassenger .section-icon-bubble {
+  background: rgba(244, 114, 182, 0.12);
+  color: #f472b6;
+  border-color: rgba(244, 114, 182, 0.3);
+}
+
+body.female-mode #portalPassenger .section-icon-bubble i {
+  color: #f472b6;
+}
+
+body.female-mode #portalPassenger #selectedStopNameDisplay {
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .live-sync-indicator {
+  border-color: rgba(244, 114, 182, 0.35);
+  color: #db2777;
+  background: rgba(244, 114, 182, 0.06);
+}
+
+body.female-mode #portalPassenger .live-sync-indicator .ping-circle {
+  background: #f472b6;
+  box-shadow: 0 0 8px #f472b6;
+}
+
+body.female-mode #portalPassenger .priority-card {
+  border-color: rgba(244, 114, 182, 0.3);
+}
+
+body.female-mode #portalPassenger .priority-card .bus-num-badge {
+  background: linear-gradient(135deg, #f472b6, #fb7185);
+  color: #ffffff;
+}
+
+body.female-mode #portalPassenger .priority-card button.btn-primary {
+  background: linear-gradient(135deg, #f472b6, #fb7185);
+  border: none;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.3);
+}
+
+body.female-mode #portalPassenger .priority-card button.btn-primary:hover {
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+}
+
+/* ========================================================
    MAIN CONTENT CONTAINER & PORTALS
    ======================================================== */
 .main-container {

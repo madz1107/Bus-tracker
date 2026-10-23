@@ -42,6 +42,12 @@ class PassengerController {
       btnMale.classList.toggle('active', this.gender === 'male');
       btnFemale.classList.toggle('active', this.gender === 'female');
     }
+
+    if (this.gender === 'female') {
+      document.body.classList.add('female-mode');
+    } else {
+      document.body.classList.remove('female-mode');
+    }
   }
 
   syncSelectedRoute() {
