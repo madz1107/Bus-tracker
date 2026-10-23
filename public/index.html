@@ -329,15 +329,6 @@
       <!-- All Active Fleet Grid -->
       <div class="content-section">
         <div class="section-header">
-          <div class="section-title-wrap">
-            <div class="section-icon-bubble">
-              <i data-lucide="layout-grid"></i>
-            </div>
-            <div>
-              <h2 class="section-title">All Active Fleet on Network</h2>
-              <p class="section-desc">Click any bus card to inspect live telemetry or launch the full "Where Is My Bus?" live map.</p>
-            </div>
-          </div>
           <div class="fleet-filter-pills" id="routeFilterPills">
             <button class="pill active" onclick="passenger.filterByRoute('all')">All Routes</button>
           </div>
@@ -635,27 +626,7 @@
             </div>
           </div>
 
-          <!-- ── Expandable Route Stops Checklist ── -->
-          <div class="cockpit-card stops-checklist-card">
-            <div class="checklist-header" onclick="Bus.toggleStopsChecklist()">
-              <div class="card-mini-title">
-                <i data-lucide="list-checks"></i>
-                <span>Route Stops Checklist</span>
-                <span class="checklist-progress-pill" id="condProgressBadge">0 / 0</span>
-              </div>
-              <div class="checklist-toggle-icon">
-                <span class="toggle-text" id="checklistToggleText">View All</span>
-                <i data-lucide="chevron-down" id="stopsChevron"></i>
-              </div>
-            </div>
 
-            <div class="stops-timeline-wrapper" id="condStopsTimelineWrapper" style="display: none;">
-              <p class="checklist-hint">💡 Tap any stop along the route to immediately update the bus location.</p>
-              <div class="stops-timeline-list" id="condStopsTimeline">
-                <!-- Dynamically rendered by bus.js -->
-              </div>
-            </div>
-          </div>
 
           <!-- ── Live Bus Crowd & Occupancy Level Controller ── -->
           <div class="cockpit-card crowd-deck-card">
