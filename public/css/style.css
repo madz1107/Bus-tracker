@@ -845,6 +845,26 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid var(--red-border);
 }
 
+.status-pill.blue,
+.status-pill.arriving {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-weight: 800;
+  animation: pulse-arriving 1.8s infinite;
+}
+
+@keyframes pulse-arriving {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(37, 99, 235, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+    transform: scale(1.02);
+  }
+}
+
 .fleet-filter-pills {
   display: flex;
   gap: 0.5rem;
@@ -1205,7 +1225,132 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--primary);
 }
 
-/* Animated Bus Position Overlay on Timeline */
+.stop-eta-badge.arriving {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-weight: 800;
+  animation: pulse-arriving 1.8s infinite;
+}
+
+/* "Where Is My Train" Style Live Route Progression Bus Track Element */
+.timeline-in-transit-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  position: relative;
+  padding: 0.15rem 0 0.5rem 0;
+  margin-top: -0.25rem;
+  margin-bottom: -0.25rem;
+  z-index: 5;
+}
+
+.transit-track-col {
+  width: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.transit-track-line-top,
+.transit-track-line-bottom {
+  width: 4px;
+  height: 10px;
+  background: var(--emerald);
+  border-radius: var(--radius-full);
+}
+
+.transit-track-line-bottom {
+  background: var(--primary);
+}
+
+.transit-bus-beacon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #0f172a;
+  border: 2px solid #3b82f6;
+  color: #facc15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.6);
+  animation: beacon-bounce 2s infinite ease-in-out;
+  z-index: 3;
+}
+
+.transit-bus-beacon i,
+.transit-bus-beacon svg {
+  width: 17px;
+  height: 17px;
+  color: #facc15;
+}
+
+@keyframes beacon-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+  }
+  50% {
+    transform: translateY(2px);
+    box-shadow: 0 0 18px rgba(37, 99, 235, 0.8);
+  }
+}
+
+.transit-pill-col {
+  flex: 1;
+}
+
+.transit-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 0.76rem;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+.transit-live-badge .live-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.3); }
+}
+
+.transit-live-badge .badge-bus-num {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.transit-live-badge .badge-speed {
+  color: #67e8f9;
+  font-weight: 800;
+}
+
+.transit-live-badge .badge-dist {
+  color: #fde047;
+  font-weight: 800;
+}
+
+.transit-live-badge .badge-sep {
+  color: #64748b;
+}
+
+/* Fallback Animated Bus Position Overlay on Timeline */
 .timeline-live-bus-floater {
   position: absolute;
   left: 2px;

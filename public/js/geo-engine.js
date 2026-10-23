@@ -3,8 +3,8 @@
  */
 const GeoEngine = {
   EARTH_RADIUS_METERS: 6371000,
-  GEOFENCE_RADIUS_METERS: 80,       // Distance threshold to mark stop as Reached
-  APPROACHING_RADIUS_METERS: 350,   // Distance threshold to mark stop as Arriving Now
+  GEOFENCE_RADIUS_METERS: 120,      // Distance threshold in meters to mark stop as Reached (instant stop detection)
+  APPROACHING_RADIUS_METERS: 450,   // Distance threshold in meters to mark stop as Arriving Now
   DEFAULT_SPEED_KMH: 28,            // Baseline transit road speed in urban traffic
   DWELL_TIME_PER_STOP_SEC: 45,      // Average passenger boarding dwell time per stop
 
@@ -139,14 +139,15 @@ const GeoEngine = {
     if (!targetStop) return { minutes: 0, text: 'N/A', distanceKm: 0 };
 
     const distanceKm = this.getDistanceKm(busLat, busLng, targetStop.lat, targetStop.lng);
+    const distanceMeters = this.getDistanceMeters(busLat, busLng, targetStop.lat, targetStop.lng);
     
     // Check if at or arriving at stop
     const geofence = this.checkGeofence(busLat, busLng, targetStop.lat, targetStop.lng);
-    if (geofence.status === 'Reached') {
-      return { minutes: 0, text: 'Reached ✅', distanceKm: Math.round(distanceKm * 10) / 10, isReached: true };
+    if (geofence.status === 'Reached' || distanceMeters <= this.GEOFENCE_RADIUS_METERS || distanceKm <= 0.12) {
+      return { minutes: 0, text: 'Reached ✅', distanceKm: 0, isReached: true, isArriving: false };
     }
-    if (geofence.status === 'Arriving Now' || distanceKm < 0.3) {
-      return { minutes: 1, text: 'Arriving Now ⚡', distanceKm: Math.round(distanceKm * 10) / 10, isArriving: true };
+    if (geofence.status === 'Arriving Now' || distanceMeters <= this.APPROACHING_RADIUS_METERS || distanceKm <= 0.45) {
+      return { minutes: 1, text: 'Arriving Now ⚡', distanceKm: Math.round(distanceKm * 10) / 10, isReached: false, isArriving: true };
     }
 
     let speedToUse = currentSpeedKmh;

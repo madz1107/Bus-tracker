@@ -581,7 +581,10 @@ class PassengerController {
                 </span>`;
       let liveSpeedHtml = `<span class="val text-blue">${bus.speed || 0} km/h</span>`;
       let nextStopHtml = `<span class="val">${bus.nextStopName || 'N/A'}</span>`;
-      let nextEtaHtml = `<span class="val text-emerald">${bus.etaMinutes || 0} min (${bus.distanceToNextKm || 0} km)</span>`;
+      const isArrivingNext = bus.etaMinutes <= 1 || (bus.distanceToNextKm != null && bus.distanceToNextKm <= 0.45);
+      let nextEtaHtml = isArrivingNext
+        ? `<span class="val text-blue" style="font-weight: 800;">⚡ Arriving Now (${bus.distanceToNextKm || 0} km)</span>`
+        : `<span class="val text-emerald">${bus.etaMinutes || 0} min (${bus.distanceToNextKm || 0} km)</span>`;
       let crowdStatusHtml = `<span class="val text-primary" style="font-weight: 700;">${crowdLvl}</span>`;
 
       if (!bus.isTripActive) {

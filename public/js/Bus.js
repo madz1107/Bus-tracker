@@ -915,34 +915,48 @@ class BusController {
     let reachedStopIds = Array.isArray(bus.reachedStopIds) ? [...bus.reachedStopIds] : [];
 
     if (hasStops) {
-      // Check Geofence for stops
+      // 1. Check Geofence for stops and instantly register reached status
+      let directHitIdx = -1;
       route.stops.forEach((stop, index) => {
         const geofence = GeoEngine.checkGeofence(lat, lng, stop.lat, stop.lng);
         if (geofence.status === 'Reached') {
+          directHitIdx = index;
           if (!reachedStopIds.includes(stop.id)) {
             reachedStopIds.push(stop.id);
             this.playChime();
             this.speakAnnouncement(`Arrived at stop ${stop.name}.`);
             window.app.showToast(`Reached Stop #${stop.sequence}: ${stop.name} ✅`, 'success');
           }
-          currentStop = stop;
-          nextStop = route.stops[index + 1] || route.stops[index];
+          // Mark all previous stops up to this stop as reached as well
+          for (let p = 0; p <= index; p++) {
+            if (!reachedStopIds.includes(route.stops[p].id)) {
+              reachedStopIds.push(route.stops[p].id);
+            }
+          }
         }
       });
 
-      // If no direct geofence hit, identify closest approaching stop
-      if (!currentStop) {
-        let minDistance = Infinity;
-        let closestIdx = 0;
-        route.stops.forEach((stop, idx) => {
-          const dist = GeoEngine.getDistanceMeters(lat, lng, stop.lat, stop.lng);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closestIdx = idx;
-          }
-        });
-        currentStop = route.stops[closestIdx];
-        nextStop = route.stops[closestIdx + 1] || route.stops[route.stops.length - 1];
+      // 2. Determine last confirmed reached stop
+      let lastReachedIdx = -1;
+      for (let i = route.stops.length - 1; i >= 0; i--) {
+        if (reachedStopIds.includes(route.stops[i].id)) {
+          lastReachedIdx = i;
+          break;
+        }
+      }
+
+      if (directHitIdx !== -1) {
+        // Bus is at a stop right now
+        currentStop = route.stops[directHitIdx];
+        nextStop = route.stops[directHitIdx + 1] || route.stops[directHitIdx];
+      } else if (lastReachedIdx !== -1) {
+        // Bus has left lastReachedIdx and is en-route towards the upcoming stop
+        currentStop = route.stops[lastReachedIdx];
+        nextStop = route.stops[lastReachedIdx + 1] || route.stops[lastReachedIdx];
+      } else {
+        // Bus hasn't reached the first stop yet; approaching stop 0
+        currentStop = route.stops[0];
+        nextStop = route.stops[0];
       }
 
       const etaObj = GeoEngine.calculateETA(lat, lng, speed, nextStop);
@@ -950,8 +964,8 @@ class BusController {
       etaMinutes = etaObj.minutes;
 
       // Calculate approximate route completion percentage
-      const currentIdx = route.stops.findIndex((s) => s.id === currentStop.id);
-      progressPct = route.stops.length > 1 ? Math.round((currentIdx / (route.stops.length - 1)) * 100) : 0;
+      const currentIdx = currentStop ? route.stops.findIndex((s) => s.id === currentStop.id) : 0;
+      progressPct = route.stops.length > 1 ? Math.round((Math.max(0, currentIdx) / (route.stops.length - 1)) * 100) : 0;
     }
 
     const updatePayload = {

@@ -310,7 +310,14 @@ class WhereIsMyBusController {
 
     if (liveSpeed) liveSpeed.textContent = `${bus.speed || 0} km/h`;
     if (nextStop) nextStop.textContent = bus.nextStopName || 'N/A';
-    if (nextEta) nextEta.textContent = `${bus.etaMinutes || 0} min (${bus.distanceToNextKm || 0} km)`;
+    if (nextEta) {
+      const isArrivingNext = bus.etaMinutes <= 1 || (bus.distanceToNextKm != null && bus.distanceToNextKm <= 0.45);
+      if (isArrivingNext && bus.isTripActive) {
+        nextEta.innerHTML = `<span style="color: #2563eb; font-weight: 800;">Arriving Now ⚡</span> (${bus.distanceToNextKm || 0} km)`;
+      } else {
+        nextEta.textContent = `${bus.etaMinutes || 0} min (${bus.distanceToNextKm || 0} km)`;
+      }
+    }
     if (bearingTip) bearingTip.textContent = `Heading: ${Math.round(bus.bearing || 0)}° • Speed: ${bus.speed || 0} km/h • Crowd: ${currentCrowd}`;
 
     // Progress Bar
@@ -334,39 +341,96 @@ class WhereIsMyBusController {
     const container = document.getElementById('wimbStopsTimeline');
     if (!container) return;
 
-    const reachedStopIds = bus.reachedStopIds || [];
-    const currentStopIdx = route.stops.findIndex((s) => s.id === bus.currentStopId);
-    const nextStopIdx = route.stops.findIndex((s) => s.id === bus.nextStopId);
+    const reachedStopIds = Array.isArray(bus.reachedStopIds) ? [...bus.reachedStopIds] : [];
 
-    container.innerHTML = route.stops.map((stop, index) => {
-      const isReached = reachedStopIds.includes(stop.id) || index < currentStopIdx;
-      const isNextTarget = stop.id === bus.nextStopId;
-      const isCurrent = stop.id === bus.currentStopId;
+    // Instant physical proximity check: if bus enters within geofence, register reached at that exact second
+    route.stops.forEach((stop) => {
+      const dMeters = GeoEngine.getDistanceMeters(bus.lat, bus.lng, stop.lat, stop.lng);
+      if (dMeters <= GeoEngine.GEOFENCE_RADIUS_METERS) {
+        if (!reachedStopIds.includes(stop.id)) {
+          reachedStopIds.push(stop.id);
+          if (Array.isArray(bus.reachedStopIds) && !bus.reachedStopIds.includes(stop.id)) {
+            bus.reachedStopIds.push(stop.id);
+          }
+        }
+      }
+    });
+
+    let currentStopIdx = -1;
+    for (let i = route.stops.length - 1; i >= 0; i--) {
+      if (reachedStopIds.includes(route.stops[i].id)) {
+        currentStopIdx = i;
+        break;
+      }
+    }
+
+    // Determine upcoming target stop index
+    let targetStopIdx = route.stops.findIndex((s) => !reachedStopIds.includes(s.id));
+    if (targetStopIdx === -1 && route.stops.length > 0) {
+      targetStopIdx = route.stops.length - 1; // Destination reached
+    }
+
+    const htmlParts = [];
+
+    route.stops.forEach((stop, index) => {
+      const distMeters = GeoEngine.getDistanceMeters(bus.lat, bus.lng, stop.lat, stop.lng);
+      const isPhysicallyReached = distMeters <= GeoEngine.GEOFENCE_RADIUS_METERS;
+      const isReached = reachedStopIds.includes(stop.id) || (currentStopIdx !== -1 && index <= currentStopIdx) || isPhysicallyReached;
+      const isNextTarget = (index === targetStopIdx);
 
       // Distance and ETA to this stop
-      const etaObj = GeoEngine.calculateETA(bus.lat, bus.lng, bus.speed, stop, Math.max(0, index - currentStopIdx));
-      const distKm = GeoEngine.getDistanceKm(bus.lat, bus.lng, stop.lat, stop.lng);
+      const etaObj = GeoEngine.calculateETA(bus.lat, bus.lng, bus.speed, stop, Math.max(0, index - (currentStopIdx !== -1 ? currentStopIdx : 0)));
+      const distKm = Math.round(GeoEngine.getDistanceKm(bus.lat, bus.lng, stop.lat, stop.lng) * 10) / 10;
+      const isArriving = isNextTarget && !isReached && (etaObj.isArriving || distMeters <= GeoEngine.APPROACHING_RADIUS_METERS || distKm <= 0.45);
+
+      // "Where Is My Train" Style Live Bus Indicator on Route Track:
+      // Insert directly on the track approaching the target stop
+      if (isNextTarget && bus.isTripActive && !isPhysicallyReached) {
+        const badgeDistText = isArriving ? '⚡ Arriving Now' : `${distKm} km to ${stop.name}`;
+        htmlParts.push(`
+          <div class="timeline-in-transit-row">
+            <div class="transit-track-col">
+              <div class="transit-track-line-top"></div>
+              <div class="transit-bus-beacon" title="BUS ${bus.busNumber} • ${bus.speed || 0} km/h">
+                <i data-lucide="bus"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg></i>
+              </div>
+              <div class="transit-track-line-bottom"></div>
+            </div>
+            <div class="transit-pill-col">
+              <div class="transit-live-badge">
+                <span class="live-pulse-dot"></span>
+                <span class="badge-bus-num">BUS ${bus.busNumber}</span>
+                <span class="badge-sep">•</span>
+                <span class="badge-speed">${bus.speed || 0} km/h</span>
+                <span class="badge-sep">•</span>
+                <span class="badge-dist">${badgeDistText}</span>
+              </div>
+            </div>
+          </div>
+        `);
+      }
 
       let nodeClass = 'stop-timeline-node';
       if (isReached) nodeClass += ' reached';
       if (isNextTarget) nodeClass += ' next-target';
 
       let indicatorContent = stop.sequence;
-      if (isReached) indicatorContent = '<i data-lucide="check" style="width: 18px; height: 18px; stroke-width: 3;"></i>';
-      else if (isNextTarget) indicatorContent = '<i data-lucide="map-pin" style="width: 18px; height: 18px;"></i>';
-
-      // If the bus is between this stop and the next stop, display the floating moving bus marker on the timeline track!
-      let movingBusOverlay = '';
-      if (isCurrent && nextStopIdx > currentStopIdx) {
-        movingBusOverlay = `
-          <div class="timeline-live-bus-floater" style="top: 48px;">
-            <i data-lucide="bus"></i>
-            <span>BUS ${bus.busNumber} • ${bus.speed || 0} km/h • ${bus.distanceToNextKm || 0} km remaining</span>
-          </div>
-        `;
+      if (isReached) {
+        indicatorContent = '<i data-lucide="check" style="width: 18px; height: 18px; stroke-width: 3;"></i>';
+      } else if (isNextTarget) {
+        indicatorContent = '<i data-lucide="map-pin" style="width: 18px; height: 18px;"></i>';
       }
 
-      return `
+      let badgeHtml = '';
+      if (isReached) {
+        badgeHtml = `<span class="stop-eta-badge reached">Reached ✅</span>`;
+      } else if (isArriving) {
+        badgeHtml = `<span class="stop-eta-badge arriving">⚡ Arriving Now</span>`;
+      } else {
+        badgeHtml = `<span class="stop-eta-badge upcoming">${etaObj.text}</span>`;
+      }
+
+      htmlParts.push(`
         <div class="${nodeClass}">
           <div class="stop-indicator-circle">
             ${indicatorContent}
@@ -374,20 +438,19 @@ class WhereIsMyBusController {
           <div class="stop-details-col">
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
               <div class="stop-node-title">${stop.name}</div>
-              <span class="stop-eta-badge ${isReached ? 'reached' : 'upcoming'}">
-                ${isReached ? 'Reached ✅' : etaObj.text}
-              </span>
+              ${badgeHtml}
             </div>
             <div class="stop-node-meta">
               <span>Stop #${stop.sequence}</span>
-              ${!isReached ? `<span>• ${Math.round(distKm * 10) / 10} km away</span>` : ''}
+              ${!isReached ? `<span>• ${distKm} km away</span>` : ''}
               ${isNextTarget ? '<span style="color: #2563eb; font-weight: 700;">• Next Approaching Stop</span>' : ''}
             </div>
           </div>
-          ${movingBusOverlay}
         </div>
-      `;
-    }).join('');
+      `);
+    });
+
+    container.innerHTML = htmlParts.join('');
 
     if (window.lucide) {
       lucide.createIcons();
@@ -398,24 +461,74 @@ class WhereIsMyBusController {
     const tbody = document.getElementById('wimbEtaTableBody');
     if (!tbody) return;
 
-    const reachedStopIds = bus.reachedStopIds || [];
-    const currentStopIdx = route.stops.findIndex((s) => s.id === bus.currentStopId);
+    const reachedStopIds = Array.isArray(bus.reachedStopIds) ? [...bus.reachedStopIds] : [];
+
+    // Instant physical proximity check: if bus enters within geofence, register reached at that exact second
+    route.stops.forEach((stop) => {
+      const dMeters = GeoEngine.getDistanceMeters(bus.lat, bus.lng, stop.lat, stop.lng);
+      if (dMeters <= GeoEngine.GEOFENCE_RADIUS_METERS) {
+        if (!reachedStopIds.includes(stop.id)) {
+          reachedStopIds.push(stop.id);
+          if (Array.isArray(bus.reachedStopIds) && !bus.reachedStopIds.includes(stop.id)) {
+            bus.reachedStopIds.push(stop.id);
+          }
+        }
+      }
+    });
+
+    let currentStopIdx = -1;
+    for (let i = route.stops.length - 1; i >= 0; i--) {
+      if (reachedStopIds.includes(route.stops[i].id)) {
+        currentStopIdx = i;
+        break;
+      }
+    }
+
+    // Determine upcoming target stop index
+    let targetStopIdx = route.stops.findIndex((s) => !reachedStopIds.includes(s.id));
+    if (targetStopIdx === -1 && route.stops.length > 0) {
+      targetStopIdx = route.stops.length - 1;
+    }
 
     tbody.innerHTML = route.stops.map((stop, index) => {
-      const isReached = reachedStopIds.includes(stop.id) || index < currentStopIdx;
-      const etaObj = GeoEngine.calculateETA(bus.lat, bus.lng, bus.speed, stop, Math.max(0, index - currentStopIdx));
+      const distMeters = GeoEngine.getDistanceMeters(bus.lat, bus.lng, stop.lat, stop.lng);
+      const isPhysicallyReached = distMeters <= GeoEngine.GEOFENCE_RADIUS_METERS;
+      const isReached = reachedStopIds.includes(stop.id) || (currentStopIdx !== -1 && index <= currentStopIdx) || isPhysicallyReached;
+
+      const etaObj = GeoEngine.calculateETA(bus.lat, bus.lng, bus.speed, stop, Math.max(0, index - (currentStopIdx !== -1 ? currentStopIdx : 0)));
       const distKm = Math.round(GeoEngine.getDistanceKm(bus.lat, bus.lng, stop.lat, stop.lng) * 10) / 10;
+      
+      const isTarget = (index === targetStopIdx);
+      const isArriving = !isReached && isTarget && (etaObj.isArriving || distMeters <= GeoEngine.APPROACHING_RADIUS_METERS || distKm <= 0.45);
+
+      // Status Column (Requirement 1: When Live ETA shows Arriving Now, Status also shows Arriving Now!)
+      let statusHtml = '';
+      if (isReached) {
+        statusHtml = `<span class="status-pill green" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">✅ Reached</span>`;
+      } else if (isArriving) {
+        statusHtml = `<span class="status-pill blue arriving" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">⚡ Arriving Now</span>`;
+      } else if (isTarget) {
+        statusHtml = `<span class="status-pill amber" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">⚡ Next</span>`;
+      } else {
+        statusHtml = `<span class="status-pill amber" style="font-size: 0.72rem; padding: 0.15rem 0.5rem; opacity: 0.85;">🚏 Upcoming</span>`;
+      }
+
+      // Live ETA Column
+      let etaDisplay = '';
+      if (isReached) {
+        etaDisplay = `<strong style="color: #059669;">Reached</strong>`;
+      } else if (isArriving) {
+        etaDisplay = `<strong style="color: #2563eb;">Arriving Now ⚡</strong>`;
+      } else {
+        etaDisplay = `<strong style="color: #2563eb;">${etaObj.text}</strong>`;
+      }
 
       return `
         <tr>
           <td><strong>${stop.name}</strong></td>
           <td>${isReached ? '0 km' : `${distKm} km`}</td>
-          <td><strong style="color: ${isReached ? '#059669' : '#2563eb'};">${isReached ? 'Reached' : etaObj.text}</strong></td>
-          <td>
-            <span class="status-pill ${isReached ? 'green' : 'amber'}" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">
-              ${isReached ? '✅ Reached' : (stop.id === bus.nextStopId ? '⚡ Next' : '🚌 Upcoming')}
-            </span>
-          </td>
+          <td>${etaDisplay}</td>
+          <td>${statusHtml}</td>
         </tr>
       `;
     }).join('');
