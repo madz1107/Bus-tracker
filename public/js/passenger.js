@@ -75,7 +75,7 @@ class PassengerController {
 
     routeSelect.innerHTML = window.appState.routes.map((r) => `
       <option value="${r.id}" ${r.id === this.selectedRouteId ? 'selected' : ''}>
-        ${r.name}
+        ${window.I18n ? window.I18n.getRouteName(r.name) : r.name}
       </option>
     `).join('');
 
@@ -88,10 +88,12 @@ class PassengerController {
     // Also build filter pills
     const pillsContainer = document.getElementById('routeFilterPills');
     if (pillsContainer) {
+      const allRoutesLabel = window.I18n && window.I18n.getLanguage() === 'ta' ? 'அனைத்து வழித்தடங்கள்' : 'All Routes';
+      const routeWord = window.I18n && window.I18n.getLanguage() === 'ta' ? 'வழித்தடம்' : 'Route';
       pillsContainer.innerHTML = `
-        <button class="pill ${this.activeFilter === 'all' ? 'active' : ''}" onclick="passenger.filterByRoute('all')">All Routes</button>
+        <button class="pill ${this.activeFilter === 'all' ? 'active' : ''}" onclick="passenger.filterByRoute('all')">${allRoutesLabel}</button>
         ${window.appState.routes.map((r) => `
-          <button class="pill ${this.activeFilter === r.id ? 'active' : ''}" onclick="passenger.filterByRoute('${r.id}')">Route ${r.code}</button>
+          <button class="pill ${this.activeFilter === r.id ? 'active' : ''}" onclick="passenger.filterByRoute('${r.id}')">${routeWord} ${r.code}</button>
         `).join('')}
       `;
     }
@@ -103,11 +105,14 @@ class PassengerController {
 
     this.syncSelectedRoute();
 
+    const noStopsText = window.I18n ? window.I18n.t('noStopsAvailable') : 'No stops available';
+    const allStopsText = window.I18n ? window.I18n.t('allStops') : 'All Stops';
+
     const route = window.appState.getRouteById(this.selectedRouteId);
     if (!route || !route.stops || route.stops.length === 0) {
-      stopSelect.innerHTML = '<option value="">No stops available</option>';
+      stopSelect.innerHTML = `<option value="">${noStopsText}</option>`;
       const stopDisplay = document.getElementById('selectedStopNameDisplay');
-      if (stopDisplay) stopDisplay.textContent = 'All Stops';
+      if (stopDisplay) stopDisplay.textContent = allStopsText;
       return;
     }
 
@@ -117,16 +122,21 @@ class PassengerController {
       this.selectedStopId = route.stops[0].id;
     }
 
-    stopSelect.innerHTML = route.stops.map((s) => `
-      <option value="${s.id}" ${s.id === this.selectedStopId ? 'selected' : ''}>
-        Stop #${s.sequence || 1}: ${s.name}
-      </option>
-    `).join('');
+    const stopLabel = window.I18n && window.I18n.getLanguage() === 'ta' ? 'நிறுத்தம்' : 'Stop';
+
+    stopSelect.innerHTML = route.stops.map((s) => {
+      const stopName = window.I18n ? window.I18n.getStopName(s.name) : s.name;
+      return `
+        <option value="${s.id}" ${s.id === this.selectedStopId ? 'selected' : ''}>
+          ${stopLabel} #${s.sequence || 1}: ${stopName}
+        </option>
+      `;
+    }).join('');
 
     const stopDisplay = document.getElementById('selectedStopNameDisplay');
     const selectedStop = route.stops.find((s) => s.id === this.selectedStopId);
     if (stopDisplay && selectedStop) {
-      stopDisplay.textContent = selectedStop.name;
+      stopDisplay.textContent = window.I18n ? window.I18n.getStopName(selectedStop.name) : selectedStop.name;
     }
   }
 
@@ -136,9 +146,11 @@ class PassengerController {
 
     this.syncSelectedRoute();
 
+    const anyDestText = window.I18n ? window.I18n.t('anyDestination') : 'Any Destination';
+
     const route = window.appState.getRouteById(this.selectedRouteId);
     if (!route || !route.stops || route.stops.length === 0) {
-      destSelect.innerHTML = '<option value="">Any Destination</option>';
+      destSelect.innerHTML = `<option value="">${anyDestText}</option>`;
       return;
     }
 
@@ -155,18 +167,22 @@ class PassengerController {
       this.selectedDestId = null;
     }
 
-    destSelect.innerHTML = '<option value="">Any Destination</option>' + availableDestinations.map((s) => {
+    const stopLabel = window.I18n && window.I18n.getLanguage() === 'ta' ? 'நிறுத்தம்' : 'Stop';
+    const freeWomenText = window.I18n ? window.I18n.t('freeWomenTravelFull') : '₹0 FREE - Women Free Travel';
+
+    destSelect.innerHTML = `<option value="">${anyDestText}</option>` + availableDestinations.map((s) => {
       let priceText = '';
       if (route.fareMatrix) {
         const priceKey = `${this.selectedStopId}_${s.id}`;
         const price = route.fareMatrix[priceKey];
         if (price !== undefined) {
-          priceText = this.gender === 'female' ? ` (₹0 FREE - Women Free Travel)` : ` (₹${price})`;
+          priceText = this.gender === 'female' ? ` (${freeWomenText})` : ` (₹${price})`;
         }
       }
+      const destStopName = window.I18n ? window.I18n.getStopName(s.name) : s.name;
       return `
         <option value="${s.id}" ${s.id === this.selectedDestId ? 'selected' : ''}>
-          Stop #${s.sequence || 1}: ${s.name}${priceText}
+          ${stopLabel} #${s.sequence || 1}: ${destStopName}${priceText}
         </option>
       `;
     }).join('');
@@ -190,7 +206,7 @@ class PassengerController {
     const selectedStop = route ? route.stops.find((s) => s.id === this.selectedStopId) : null;
     const stopDisplay = document.getElementById('selectedStopNameDisplay');
     if (stopDisplay && selectedStop) {
-      stopDisplay.textContent = selectedStop.name;
+      stopDisplay.textContent = window.I18n ? window.I18n.getStopName(selectedStop.name) : selectedStop.name;
     }
     this.populateDestDropdown();
     this.render();
@@ -406,6 +422,7 @@ class PassengerController {
     if (!route) return;
 
     const targetStop = route.stops.find((s) => s.id === this.selectedStopId) || route.stops[0];
+    const targetStopName = window.I18n ? window.I18n.getStopName(targetStop.name) : targetStop.name;
 
     // If destination is selected, validate stop ordering
     let isValidRoute = true;
@@ -424,23 +441,33 @@ class PassengerController {
       const price = route.fareMatrix[priceKey];
       if (price !== undefined) {
         const destStop = route.stops.find(s => s.id === this.selectedDestId);
+        const destStopName = destStop ? (window.I18n ? window.I18n.getStopName(destStop.name) : destStop.name) : '';
+        const ticketTitle = window.I18n ? window.I18n.t('ticketPriceInfo') : 'Ticket Price Info';
+        const fromLabel = window.I18n ? window.I18n.t('ticketFrom') : 'From';
+        const toLabel = window.I18n ? window.I18n.t('ticketTo') : 'to';
+        const vetriBusesLabel = window.I18n ? window.I18n.t('ticketVetriBusLabel') : 'Vetri Payanam Buses:';
+        const stdBusesLabel = window.I18n ? window.I18n.t('ticketStandardBusLabel') : 'Standard Buses:';
+        const freeWomenFull = window.I18n ? window.I18n.t('freeWomenTravelFull') : '₹0 FREE (Women Free Travel)';
+        const freeTag = window.I18n ? window.I18n.t('freeWomenTravelTag') : '(Women Free Travel)';
+        const freeFareText = window.I18n ? window.I18n.t('ticketFareFreeText') : '₹0 FREE';
+
         if (this.gender === 'female') {
           ticketPriceHtml = `
             <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
               <div>
-                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">Ticket Price Info</div>
+                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">${ticketTitle}</div>
                 <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
-                  From <strong>${targetStop.name}</strong> to <strong>${destStop.name}</strong>
+                  ${fromLabel} <strong>${targetStopName}</strong> ${toLabel} <strong>${destStopName}</strong>
                 </div>
                 <div style="font-size: 0.82rem; color: #047857; margin-top: 4px;">
-                  Vetri Payanam Buses: <strong style="color: #059669;">₹0 FREE (Women Free Travel)</strong> • Standard Buses: <strong>₹${price}</strong>
+                  ${vetriBusesLabel} <strong style="color: #059669;">${freeWomenFull}</strong> • ${stdBusesLabel} <strong>₹${price}</strong>
                 </div>
               </div>
               <div style="text-align: right;">
                 <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
-                  ₹0 FREE
+                  ${freeFareText}
                 </div>
-                <div style="font-size: 0.72rem; font-weight: 700; color: #065f46;">(Women Free Travel)</div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: #065f46;">${freeTag}</div>
               </div>
             </div>
           `;
@@ -448,9 +475,9 @@ class PassengerController {
           ticketPriceHtml = `
             <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
               <div>
-                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">Ticket Price Info</div>
+                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">${ticketTitle}</div>
                 <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
-                  From <strong>${targetStop.name}</strong> to <strong>${destStop.name}</strong>
+                  ${fromLabel} <strong>${targetStopName}</strong> ${toLabel} <strong>${destStopName}</strong>
                 </div>
               </div>
               <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
@@ -476,6 +503,11 @@ class PassengerController {
       const lowCrowdBus = ranked.find((item) => (item.crowdLevel || 'Moderate').toLowerCase() === 'low');
 
       if (lowCrowdBus && firstBus && lowCrowdBus.bus.id !== firstBus.bus.id && (firstBus.crowdLevel || 'Moderate').toLowerCase() !== 'low') {
+        const smartTitle = window.I18n ? window.I18n.t('smartTipTitle') : 'Smart Travel Tip: Low Crowd Bus on Same Route!';
+        const smartSeats = window.I18n ? window.I18n.t('smartTipSeats') : 'has 🟢 Seats Available (Low Crowd) arriving in';
+        const smartPeaceful = window.I18n ? window.I18n.t('smartTipPeaceful') : 'Take this bus for a peaceful ride!';
+        const smartTrackBtn = window.I18n ? window.I18n.t('smartTipTrackBtn') : 'Track BUS';
+
         smartSuggestionHtml = `
           <div class="smart-crowd-alert" style="grid-column: 1 / -1;">
             <div class="smart-crowd-alert-left">
@@ -484,15 +516,15 @@ class PassengerController {
               </div>
               <div>
                 <div class="smart-crowd-title">
-                  <span>Smart Travel Tip: Low Crowd Bus on Same Route!</span>
+                  <span>${smartTitle}</span>
                 </div>
                 <div class="smart-crowd-desc">
-                  <strong>BUS ${lowCrowdBus.busNumber}</strong> has <strong>🟢 Seats Available (Low Crowd)</strong> arriving in <strong>${lowCrowdBus.etaText}</strong> (${lowCrowdBus.distanceKm} km away). Take this bus for a peaceful ride!
+                  <strong>BUS ${lowCrowdBus.busNumber}</strong> ${smartSeats} <strong>${lowCrowdBus.etaText}</strong> (${lowCrowdBus.distanceKm} km). ${smartPeaceful}
                 </div>
               </div>
             </div>
             <button class="smart-crowd-btn" onclick="passenger.trackSelectedBus('${lowCrowdBus.bus.id}')">
-              <i data-lucide="navigation"></i> Track BUS ${lowCrowdBus.busNumber}
+              <i data-lucide="navigation"></i> ${smartTrackBtn} ${lowCrowdBus.busNumber}
             </button>
           </div>
         `;
@@ -503,6 +535,23 @@ class PassengerController {
         const crowdClass = crowdLvl.toLowerCase();
         const isLowCrowdRecommended = lowCrowdBus && item.bus.id === lowCrowdBus.bus.id && ranked.length > 1;
         const isVetriBus = item.bus && item.bus.isVetriPayanam;
+
+        const crowdTranslated = window.I18n ? window.I18n.t('crowd' + crowdLvl, crowdLvl) : crowdLvl;
+        const crowdWord = window.I18n ? window.I18n.t('crowd') : 'Crowd';
+        const vetriBadgeText = window.I18n ? window.I18n.t('vetriPayanamFree') : 'Vetri Payanam • FREE';
+        const comfortText = window.I18n ? window.I18n.t('comfortRecommended') : 'Recommended for Comfort • Seats Available';
+        const arrivalAtText = window.I18n ? window.I18n.t('estimatedArrivalAt') : 'Estimated Arrival at';
+        const driverNoticeText = window.I18n ? window.I18n.t('driverNotice') : 'Driver Notice:';
+        const distLabel = window.I18n ? window.I18n.t('distanceToStop') : 'Distance to Stop';
+        const speedLabel = window.I18n ? window.I18n.t('movingSpeed') : 'Moving Speed';
+        const curStopLabel = window.I18n ? window.I18n.t('currentStop') : 'Current Stop';
+        const nextStopLabel = window.I18n ? window.I18n.t('nextStop') : 'Next Stop';
+        const ticketFareLabel = window.I18n ? window.I18n.t('ticketFare') : 'Ticket Fare';
+        const curStopVal = item.currentStopName ? (window.I18n ? window.I18n.getStopName(item.currentStopName) : item.currentStopName) : (window.I18n ? window.I18n.t('onRoute') : 'On Route');
+        const nextStopVal = item.nextStopName ? (window.I18n ? window.I18n.getStopName(item.nextStopName) : item.nextStopName) : (window.I18n ? window.I18n.t('enRoute') : 'En route');
+        const fareVal = isVetriBus ? (window.I18n ? window.I18n.t('ticketFareFreeText') : '₹0 FREE') : (window.I18n ? window.I18n.t('standardFare') : 'Standard Fare');
+        const wimbBtnText = window.I18n ? window.I18n.t('whereIsMyBusBtn') : 'Where Is My Bus';
+        const alarmBtnText = window.I18n ? window.I18n.t('alarmBtn') : 'Alarm';
 
         return `
         <div class="priority-card ${item.rankClass}">
@@ -515,14 +564,14 @@ class PassengerController {
                 ${this.gender === 'female' && isVetriBus ? `
                   <div style="margin-top: 4px;">
                     <span class="badge" style="display: inline-block; background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
-                      Vetri Payanam • FREE
+                      ${vetriBadgeText}
                     </span>
                   </div>
                 ` : ''}
               </div>
               <div style="text-align: right;">
                 <span class="crowd-pill ${crowdClass}">
-                  <span class="dot" style="background: currentColor;"></span> ${crowdLvl} Crowd
+                  <span class="dot" style="background: currentColor;"></span> ${crowdTranslated} ${crowdWord}
                 </span>
                 <div class="bus-meta-title" style="margin-top: 4px;">${item.regNumber}</div>
               </div>
@@ -530,44 +579,44 @@ class PassengerController {
 
             ${isLowCrowdRecommended ? `
               <div class="comfort-recommend-chip">
-                <i data-lucide="thumbs-up" style="width: 12px; height: 12px;"></i> Recommended for Comfort • Seats Available
+                <i data-lucide="thumbs-up" style="width: 12px; height: 12px;"></i> ${comfortText}
               </div>
             ` : ''}
 
             <!-- Big ETA Callout -->
             <div class="priority-eta-box">
-              <div class="eta-label-tag">Estimated Arrival at ${targetStop.name}</div>
+              <div class="eta-label-tag">${arrivalAtText} ${targetStopName}</div>
               <div class="eta-time-val">${item.etaText}</div>
             </div>
 
             <!-- Key Telemetry Metrics -->
             ${item.bus.delayAlert ? `
               <div style="background: #fef3c7; color: #92400e; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #fde68a; display: flex; align-items: center; gap: 6px;">
-                ⚠️ <span>Driver Notice: <strong>${item.bus.delayAlert}</strong></span>
+                ⚠️ <span>${driverNoticeText} <strong>${item.bus.delayAlert}</strong></span>
               </div>
             ` : ''}
             <div class="priority-metrics-row">
               <div class="metric-item">
-                <span class="lbl">Distance to Stop</span>
+                <span class="lbl">${distLabel}</span>
                 <span class="val">${item.distanceKm} km</span>
               </div>
               <div class="metric-item">
-                <span class="lbl">Moving Speed</span>
+                <span class="lbl">${speedLabel}</span>
                 <span class="val text-blue">${item.speed} km/h</span>
               </div>
               <div class="metric-item">
-                <span class="lbl">Current Stop</span>
-                <span class="val">${item.currentStopName || 'On Route'}</span>
+                <span class="lbl">${curStopLabel}</span>
+                <span class="val">${curStopVal}</span>
               </div>
               <div class="metric-item">
-                <span class="lbl">Next Stop</span>
-                <span class="val text-emerald">${item.nextStopName || 'En route'}</span>
+                <span class="lbl">${nextStopLabel}</span>
+                <span class="val text-emerald">${nextStopVal}</span>
               </div>
               ${this.gender === 'female' ? `
                 <div class="metric-item">
-                  <span class="lbl">Ticket Fare</span>
+                  <span class="lbl">${ticketFareLabel}</span>
                   <span class="val ${isVetriBus ? 'text-emerald' : ''}" style="font-weight: 700;">
-                    ${isVetriBus ? '₹0 FREE' : 'Standard Fare'}
+                    ${fareVal}
                   </span>
                 </div>
               ` : ''}
@@ -576,19 +625,20 @@ class PassengerController {
 
           <div style="display: flex; gap: 8px; margin-top: 1rem;">
             <button class="btn btn-primary" style="flex: 1;" onclick="passenger.trackSelectedBus('${item.bus.id}')">
-              <i data-lucide="navigation"></i> Where Is My Bus
+              <i data-lucide="navigation"></i> ${wimbBtnText}
             </button>
             <button class="btn btn-warning" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 0.6rem 0.9rem; display: flex; align-items: center; gap: 4px;" onclick="window.proximityAlarm.openAlarmModal('${item.bus.id}', '${targetStop.id}')" title="Wake Me Up Alarm">
-              <i data-lucide="bell" style="width: 16px; height: 16px;"></i> <span>Alarm</span>
+              <i data-lucide="bell" style="width: 16px; height: 16px;"></i> <span>${alarmBtnText}</span>
             </button>
           </div>
         </div>
       `;
       }).join('');
     } else {
+      const emptyMsg = window.I18n ? window.I18n.t('noActiveBusesSegment') : 'No active buses currently operating on this route segment.';
       cardsHtml = `
         <div style="grid-column: 1 / -1; padding: 2rem; background: #fff; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
-          <p style="color: #64748b; font-size: 0.95rem;">No active buses currently operating on this route segment.</p>
+          <p style="color: #64748b; font-size: 0.95rem;">${emptyMsg}</p>
         </div>
       `;
     }

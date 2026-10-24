@@ -9,7 +9,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Leaflet CSS for Map Rendering -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -182,12 +182,12 @@
     <nav class="portal-nav" id="portalNav">
       <button class="nav-tab active" data-portal="passenger" id="navTabPassenger" onclick="app.navigate('passenger')">
         <i data-lucide="user"></i>
-        <span>Passenger</span>
+        <span data-i18n="navPassenger">Passenger</span>
       </button>
       <button class="nav-tab" data-portal="where-is-my-bus" id="navTabWimb" onclick="app.navigate('where-is-my-bus')" style="display: none;">
         <i data-lucide="map-pin"></i>
-        <span>Where Is My Bus?</span>
-        <span class="hot-badge">LIVE</span>
+        <span data-i18n="navWimb">Where Is My Bus?</span>
+        <span class="hot-badge" data-i18n="liveBadge">LIVE</span>
       </button>
       <button class="nav-tab" data-portal="Bus" id="navTabBus" onclick="app.navigate('Bus')">
         <i data-lucide="bus"></i>
@@ -199,13 +199,23 @@
       </button>
     </nav>
 
-    <!-- User Auth & Gender Controls -->
+    <!-- User Auth, Language & Gender Controls -->
     <div class="header-right">
+      <!-- Language Switcher (English / தமிழ்) -->
+      <div class="lang-toggle-wrap" id="passengerLangToggle" title="Language / மொழி">
+        <button type="button" class="lang-btn active" id="langBtnEn" onclick="app.setLanguage('en')">
+          English
+        </button>
+        <button type="button" class="lang-btn" id="langBtnTa" onclick="app.setLanguage('ta')">
+          தமிழ்
+        </button>
+      </div>
+
       <div class="gender-toggle-wrap" id="passengerGenderToggle" title="Passenger Gender / Category">
-        <button type="button" class="gender-btn active" id="genderBtnMale" onclick="passenger.setGender('male')">
+        <button type="button" class="gender-btn active" id="genderBtnMale" onclick="passenger.setGender('male')" data-i18n="male">
           Male
         </button>
-        <button type="button" class="gender-btn" id="genderBtnFemale" onclick="passenger.setGender('female')">
+        <button type="button" class="gender-btn" id="genderBtnFemale" onclick="passenger.setGender('female')" data-i18n="female">
           Female
         </button>
       </div>
@@ -228,15 +238,15 @@
     <section id="portalPassenger" class="portal-view active">
       <div class="passenger-hero">
         <button class="btn btn-outline" style="position: absolute; top: 1.5rem; right: 1.5rem; background: white; z-index: 10;" onclick="passenger.findNearestStop()">
-          <i data-lucide="crosshair"></i> Find Nearest Stop
+          <i data-lucide="crosshair"></i> <span data-i18n="findNearestStop">Find Nearest Stop</span>
         </button>
         <div class="hero-content">
           <div class="hero-chip">
             <i data-lucide="radio" class="icon-pulse"></i>
-            <span>Tirunelveli Real-Time GPS Connected</span>
+            <span data-i18n="heroChip">Tirunelveli Real-Time GPS Connected</span>
           </div>
-          <h1 class="hero-title">Track City Buses in Real Time</h1>
-          <p class="hero-subtitle">Live real-time transit tracking for active city routes. See which bus arrives first with smart live ETA ranking.</p>
+          <h1 class="hero-title" data-i18n="heroTitle">Track City Buses in Real Time</h1>
+          <p class="hero-subtitle" data-i18n="heroSubtitle">Live real-time transit tracking for active city routes. See which bus arrives first with smart live ETA ranking.</p>
           
           <!-- Favorite Routes & Stops ("My Daily Commute") Section -->
           <div class="favorite-commutes-section" id="favoriteCommutesSection" style="display: none;">
@@ -246,12 +256,12 @@
                   <i data-lucide="star" style="color: #f59e0b; fill: #f59e0b; width: 18px; height: 18px;"></i>
                 </div>
                 <div>
-                  <h2 class="fav-title">⭐ My Daily Commute</h2>
-                  <p class="fav-subtitle">Starred routes & stops • 1-Tap instant live radar tracking</p>
+                  <h2 class="fav-title" data-i18n="myDailyCommute">⭐ My Daily Commute</h2>
+                  <p class="fav-subtitle" data-i18n="myDailyCommuteSub">Starred routes & stops • 1-Tap instant live radar tracking</p>
                 </div>
               </div>
               <button class="btn btn-sm btn-outline fav-add-btn" onclick="passenger.openSaveFavoriteModal()" title="Add Custom Daily Commute">
-                <i data-lucide="plus" style="width: 15px; height: 15px;"></i> Add Commute
+                <i data-lucide="plus" style="width: 15px; height: 15px;"></i> <span data-i18n="addCommute">Add Commute</span>
               </button>
             </div>
             
@@ -264,48 +274,48 @@
           <div class="search-card" style="margin-bottom: 1.5rem;">
             <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
               <h3 style="margin-bottom: 0; color: #0f172a; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
-                <i data-lucide="route" style="color: #2563eb; width: 18px; height: 18px;"></i> 1. Track by Route & Stop
+                <i data-lucide="route" style="color: #2563eb; width: 18px; height: 18px;"></i> <span data-i18n="trackByRoute">1. Track by Route & Stop</span>
               </h3>
               <button id="btnStarCurrentCommute" class="btn btn-xs btn-outline star-commute-btn" onclick="passenger.toggleFavoriteCurrentCommute()" title="Star this route & stop as Daily Commute">
-                <i data-lucide="star" style="width: 14px; height: 14px;"></i> <span>Star Commute</span>
+                <i data-lucide="star" style="width: 14px; height: 14px;"></i> <span data-i18n="starCommute">Star Commute</span>
               </button>
             </div>
             <div class="search-field">
-              <label for="passengerRouteSelect"><i data-lucide="route"></i> Select Route</label>
+              <label for="passengerRouteSelect"><i data-lucide="route"></i> <span data-i18n="selectRoute">Select Route</span></label>
               <select id="passengerRouteSelect" class="form-control" onchange="passenger.onRouteChanged()">
                 <!-- Populated dynamically -->
               </select>
             </div>
             
             <div class="search-field">
-              <label for="passengerStopSelect"><i data-lucide="map-pin"></i> Your Boarding Stop</label>
+              <label for="passengerStopSelect"><i data-lucide="map-pin"></i> <span data-i18n="yourBoardingStop">Your Boarding Stop</span></label>
               <select id="passengerStopSelect" class="form-control" onchange="passenger.onStopChanged()">
                 <!-- Populated dynamically -->
               </select>
             </div>
 
             <div class="search-field">
-              <label for="passengerDestSelect"><i data-lucide="map-pin"></i> Destination Stop</label>
+              <label for="passengerDestSelect"><i data-lucide="map-pin"></i> <span data-i18n="destinationStop">Destination Stop</span></label>
               <select id="passengerDestSelect" class="form-control" onchange="passenger.onDestChanged()">
-                <option value="">Any Destination</option>
+                <option value="" data-i18n="anyDestination">Any Destination</option>
                 <!-- Populated dynamically -->
               </select>
             </div>
 
             <button class="btn btn-primary btn-search" onclick="passenger.trackSelectedBus('byRoute')">
-              <i data-lucide="navigation"></i> Track Live
+              <i data-lucide="navigation"></i> <span data-i18n="trackLive">Track Live</span>
             </button>
           </div>
 
           <div class="search-card">
-            <h3 style="grid-column: 1 / -1; margin-bottom: 0.5rem; color: #0f172a; font-size: 1rem; font-weight: 700;">2. Track by Bus Number</h3>
+            <h3 style="grid-column: 1 / -1; margin-bottom: 0.5rem; color: #0f172a; font-size: 1rem; font-weight: 700;" data-i18n="trackByBusNumber">2. Track by Bus Number</h3>
             <div class="search-field" style="grid-column: span 3;">
-              <label for="passengerBusSearch"><i data-lucide="search"></i> Find Bus #</label>
-              <input type="text" id="passengerBusSearch" class="form-control" placeholder="e.g. 101, 102, 202" oninput="passenger.onSearchInput(this.value)">
+              <label for="passengerBusSearch"><i data-lucide="search"></i> <span data-i18n="findBusLabel">Find Bus #</span></label>
+              <input type="text" id="passengerBusSearch" class="form-control" placeholder="e.g. 101, 102, 202" data-i18n-placeholder="findBusPlaceholder" oninput="passenger.onSearchInput(this.value)">
             </div>
 
             <button class="btn btn-primary btn-search" onclick="passenger.trackSelectedBus('byBusNumber')">
-              <i data-lucide="navigation"></i> Track Live
+              <i data-lucide="navigation"></i> <span data-i18n="trackLive">Track Live</span>
             </button>
           </div>
         </div>
@@ -319,13 +329,13 @@
               <i data-lucide="zap"></i>
             </div>
             <div>
-              <h2 class="section-title">Live Bus Arrival Priority for <span id="selectedStopNameDisplay" class="text-primary">All Stops</span></h2>
-              <p class="section-desc">Dynamic multi-bus priority ranked by <strong>Earliest Live ETA</strong> (not just physical distance). Updates in real-time as buses move.</p>
+              <h2 class="section-title"><span data-i18n="arrivalPriorityFor">Live Bus Arrival Priority for</span> <span id="selectedStopNameDisplay" class="text-primary">All Stops</span></h2>
+              <p class="section-desc" data-i18n-html="priorityDesc">Dynamic multi-bus priority ranked by <strong>Earliest Live ETA</strong> (not just physical distance). Updates in real-time as buses move.</p>
             </div>
           </div>
           <div class="live-sync-indicator">
             <span class="ping-circle"></span>
-            <span>Live Auto-Sync</span>
+            <span data-i18n="autoSync">Live Auto-Sync</span>
           </div>
         </div>
 
@@ -345,11 +355,11 @@
         <div class="section-header" style="margin-bottom: 1rem;">
           <div class="section-title-wrap" style="display: flex; align-items: center;">
             <button class="btn btn-outline" style="margin-right: 1rem; padding: 0.5rem;" onclick="app.navigate('passenger')">
-              <i data-lucide="arrow-left"></i> Back
+              <i data-lucide="arrow-left"></i> <span data-i18n="backBtn">Back</span>
             </button>
             <div>
-              <h2 class="section-title" id="nearestStopMapTitle">Nearest Bus Stop Map</h2>
-              <p class="section-desc">View your location, the nearest stop, and full stop details.</p>
+              <h2 class="section-title" id="nearestStopMapTitle" data-i18n="nearestStopTitle">Nearest Bus Stop Map</h2>
+              <p class="section-desc" data-i18n="nearestStopDesc">View your location, the nearest stop, and full stop details.</p>
             </div>
           </div>
         </div>
@@ -375,7 +385,7 @@
         <div id="wimbSmartCrowdAlert"></div>
 
         <!-- Vetri Payanam Scheme Banner -->
-        <div id="wimbVetriPayanamBanner" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 700; font-size: 0.88rem; text-align: center;">
+        <div id="wimbVetriPayanamBanner" data-i18n="wimbVetriBanner" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 700; font-size: 0.88rem; text-align: center;">
           Vetri Payanam Scheme Bus — Free Travel for Women Passengers
         </div>
 
@@ -384,35 +394,35 @@
           <div class="wimb-bus-profile">
             <div class="wimb-bus-badge" id="wimbBusNumberBadge">BUS</div>
             <div>
-              <div class="wimb-bus-title" id="wimbBusRouteTitle">Live Fleet Tracking</div>
-              <div class="wimb-bus-reg" id="wimbBusReg">Real-Time Transit Radar</div>
+              <div class="wimb-bus-title" id="wimbBusRouteTitle" data-i18n="wimbLiveFleetTracking">Live Fleet Tracking</div>
+              <div class="wimb-bus-reg" id="wimbBusReg" data-i18n="wimbTransitRadar">Real-Time Transit Radar</div>
             </div>
           </div>
 
           <!-- Quick Telemetry Badges -->
           <div class="wimb-hud-stats" id="wimbHudStats">
             <div class="hud-stat-item">
-              <span class="hud-label">Status</span>
+              <span class="hud-label" data-i18n="wimbStatusLabel">Status</span>
               <span class="hud-value status-pill green" id="wimbLiveStatus">🟢 Running</span>
             </div>
             <div class="hud-stat-item">
-              <span class="hud-label">Live Crowd</span>
+              <span class="hud-label" data-i18n="wimbLiveCrowdLabel">Live Crowd</span>
               <span class="hud-value" id="wimbLiveCrowd"><span class="crowd-pill moderate">Moderate</span></span>
             </div>
             <div class="hud-stat-item">
-              <span class="hud-label">Live Speed</span>
+              <span class="hud-label" data-i18n="wimbLiveSpeedLabel">Live Speed</span>
               <span class="hud-value text-blue" id="wimbLiveSpeed">34 km/h</span>
             </div>
             <div class="hud-stat-item">
-              <span class="hud-label">Next Stop</span>
+              <span class="hud-label" data-i18n="wimbNextStopLabel">Next Stop</span>
               <span class="hud-value" id="wimbNextStop">Palayamkottai Stand</span>
             </div>
             <div class="hud-stat-item">
-              <span class="hud-label">Next Stop ETA</span>
+              <span class="hud-label" data-i18n="wimbNextEtaLabel">Next Stop ETA</span>
               <span class="hud-value text-emerald font-bold" id="wimbNextEta">3 min (1.2 km)</span>
             </div>
             <div class="hud-stat-item">
-              <span class="hud-label">GPS Freshness</span>
+              <span class="hud-label" data-i18n="wimbGpsFreshnessLabel">GPS Freshness</span>
               <span class="hud-value text-slate" id="wimbGpsFreshness">Updated live</span>
             </div>
           </div>
@@ -424,13 +434,13 @@
               <!-- Options populated dynamically -->
             </select>
             <button class="btn btn-outline btn-sm" id="btnFollowBus" onclick="wimb.toggleFollowBus()">
-              <i data-lucide="crosshair"></i> <span id="followBusBtnText">Follow Bus</span>
+              <i data-lucide="crosshair"></i> <span id="followBusBtnText" data-i18n="wimbFollowBus">Follow Bus</span>
             </button>
             <button class="btn btn-outline btn-sm" onclick="wimb.fitFullRoute()">
-              <i data-lucide="maximize-2"></i> Full Route
+              <i data-lucide="maximize-2"></i> <span data-i18n="wimbFullRoute">Full Route</span>
             </button>
             <button class="btn btn-warning btn-sm" id="btnWimbAlarm" onclick="if (window.proximityAlarm) { window.proximityAlarm.openAlarmModal(window.wimb ? window.wimb.currentBusId : null); }" title="Set Bus Approaching Wake-Up Alarm" style="background: #f59e0b; color: #0f172a; border-color: #d97706; font-weight: 700; cursor: pointer;">
-              <i data-lucide="bell"></i> <span>Wake Me Up</span>
+              <i data-lucide="bell"></i> <span data-i18n="wimbWakeMeUp">Wake Me Up</span>
             </button>
           </div>
         </div>
@@ -438,9 +448,9 @@
         <!-- Split Layout: Interactive Map + Vertical Journey Timeline -->
         <div id="wimbOfflineMessage" style="display: none; text-align: center; padding: 4rem 1rem; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 1rem;">
           <i data-lucide="bus-off" style="width: 48px; height: 48px; color: #94a3b8; margin-bottom: 1rem;"></i>
-          <h2 style="color: #0f172a; margin-bottom: 0.5rem;">This Bus is Currently Offline</h2>
-          <p style="color: #64748b; margin-bottom: 1.5rem;">The bus has ended its trip and is not broadcasting a live GPS signal.</p>
-          <button class="btn btn-primary" onclick="window.app.navigate('passenger')">Back to Passenger Portal</button>
+          <h2 style="color: #0f172a; margin-bottom: 0.5rem;" data-i18n="wimbOfflineTitle">This Bus is Currently Offline</h2>
+          <p style="color: #64748b; margin-bottom: 1.5rem;" data-i18n="wimbOfflineDesc">The bus has ended its trip and is not broadcasting a live GPS signal.</p>
+          <button class="btn btn-primary" onclick="window.app.navigate('passenger')" data-i18n="wimbBackBtn">Back to Passenger Portal</button>
         </div>
 
         <div id="wimbLiveContent" class="wimb-main-grid">
@@ -475,7 +485,7 @@
             <div class="timeline-panel-header">
               <div class="panel-heading">
                 <i data-lucide="git-commit"></i>
-                <span>Live Route Progression</span>
+                <span data-i18n="wimbTimelineHeading">Live Journey Timeline</span>
               </div>
               <span class="route-progress-pct" id="wimbProgressPct">42% Complete</span>
             </div>
@@ -1508,6 +1518,9 @@
 
   <!-- Cloud Database Integration Module -->
   <script src="js/cloud-db.js"></script>
+
+  <!-- Internationalization Module (English & தமிழ்) -->
+  <script src="js/i18n.js"></script>
 
   <!-- App JS Modules -->
   <script src="js/geo-engine.js"></script>

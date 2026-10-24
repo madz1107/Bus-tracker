@@ -79,18 +79,20 @@ class WhereIsMyBusController {
     if (vpBanner) {
       if (currentGender === 'female' && bus.isVetriPayanam) {
         vpBanner.style.display = 'block';
-        vpBanner.textContent = 'Vetri Payanam Scheme Bus — Free Travel for Women Passengers';
+        vpBanner.textContent = window.I18n ? window.I18n.t('wimbVetriBanner') : 'Vetri Payanam Scheme Bus — Free Travel for Women Passengers';
       } else {
         vpBanner.style.display = 'none';
       }
     }
 
     if (numBadge) numBadge.textContent = `BUS ${bus.busNumber}`;
-    if (routeTitle) routeTitle.textContent = route.name;
+    if (routeTitle) routeTitle.textContent = window.I18n ? window.I18n.getRouteName(route.name) : route.name;
     if (busReg) {
-      const vpText = (currentGender === 'female' && bus.isVetriPayanam) ? ' • Vetri Payanam: Free for Women' : '';
+      const vpText = (currentGender === 'female' && bus.isVetriPayanam) ? (window.I18n ? ' ' + window.I18n.t('wimbVetriSubtitle') : ' • Vetri Payanam: Free for Women') : '';
+      const crowdLabel = window.I18n ? window.I18n.t('crowd' + (bus.crowdLevel || 'Moderate'), bus.crowdLevel || 'Moderate') : (bus.crowdLevel || 'Moderate');
+      const crowdWord = window.I18n ? window.I18n.t('crowd') : 'Crowd';
       if (bus.isTripActive) {
-        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber} • Crowd: ${bus.crowdLevel || 'Moderate'}${vpText}`;
+        busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber} • ${crowdWord}: ${crowdLabel}${vpText}`;
       } else {
         busReg.textContent = `Reg: ${bus.regNumber} • Bus: ${bus.BusName || bus.busNumber}${vpText}`;
       }
@@ -141,7 +143,7 @@ class WhereIsMyBusController {
     const btn = document.getElementById('btnFollowBus');
 
     if (this.isFollowing) {
-      if (btnText) btnText.textContent = 'Following Bus';
+      if (btnText) btnText.textContent = window.I18n && window.I18n.getLanguage() === 'ta' ? 'பின்தொடர்கிறது' : 'Following Bus';
       if (btn) {
         btn.classList.remove('btn-outline');
         btn.classList.add('btn-primary');
@@ -152,7 +154,7 @@ class WhereIsMyBusController {
         if (bus) this.mapManager.centerOnLocation(bus.lat, bus.lng, 15);
       }
     } else {
-      if (btnText) btnText.textContent = 'Follow Bus';
+      if (btnText) btnText.textContent = window.I18n ? window.I18n.t('wimbFollowBus') : 'Follow Bus';
       if (btn) {
         btn.classList.remove('btn-primary');
         btn.classList.add('btn-outline');
@@ -167,7 +169,7 @@ class WhereIsMyBusController {
     this.isFollowing = false;
     const btnText = document.getElementById('followBusBtnText');
     const btn = document.getElementById('btnFollowBus');
-    if (btnText) btnText.textContent = 'Follow Bus';
+    if (btnText) btnText.textContent = window.I18n ? window.I18n.t('wimbFollowBus') : 'Follow Bus';
     if (btn) {
       btn.classList.remove('btn-primary');
       btn.classList.add('btn-outline');
@@ -272,20 +274,24 @@ class WhereIsMyBusController {
     if (liveStatus) {
       if (!bus.isTripActive) {
         liveStatus.className = 'hud-value status-pill red';
-        liveStatus.textContent = '🔴 Trip Ended (GPS Off)';
+        liveStatus.textContent = window.I18n ? window.I18n.t('wimbStatusOffline') : '🔴 Trip Ended (GPS Off)';
       } else {
         const isRunning = bus.status === 'Running';
         liveStatus.className = `hud-value status-pill ${isRunning ? 'green' : (bus.status === 'Stopped' ? 'amber' : 'red')}`;
-        liveStatus.textContent = isRunning ? '🟢 Running' : `🟡 ${bus.status}`;
+        liveStatus.textContent = isRunning
+          ? (window.I18n ? window.I18n.t('wimbStatusRunning') : '🟢 Running')
+          : (bus.status === 'Stopped' ? (window.I18n ? window.I18n.t('wimbStatusStopped') : '🟡 Stopped') : `🟡 ${bus.status}`);
       }
     }
 
     const currentCrowd = bus.crowdLevel || 'Moderate';
     if (liveCrowd) {
       const crowdClass = currentCrowd.toLowerCase();
+      const crowdLabel = window.I18n ? window.I18n.t('crowd' + currentCrowd, currentCrowd) : currentCrowd;
+      const crowdWord = window.I18n ? window.I18n.t('crowd') : 'Crowd';
       liveCrowd.innerHTML = `
         <span class="crowd-pill ${crowdClass}">
-          <span class="dot" style="background: currentColor;"></span> ${currentCrowd} Crowd
+          <span class="dot" style="background: currentColor;"></span> ${crowdLabel} ${crowdWord}
         </span>
       `;
     }
@@ -322,13 +328,15 @@ class WhereIsMyBusController {
     }
 
     if (liveSpeed) liveSpeed.textContent = `${bus.speed || 0} km/h`;
-    if (nextStop) nextStop.textContent = bus.nextStopName || 'N/A';
+    if (nextStop) nextStop.textContent = bus.nextStopName ? (window.I18n ? window.I18n.getStopName(bus.nextStopName) : bus.nextStopName) : 'N/A';
     if (nextEta) {
       const isArrivingNext = bus.etaMinutes <= 1 || (bus.distanceToNextKm != null && bus.distanceToNextKm <= 0.45);
+      const arrivingNowText = window.I18n && window.I18n.getLanguage() === 'ta' ? 'இப்போது வந்தடைகிறது ⚡' : 'Arriving Now ⚡';
+      const minText = window.I18n && window.I18n.getLanguage() === 'ta' ? 'நிமிடம்' : 'min';
       if (isArrivingNext && bus.isTripActive) {
-        nextEta.innerHTML = `<span style="color: #2563eb; font-weight: 800;">Arriving Now ⚡</span> (${bus.distanceToNextKm || 0} km)`;
+        nextEta.innerHTML = `<span style="color: #2563eb; font-weight: 800;">${arrivingNowText}</span> (${bus.distanceToNextKm || 0} km)`;
       } else {
-        nextEta.textContent = `${bus.etaMinutes || 0} min (${bus.distanceToNextKm || 0} km)`;
+        nextEta.textContent = `${bus.etaMinutes || 0} ${minText} (${bus.distanceToNextKm || 0} km)`;
       }
     }
     if (bearingTip) bearingTip.textContent = `Heading: ${Math.round(bus.bearing || 0)}° • Speed: ${bus.speed || 0} km/h • Crowd: ${currentCrowd}`;
@@ -337,8 +345,9 @@ class WhereIsMyBusController {
     const progressFill = document.getElementById('wimbProgressBarFill');
     const progressPct = document.getElementById('wimbProgressPct');
     const pct = Math.round(bus.routeProgress || 0);
+    const completeText = window.I18n && window.I18n.getLanguage() === 'ta' ? 'முடிந்தது' : 'Complete';
     if (progressFill) progressFill.style.width = `${pct}%`;
-    if (progressPct) progressPct.textContent = `${pct}% Complete`;
+    if (progressPct) progressPct.textContent = `${pct}% ${completeText}`;
 
     // Render Vertical Timeline ("Where Is My Train" Style)
     this.renderTimeline(route, bus);
@@ -398,8 +407,12 @@ class WhereIsMyBusController {
 
       // "Where Is My Train" Style Live Bus Indicator on Route Track:
       // Insert directly on the track approaching the target stop
+      const stopName = window.I18n ? window.I18n.getStopName(stop.name) : stop.name;
+
       if (isNextTarget && bus.isTripActive && !isPhysicallyReached) {
-        const badgeDistText = isArriving ? '⚡ Arriving Now' : `${distKm} km to ${stop.name}`;
+        const badgeDistText = isArriving
+          ? (window.I18n && window.I18n.getLanguage() === 'ta' ? '⚡ இப்போது வந்தடைகிறது' : '⚡ Arriving Now')
+          : `${distKm} km to ${stopName}`;
         htmlParts.push(`
           <div class="timeline-in-transit-row">
             <div class="transit-track-col">
@@ -436,12 +449,18 @@ class WhereIsMyBusController {
 
       let badgeHtml = '';
       if (isReached) {
-        badgeHtml = `<span class="stop-eta-badge reached">Reached ✅</span>`;
+        const reachedText = window.I18n && window.I18n.getLanguage() === 'ta' ? 'அடைந்தது ✅' : 'Reached ✅';
+        badgeHtml = `<span class="stop-eta-badge reached">${reachedText}</span>`;
       } else if (isArriving) {
-        badgeHtml = `<span class="stop-eta-badge arriving">⚡ Arriving Now</span>`;
+        const arrivingText = window.I18n && window.I18n.getLanguage() === 'ta' ? '⚡ இப்போது வந்தடைகிறது' : '⚡ Arriving Now';
+        badgeHtml = `<span class="stop-eta-badge arriving">${arrivingText}</span>`;
       } else {
         badgeHtml = `<span class="stop-eta-badge upcoming">${etaObj.text}</span>`;
       }
+
+      const stopLabel = window.I18n && window.I18n.getLanguage() === 'ta' ? 'நிறுத்தம்' : 'Stop';
+      const kmAwayText = window.I18n && window.I18n.getLanguage() === 'ta' ? 'கி.மீ தொலைவில்' : 'km away';
+      const nextApproachingText = window.I18n ? window.I18n.t('wimbNextApproaching') : 'Next Approaching Stop';
 
       htmlParts.push(`
         <div class="${nodeClass}">
@@ -450,13 +469,13 @@ class WhereIsMyBusController {
           </div>
           <div class="stop-details-col">
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
-              <div class="stop-node-title">${stop.name}</div>
+              <div class="stop-node-title">${stopName}</div>
               ${badgeHtml}
             </div>
             <div class="stop-node-meta">
-              <span>Stop #${stop.sequence}</span>
-              ${!isReached ? `<span>• ${distKm} km away</span>` : ''}
-              ${isNextTarget ? '<span style="color: #2563eb; font-weight: 700;">• Next Approaching Stop</span>' : ''}
+              <span>${stopLabel} #${stop.sequence}</span>
+              ${!isReached ? `<span>• ${distKm} ${kmAwayText}</span>` : ''}
+              ${isNextTarget ? `<span style="color: #2563eb; font-weight: 700;">• ${nextApproachingText}</span>` : ''}
             </div>
           </div>
         </div>
@@ -514,31 +533,39 @@ class WhereIsMyBusController {
       const isTarget = (index === targetStopIdx);
       const isArriving = !isReached && isTarget && (etaObj.isArriving || distMeters <= GeoEngine.APPROACHING_RADIUS_METERS || distKm <= 0.45);
 
-      // Status Column (Requirement 1: When Live ETA shows Arriving Now, Status also shows Arriving Now!)
+      const stopName = window.I18n ? window.I18n.getStopName(stop.name) : stop.name;
+
+      // Status Column
       let statusHtml = '';
       if (isReached) {
-        statusHtml = `<span class="status-pill green" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">✅ Reached</span>`;
+        const text = window.I18n && window.I18n.getLanguage() === 'ta' ? '✅ அடைந்தது' : '✅ Reached';
+        statusHtml = `<span class="status-pill green" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">${text}</span>`;
       } else if (isArriving) {
-        statusHtml = `<span class="status-pill blue arriving" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">⚡ Arriving Now</span>`;
+        const text = window.I18n && window.I18n.getLanguage() === 'ta' ? '⚡ இப்போது வந்தடைகிறது' : '⚡ Arriving Now';
+        statusHtml = `<span class="status-pill blue arriving" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">${text}</span>`;
       } else if (isTarget) {
-        statusHtml = `<span class="status-pill amber" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">⚡ Next</span>`;
+        const text = window.I18n && window.I18n.getLanguage() === 'ta' ? '⚡ அடுத்தது' : '⚡ Next';
+        statusHtml = `<span class="status-pill amber" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">${text}</span>`;
       } else {
-        statusHtml = `<span class="status-pill amber" style="font-size: 0.72rem; padding: 0.15rem 0.5rem; opacity: 0.85;">🚏 Upcoming</span>`;
+        const text = window.I18n && window.I18n.getLanguage() === 'ta' ? '🚏 வரவிருக்கும்' : '🚏 Upcoming';
+        statusHtml = `<span class="status-pill amber" style="font-size: 0.72rem; padding: 0.15rem 0.5rem; opacity: 0.85;">${text}</span>`;
       }
 
       // Live ETA Column
       let etaDisplay = '';
       if (isReached) {
-        etaDisplay = `<strong style="color: #059669;">Reached</strong>`;
+        const text = window.I18n && window.I18n.getLanguage() === 'ta' ? 'அடைந்தது' : 'Reached';
+        etaDisplay = `<strong style="color: #059669;">${text}</strong>`;
       } else if (isArriving) {
-        etaDisplay = `<strong style="color: #2563eb;">Arriving Now ⚡</strong>`;
+        const text = window.I18n && window.I18n.getLanguage() === 'ta' ? 'இப்போது வந்தடைகிறது ⚡' : 'Arriving Now ⚡';
+        etaDisplay = `<strong style="color: #2563eb;">${text}</strong>`;
       } else {
         etaDisplay = `<strong style="color: #2563eb;">${etaObj.text}</strong>`;
       }
 
       return `
         <tr>
-          <td><strong>${stop.name}</strong></td>
+          <td><strong>${stopName}</strong></td>
           <td>${isReached ? '0 km' : `${distKm} km`}</td>
           <td>${etaDisplay}</td>
           <td>${statusHtml}</td>

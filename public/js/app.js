@@ -53,6 +53,11 @@ class AppController {
       this.applyAppFlavor(this.appFlavor);
     }
 
+    // Initialize Internationalization
+    if (window.I18n && typeof window.I18n.init === 'function') {
+      window.I18n.init();
+    }
+
     // Auto-update Active Buses Live network badge whenever bus states change
     if (window.appState && typeof window.appState.subscribe === 'function') {
       window.appState.subscribe(() => {
@@ -154,6 +159,7 @@ class AppController {
     if (!user) return;
 
     const genderToggle = document.getElementById('passengerGenderToggle');
+    const langToggle = document.getElementById('passengerLangToggle');
 
     if (user.role === 'passenger') {
       // Passenger only sees Passenger search and Where Is My Bus (initially hidden)
@@ -162,6 +168,7 @@ class AppController {
       if (tabBus) tabBus.style.display = 'none';
       if (tabAdmin) tabAdmin.style.display = 'none';
       if (genderToggle) genderToggle.style.display = 'inline-flex';
+      if (langToggle) langToggle.style.display = 'inline-flex';
     } else if (user.role === 'Bus') {
       // Bus only sees Bus console - NO male/female controls
       if (tabPassenger) tabPassenger.style.display = 'none';
@@ -169,6 +176,7 @@ class AppController {
       if (tabBus) tabBus.style.display = 'inline-flex';
       if (tabAdmin) tabAdmin.style.display = 'none';
       if (genderToggle) genderToggle.style.display = 'none';
+      if (langToggle) langToggle.style.display = 'none';
       document.body.classList.remove('female-mode');
     } else if (user.role === 'admin') {
       // Admin sees Fleet Admin control center - NO male/female controls
@@ -177,6 +185,7 @@ class AppController {
       if (tabBus) tabBus.style.display = 'none';
       if (tabAdmin) tabAdmin.style.display = 'inline-flex';
       if (genderToggle) genderToggle.style.display = 'none';
+      if (langToggle) langToggle.style.display = 'none';
       document.body.classList.remove('female-mode');
     }
   }
@@ -518,10 +527,15 @@ class AppController {
       tabWimb.style.display = 'none';
     }
 
-    // Gender toggle is visible in Passenger portal & Where Is My Bus tracking screen (never in Bus or Admin)
+    // Gender and Language toggles are visible in Passenger portal & Where Is My Bus tracking screen (never in Bus or Admin)
     const genderToggle = document.getElementById('passengerGenderToggle');
     if (genderToggle) {
       genderToggle.style.display = (portalName === 'passenger' || portalName === 'where-is-my-bus') ? 'inline-flex' : 'none';
+    }
+
+    const langToggle = document.getElementById('passengerLangToggle');
+    if (langToggle) {
+      langToggle.style.display = (portalName === 'passenger' || portalName === 'where-is-my-bus') ? 'inline-flex' : 'none';
     }
 
     // Apply female-mode theme across all passenger screens (Passenger, Where Is My Bus, Nearest Stop Map)
@@ -557,6 +571,16 @@ class AppController {
   }
 
   /**
+   * Sets website language (English 'en' or Tamil 'ta')
+   */
+  setLanguage(lang) {
+    if (window.I18n) {
+      window.I18n.setLanguage(lang);
+      this.updateActiveBusesBadge();
+    }
+  }
+
+  /**
    * Returns exact count of currently online live-tracking buses
    */
   getActiveLiveBusesCount() {
@@ -580,18 +604,21 @@ class AppController {
       badgeWrap.classList.toggle('idle', count === 0);
     }
 
+    const liveTextSingular = window.I18n ? window.I18n.t('activeBusLive', 'Active Bus Live') : 'Active Bus Live';
+    const liveTextPlural = window.I18n ? window.I18n.t('activeBusesLive', 'Active Buses Live') : 'Active Buses Live';
+
     if (count === 0) {
-      badgeText.textContent = '0 Active Buses Live';
+      badgeText.textContent = `0 ${liveTextPlural}`;
       if (pulseDot) {
         pulseDot.className = 'pulse-dot amber';
       }
     } else if (count === 1) {
-      badgeText.textContent = '1 Active Bus Live';
+      badgeText.textContent = `1 ${liveTextSingular}`;
       if (pulseDot) {
         pulseDot.className = 'pulse-dot green';
       }
     } else {
-      badgeText.textContent = `${count} Active Buses Live`;
+      badgeText.textContent = `${count} ${liveTextPlural}`;
       if (pulseDot) {
         pulseDot.className = 'pulse-dot green';
       }
