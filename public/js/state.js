@@ -132,6 +132,16 @@ class StateManager {
               freshBuses.forEach((freshBus) => {
                 const local = this.getBusById(freshBus.id);
                 if (local) {
+                  // Trip State Protection: Prevent background poll from clearing active trip if local bus has fresh live heartbeat
+                  if (local.isTripActive && !freshBus.isTripActive) {
+                    const localTime = new Date(local.lastUpdated || 0).getTime();
+                    const isConductorActive = localStorage.getItem('citybus_active_trip_' + local.id) === 'true';
+                    if (isConductorActive || (Date.now() - localTime < 45000)) {
+                      freshBus.isTripActive = true;
+                      freshBus.status = local.status || 'Running';
+                    }
+                  }
+
                   const hasBusChanged = (
                     local.lat !== freshBus.lat ||
                     local.lng !== freshBus.lng ||
@@ -196,6 +206,15 @@ class StateManager {
           freshBuses.forEach((freshBus) => {
             const local = this.getBusById(freshBus.id);
             if (local) {
+              if (local.isTripActive && !freshBus.isTripActive) {
+                const localTime = new Date(local.lastUpdated || 0).getTime();
+                const isConductorActive = localStorage.getItem('citybus_active_trip_' + local.id) === 'true';
+                if (isConductorActive || (Date.now() - localTime < 45000)) {
+                  freshBus.isTripActive = true;
+                  freshBus.status = local.status || 'Running';
+                }
+              }
+
               const changed = (
                 local.lat !== freshBus.lat ||
                 local.lng !== freshBus.lng ||

@@ -15,12 +15,18 @@ class PassengerController {
 
     // Subscribe to state updates (e.g. stops added/edited in Admin portal or initial DB load)
     window.appState.subscribe((state, event) => {
-      this.syncSelectedRoute();
-      this.populateRouteDropdown();
-      this.populateStopDropdown();
-      this.populateDestDropdown();
-      this.updateGenderToggleUi();
-      this.render();
+      const isLocationUpdate = event && event.type === 'BUS_LOCATION_UPDATE';
+      if (!isLocationUpdate) {
+        this.syncSelectedRoute();
+        this.populateRouteDropdown();
+        this.populateStopDropdown();
+        this.populateDestDropdown();
+        this.updateGenderToggleUi();
+        this.render();
+      } else {
+        // Targeted in-place update for bus arrival telemetry (zero flicker, no dropdown reset)
+        this.updateLiveArrivalsInPlace();
+      }
     });
   }
 
@@ -494,7 +500,21 @@ class PassengerController {
 
     // 2. Bus Cards Generation (Live GPS Ranked or Scheduled Fleet)
     const allRouteBuses = window.appState.getBusesForRoute(this.selectedRouteId);
-    const activeRouteBuses = allRouteBuses.filter(b => b.isTripActive);
+    
+    // Trip State Stability: Cache active buses with 12s grace period to prevent poll drops from disappearing
+    this._activeBusGraceMap = this._activeBusGraceMap || new Map();
+    const now = Date.now();
+    allRouteBuses.forEach(b => {
+      if (b.isTripActive) {
+        this._activeBusGraceMap.set(b.id, now);
+      }
+    });
+
+    const activeRouteBuses = allRouteBuses.filter(b => {
+      if (b.isTripActive) return true;
+      const lastActive = this._activeBusGraceMap.get(b.id);
+      return lastActive && (now - lastActive < 12000);
+    });
 
     let smartSuggestionHtml = '';
     let cardsHtml = '';
@@ -557,7 +577,7 @@ class PassengerController {
         const alarmBtnText = window.I18n ? window.I18n.t('alarmBtn') : 'Alarm';
 
         return `
-        <div class="priority-card ${item.rankClass}">
+        <div class="priority-card ${item.rankClass}" data-bus-id="${item.bus.id}">
           <div>
             <div class="priority-card-header">
               <div>
@@ -575,7 +595,7 @@ class PassengerController {
               </div>
               <div style="text-align: right;">
                 <span class="crowd-pill ${crowdClass}">
-                  <span class="dot" style="background: currentColor;"></span> ${crowdTranslated} ${crowdWord}
+                  <span class="dot" style="background: currentColor;"></span> <span class="val-crowd">${crowdTranslated} ${crowdWord}</span>
                 </span>
                 <div class="bus-meta-title" style="margin-top: 4px;">${item.regNumber}</div>
               </div>
@@ -595,26 +615,26 @@ class PassengerController {
 
             <!-- Key Telemetry Metrics -->
             ${item.bus.delayAlert ? `
-              <div style="background: #fef3c7; color: #92400e; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #fde68a; display: flex; align-items: center; gap: 6px;">
+              <div class="driver-delay-alert" style="background: #fef3c7; color: #92400e; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #fde68a; display: flex; align-items: center; gap: 6px;">
                 ⚠️ <span>${driverNoticeText} <strong>${item.bus.delayAlert}</strong></span>
               </div>
             ` : ''}
             <div class="priority-metrics-row">
               <div class="metric-item">
                 <span class="lbl">${distLabel}</span>
-                <span class="val">${item.distanceKm} km</span>
+                <span class="val val-dist">${item.distanceKm} km</span>
               </div>
               <div class="metric-item">
                 <span class="lbl">${speedLabel}</span>
-                <span class="val text-blue">${item.speed} km/h</span>
+                <span class="val text-blue val-speed">${item.speed} km/h</span>
               </div>
               <div class="metric-item">
                 <span class="lbl">${curStopLabel}</span>
-                <span class="val">${curStopVal}</span>
+                <span class="val val-cur-stop">${curStopVal}</span>
               </div>
               <div class="metric-item">
                 <span class="lbl">${nextStopLabel}</span>
-                <span class="val text-emerald">${nextStopVal}</span>
+                <span class="val text-emerald val-next-stop">${nextStopVal}</span>
               </div>
               ${this.gender === 'female' ? `
                 <div class="metric-item">
@@ -651,6 +671,109 @@ class PassengerController {
 
     if (window.lucide) {
       lucide.createIcons();
+    }
+  }
+
+  /**
+   * Fast in-place telemetry update for Live Bus Arrival Priority cards.
+   * Completely avoids DOM destruction, eliminating flickering and disappearing cards.
+   */
+  updateLiveArrivalsInPlace() {
+    const container = document.getElementById('priorityBusesContainer');
+    if (!container) return;
+
+    const portal = document.getElementById('portalPassenger');
+    if (portal && portal.style.display === 'none') return;
+
+    const route = window.appState.getRouteById(this.selectedRouteId);
+    if (!route) return;
+
+    const targetStop = route.stops.find((s) => s.id === this.selectedStopId) || route.stops[0];
+    if (!targetStop) return;
+
+    const allRouteBuses = window.appState.getBusesForRoute(this.selectedRouteId);
+    this._activeBusGraceMap = this._activeBusGraceMap || new Map();
+    const now = Date.now();
+    allRouteBuses.forEach(b => {
+      if (b.isTripActive) {
+        this._activeBusGraceMap.set(b.id, now);
+      }
+    });
+
+    const activeRouteBuses = allRouteBuses.filter(b => {
+      if (b.isTripActive) return true;
+      const lastActive = this._activeBusGraceMap.get(b.id);
+      return lastActive && (now - lastActive < 12000);
+    });
+
+    // If no active buses or transition between empty/active, do full render
+    const existingCards = container.querySelectorAll('.priority-card[data-bus-id]');
+    if (activeRouteBuses.length === 0 || existingCards.length === 0) {
+      this.renderPriorityLeaderboard();
+      this.renderFleetGrid();
+      return;
+    }
+
+    const ranked = PriorityEngine.rankBusesForStop(route, targetStop, activeRouteBuses);
+    const existingBusIds = Array.from(existingCards).map(el => el.getAttribute('data-bus-id'));
+    const newBusIds = ranked.map(r => r.bus.id);
+
+    // If bus ranking order changed (e.g. Bus 2 overtook Bus 1, or bus arrived at stop), rebuild cards cleanly
+    const isSameOrder = existingBusIds.length === newBusIds.length &&
+      existingBusIds.every((id, idx) => id === newBusIds[idx]);
+
+    if (!isSameOrder) {
+      this.renderPriorityLeaderboard();
+      this.renderFleetGrid();
+      return;
+    }
+
+    // Identical ranking order: update dynamic values in-place (Zero Flicker!)
+    ranked.forEach((item, index) => {
+      const card = existingCards[index];
+      if (!card) return;
+
+      const etaElem = card.querySelector('.eta-time-val');
+      if (etaElem && etaElem.textContent !== item.etaText) {
+        etaElem.textContent = item.etaText;
+      }
+
+      const distElem = card.querySelector('.val-dist');
+      if (distElem) {
+        const text = `${item.distanceKm} km`;
+        if (distElem.textContent !== text) distElem.textContent = text;
+      }
+
+      const speedElem = card.querySelector('.val-speed');
+      if (speedElem) {
+        const text = `${item.speed} km/h`;
+        if (speedElem.textContent !== text) speedElem.textContent = text;
+      }
+
+      const curStopVal = item.currentStopName ? (window.I18n ? window.I18n.getStopName(item.currentStopName) : item.currentStopName) : (window.I18n ? window.I18n.t('onRoute') : 'On Route');
+      const curStopElem = card.querySelector('.val-cur-stop');
+      if (curStopElem && curStopElem.textContent !== curStopVal) {
+        curStopElem.textContent = curStopVal;
+      }
+
+      const nextStopVal = item.nextStopName ? (window.I18n ? window.I18n.getStopName(item.nextStopName) : item.nextStopName) : (window.I18n ? window.I18n.t('enRoute') : 'En route');
+      const nextStopElem = card.querySelector('.val-next-stop');
+      if (nextStopElem && nextStopElem.textContent !== nextStopVal) {
+        nextStopElem.textContent = nextStopVal;
+      }
+
+      const crowdLvl = item.crowdLevel || 'Moderate';
+      const crowdTranslated = window.I18n ? window.I18n.t('crowd' + crowdLvl, crowdLvl) : crowdLvl;
+      const crowdWord = window.I18n ? window.I18n.t('crowd') : 'Crowd';
+      const crowdElem = card.querySelector('.val-crowd');
+      if (crowdElem) {
+        const crowdFull = `${crowdTranslated} ${crowdWord}`;
+        if (crowdElem.textContent !== crowdFull) crowdElem.textContent = crowdFull;
+      }
+    });
+
+    if (window.app && typeof window.app.updateActiveBusesBadge === 'function') {
+      window.app.updateActiveBusesBadge();
     }
   }
 
