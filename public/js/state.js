@@ -60,7 +60,13 @@ class StateManager {
           this.buses = busesRes.data.map(r => window.CloudDB ? window.CloudDB.rowToBus(r) : r);
         }
         if (routesRes.data && routesRes.data.length > 0) {
-          this.routes = routesRes.data;
+          this.routes = routesRes.data.map(remoteRoute => {
+            const local = this.routes.find(r => r.id === remoteRoute.id);
+            return {
+              ...remoteRoute,
+              fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
+            };
+          });
         }
         if (usersRes.data && usersRes.data.length > 0) {
           this.users = usersRes.data;
@@ -484,16 +490,32 @@ class StateManager {
       // 2. Direct Supabase save if connected in browser
       if (window.CloudDB && window.CloudDB.supabase) {
         try {
-          await window.CloudDB.supabase.from('routes').upsert({
+          const rowPayload = {
             id: routeData.id,
             name: routeData.name,
             code: routeData.code,
             color: routeData.color || '#2563EB',
             stops: routeData.stops || [],
             roadway: routeData.roadway || []
+          };
+          const { error: sErr } = await window.CloudDB.supabase.from('routes').upsert({
+            ...rowPayload,
+            fare_matrix: routeData.fareMatrix || {}
           });
+          if (sErr) {
+            await window.CloudDB.supabase.from('routes').upsert(rowPayload);
+          }
         } catch (sErr) {
-          console.warn('Direct Supabase save route error:', sErr);
+          try {
+            await window.CloudDB.supabase.from('routes').upsert({
+              id: routeData.id,
+              name: routeData.name,
+              code: routeData.code,
+              color: routeData.color || '#2563EB',
+              stops: routeData.stops || [],
+              roadway: routeData.roadway || []
+            });
+          } catch (_) {}
         }
       }
 

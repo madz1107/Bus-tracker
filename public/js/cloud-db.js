@@ -168,6 +168,10 @@
               if (freshRoute && freshRoute.id) {
                 const idx = window.appState.routes.findIndex(r => r.id === freshRoute.id);
                 if (idx >= 0) {
+                  const existingMatrix = window.appState.routes[idx].fareMatrix;
+                  if (!freshRoute.fareMatrix && !freshRoute.fare_matrix && existingMatrix) {
+                    freshRoute.fareMatrix = existingMatrix;
+                  }
                   window.appState.routes[idx] = freshRoute;
                 } else {
                   window.appState.routes.push(freshRoute);

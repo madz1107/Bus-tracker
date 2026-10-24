@@ -152,7 +152,13 @@ async function syncFromSupabase() {
     ]);
 
     if (!routesRes.error && Array.isArray(routesRes.data)) {
-      db.routes = routesRes.data;
+      db.routes = routesRes.data.map(remoteRoute => {
+        const local = db.routes.find(r => r.id === remoteRoute.id);
+        return {
+          ...remoteRoute,
+          fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
+        };
+      });
     }
     if (!busesRes.error && Array.isArray(busesRes.data)) {
       db.buses = busesRes.data.map(rowToBus);
@@ -187,7 +193,15 @@ app.get('/api/state', async (req, res) => {
         supabase.from('buses').select('*').order('bus_number', { ascending: true }),
         supabase.from('users').select('*')
       ]);
-      if (!r.error && Array.isArray(r.data)) db.routes = r.data;
+      if (!r.error && Array.isArray(r.data)) {
+        db.routes = r.data.map(remoteRoute => {
+          const local = db.routes.find(lr => lr.id === remoteRoute.id);
+          return {
+            ...remoteRoute,
+            fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
+          };
+        });
+      }
       if (!b.error && Array.isArray(b.data)) db.buses = b.data.map(rowToBus);
       if (!u.error && Array.isArray(u.data) && u.data.length > 0) db.users = u.data;
     } catch (e) {}
@@ -305,15 +319,37 @@ app.post('/api/routes', async (req, res) => {
 
   if (supabase) {
     try {
-      await supabase.from('routes').upsert({
+      const { error: upsertErr } = await supabase.from('routes').upsert({
         id: routeData.id,
         name: routeData.name,
         code: routeData.code,
         color: routeData.color || '#2563EB',
         stops: routeData.stops || [],
-        roadway: routeData.roadway || []
+        roadway: routeData.roadway || [],
+        fare_matrix: routeData.fareMatrix || {}
       });
-    } catch (e) {}
+      if (upsertErr) {
+        await supabase.from('routes').upsert({
+          id: routeData.id,
+          name: routeData.name,
+          code: routeData.code,
+          color: routeData.color || '#2563EB',
+          stops: routeData.stops || [],
+          roadway: routeData.roadway || []
+        });
+      }
+    } catch (e) {
+      try {
+        await supabase.from('routes').upsert({
+          id: routeData.id,
+          name: routeData.name,
+          code: routeData.code,
+          color: routeData.color || '#2563EB',
+          stops: routeData.stops || [],
+          roadway: routeData.roadway || []
+        });
+      } catch (_) {}
+    }
   }
 
   const existingIdx = db.routes.findIndex(r => r.id === routeData.id);

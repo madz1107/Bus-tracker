@@ -63,6 +63,25 @@ class PassengerController {
     }
   }
 
+  getFare(route, fromStopId, toStopId) {
+    if (!route || !fromStopId || !toStopId) return 5;
+    const key = `${fromStopId}_${toStopId}`;
+    if (route.fareMatrix && route.fareMatrix[key] !== undefined) {
+      return Number(route.fareMatrix[key]);
+    }
+    // Dynamic fallback calculation based on stop index difference
+    if (route.stops && Array.isArray(route.stops)) {
+      const fromIdx = route.stops.findIndex(s => s.id === fromStopId);
+      const toIdx = route.stops.findIndex(s => s.id === toStopId);
+      if (fromIdx >= 0 && toIdx >= 0 && toIdx > fromIdx) {
+        const diff = toIdx - fromIdx;
+        const stages = [0, 5, 7, 10, 12, 14, 15, 17, 18, 20, 20, 22, 23, 25, 25];
+        return stages[Math.min(diff, stages.length - 1)] || (5 + diff * 2);
+      }
+    }
+    return 5;
+  }
+
   init() {
     this.syncSelectedRoute();
     this.populateRouteDropdown();
@@ -178,11 +197,12 @@ class PassengerController {
 
     destSelect.innerHTML = `<option value="">${anyDestText}</option>` + availableDestinations.map((s) => {
       let priceText = '';
-      if (route.fareMatrix) {
-        const priceKey = `${this.selectedStopId}_${s.id}`;
-        const price = route.fareMatrix[priceKey];
-        if (price !== undefined) {
-          priceText = this.gender === 'female' ? ` (${freeWomenText})` : ` (₹${price})`;
+      const price = this.getFare(route, this.selectedStopId, s.id);
+      if (price !== undefined) {
+        if (this.gender === 'female') {
+          priceText = ` (₹${price} • Vetri: ₹0 Free)`;
+        } else {
+          priceText = ` (₹${price})`;
         }
       }
       const destStopName = window.I18n ? window.I18n.getStopName(s.name) : s.name;
@@ -442,10 +462,9 @@ class PassengerController {
 
     // 1. Ticket Price Info Box (Always calculated and shown when destination is selected)
     let ticketPriceHtml = '';
-    if (isValidRoute && this.selectedDestId && route.fareMatrix) {
-      const priceKey = `${this.selectedStopId}_${this.selectedDestId}`;
-      const price = route.fareMatrix[priceKey];
-      if (price !== undefined) {
+    if (isValidRoute && this.selectedDestId) {
+      const price = this.getFare(route, this.selectedStopId, this.selectedDestId);
+      if (price !== undefined && price !== null) {
         const destStop = route.stops.find(s => s.id === this.selectedDestId);
         const destStopName = destStop ? (window.I18n ? window.I18n.getStopName(destStop.name) : destStop.name) : '';
         const ticketTitle = window.I18n ? window.I18n.t('ticketPriceInfo') : 'Ticket Price Info';
@@ -487,6 +506,9 @@ class PassengerController {
                 <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">${ticketTitle}</div>
                 <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
                   ${fromLabel} <strong>${targetStopName}</strong> ${toLabel} <strong>${destStopName}</strong>
+                </div>
+                <div style="font-size: 0.82rem; color: #047857; margin-top: 4px;">
+                  ${stdBusesLabel} <strong>₹${price}</strong>
                 </div>
               </div>
               <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
@@ -572,7 +594,20 @@ class PassengerController {
         const ticketFareLabel = window.I18n ? window.I18n.t('ticketFare') : 'Ticket Fare';
         const curStopVal = item.currentStopName ? (window.I18n ? window.I18n.getStopName(item.currentStopName) : item.currentStopName) : (window.I18n ? window.I18n.t('onRoute') : 'On Route');
         const nextStopVal = item.nextStopName ? (window.I18n ? window.I18n.getStopName(item.nextStopName) : item.nextStopName) : (window.I18n ? window.I18n.t('enRoute') : 'En route');
-        const fareVal = isVetriBus ? (window.I18n ? window.I18n.t('ticketFareFreeText') : '₹0 FREE') : (window.I18n ? window.I18n.t('standardFare') : 'Standard Fare');
+
+        // Ticket fare calculation:
+        // - Vetri Payanam bus for Female passenger: Default is (₹0 Free)
+        // - Male passenger or Non-Vetri Payanam bus: Must show ticket price!
+        const isFreeForThisPassenger = isVetriBus && this.gender === 'female';
+        let calcFare = this.selectedDestId && isValidRoute 
+          ? this.getFare(route, this.selectedStopId, this.selectedDestId)
+          : null;
+        if (!calcFare) {
+          calcFare = 5; // standard base starting fare
+        }
+        const fareVal = isFreeForThisPassenger 
+          ? (window.I18n ? window.I18n.t('ticketFareFreeText') : '₹0 FREE')
+          : (this.selectedDestId ? `₹${calcFare}` : `From ₹${calcFare}`);
         const wimbBtnText = window.I18n ? window.I18n.t('whereIsMyBusBtn') : 'Where Is My Bus';
         const alarmBtnText = window.I18n ? window.I18n.t('alarmBtn') : 'Alarm';
 
@@ -636,14 +671,12 @@ class PassengerController {
                 <span class="lbl">${nextStopLabel}</span>
                 <span class="val text-emerald val-next-stop">${nextStopVal}</span>
               </div>
-              ${this.gender === 'female' ? `
-                <div class="metric-item">
-                  <span class="lbl">${ticketFareLabel}</span>
-                  <span class="val ${isVetriBus ? 'text-emerald' : ''}" style="font-weight: 700;">
-                    ${fareVal}
-                  </span>
-                </div>
-              ` : ''}
+              <div class="metric-item">
+                <span class="lbl">${ticketFareLabel}</span>
+                <span class="val ${isFreeForThisPassenger ? 'text-emerald' : ''}" style="font-weight: 700; ${isFreeForThisPassenger ? 'color: #10b981;' : 'color: #0f172a;'}">
+                  ${fareVal}
+                </span>
+              </div>
             </div>
           </div>
 
