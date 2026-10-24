@@ -453,17 +453,20 @@ class PassengerController {
 
         if (this.gender === 'female') {
           ticketPriceHtml = `
-            <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-              <div>
-                <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">${ticketTitle}</div>
-                <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
-                  ${fromLabel} <strong>${targetStopName}</strong> ${toLabel} <strong>${destStopName}</strong>
-                </div>
-                <div style="font-size: 0.82rem; color: #047857; margin-top: 4px;">
-                  ${vetriBusesLabel} <strong style="color: #059669;">${freeWomenFull}</strong> • ${stdBusesLabel} <strong>₹${price}</strong>
+            <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="assets/vetri-payanam-logo.png" alt="Vetri Payanam" style="height: 48px; width: 44px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">
+                <div>
+                  <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">${ticketTitle}</div>
+                  <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
+                    ${fromLabel} <strong>${targetStopName}</strong> ${toLabel} <strong>${destStopName}</strong>
+                  </div>
+                  <div style="font-size: 0.82rem; color: #047857; margin-top: 4px;">
+                    ${vetriBusesLabel} <strong style="color: #059669;">${freeWomenFull}</strong> • ${stdBusesLabel} <strong>₹${price}</strong>
+                  </div>
                 </div>
               </div>
-              <div style="text-align: right;">
+              <div style="text-align: right; flex-shrink: 0;">
                 <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
                   ${freeFareText}
                 </div>
@@ -563,7 +566,8 @@ class PassengerController {
                 </div>
                 ${this.gender === 'female' && isVetriBus ? `
                   <div style="margin-top: 4px;">
-                    <span class="badge" style="display: inline-block; background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                    <span class="badge" style="display: inline-flex; align-items: center; gap: 4px; background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                      <img src="assets/vetri-payanam-logo.png" alt="" style="width: 14px; height: 14px; object-fit: contain;">
                       ${vetriBadgeText}
                     </span>
                   </div>

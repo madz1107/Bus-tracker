@@ -76,10 +76,16 @@ class WhereIsMyBusController {
     // Check passenger gender mode for Vetri Payanam Scheme
     const currentGender = localStorage.getItem('citybus_passenger_gender') || 'male';
     const vpBanner = document.getElementById('wimbVetriPayanamBanner');
+    const vpTextElem = document.getElementById('wimbVetriPayanamText');
     if (vpBanner) {
       if (currentGender === 'female' && bus.isVetriPayanam) {
-        vpBanner.style.display = 'block';
-        vpBanner.textContent = window.I18n ? window.I18n.t('wimbVetriBanner') : 'Vetri Payanam Scheme Bus — Free Travel for Women Passengers';
+        vpBanner.style.display = 'flex';
+        const bannerMsg = window.I18n ? window.I18n.t('wimbVetriBanner') : 'Vetri Payanam Scheme Bus — Free Travel for Women Passengers';
+        if (vpTextElem) {
+          vpTextElem.textContent = bannerMsg;
+        } else {
+          vpBanner.textContent = bannerMsg;
+        }
       } else {
         vpBanner.style.display = 'none';
       }
