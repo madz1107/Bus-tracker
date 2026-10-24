@@ -303,7 +303,13 @@ app.get('/api/routes', async (req, res) => {
     try {
       const { data, error } = await supabase.from('routes').select('*').order('code', { ascending: true });
       if (!error && Array.isArray(data)) {
-        db.routes = data;
+        db.routes = data.map(remoteRoute => {
+          const local = db.routes.find(lr => lr.id === remoteRoute.id);
+          return {
+            ...remoteRoute,
+            fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
+          };
+        });
       }
     } catch (e) {}
   }

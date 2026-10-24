@@ -184,9 +184,20 @@ class StateManager {
           if (rRes.ok) {
             const freshRoutes = await rRes.json();
             if (Array.isArray(freshRoutes)) {
-              const routesDiffer = JSON.stringify(freshRoutes) !== JSON.stringify(this.routes);
+              const mergedRoutes = freshRoutes.map(remoteRoute => {
+                const local = this.routes.find(r => r.id === remoteRoute.id);
+                return {
+                  ...remoteRoute,
+                  fareMatrix: (remoteRoute.fareMatrix && Object.keys(remoteRoute.fareMatrix).length > 0)
+                    ? remoteRoute.fareMatrix
+                    : (remoteRoute.fare_matrix && Object.keys(remoteRoute.fare_matrix).length > 0)
+                      ? remoteRoute.fare_matrix
+                      : (local && local.fareMatrix ? local.fareMatrix : {})
+                };
+              });
+              const routesDiffer = JSON.stringify(mergedRoutes) !== JSON.stringify(this.routes);
               if (routesDiffer) {
-                this.routes = freshRoutes;
+                this.routes = mergedRoutes;
                 this.notify({ type: 'ROUTES_UPDATED' });
               }
             }

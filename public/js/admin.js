@@ -1092,6 +1092,7 @@ class AdminController {
     const routeId = this._fareMatrixRouteId;
     if (!routeId) return;
     const route = window.appState.getRouteById(routeId);
+    if (!route || !route.stops) return;
     
     const select = document.getElementById('fareMatrixBoardingStop');
     const boardStopId = select.value;
@@ -1102,10 +1103,17 @@ class AdminController {
     if (boardIdx === -1) return;
     
     const destStops = route.stops.slice(boardIdx + 1);
+    const stages = [0, 5, 7, 10, 12, 14, 15, 17, 18, 20, 20, 22, 23, 25, 25];
     
-    container.innerHTML = destStops.map(dest => {
+    container.innerHTML = destStops.map((dest, dIdx) => {
       const key = `${boardStopId}_${dest.id}`;
-      const existingPrice = route.fareMatrix && route.fareMatrix[key] ? route.fareMatrix[key] : '';
+      let existingPrice = (route.fareMatrix && route.fareMatrix[key] !== undefined && route.fareMatrix[key] !== null)
+        ? route.fareMatrix[key]
+        : '';
+      if (existingPrice === '') {
+        const stepDiff = dIdx + 1;
+        existingPrice = stages[Math.min(stepDiff, stages.length - 1)] || (5 + stepDiff * 2);
+      }
       return `
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
           <div style="font-size: 0.9rem; color: #475569;">To: <strong>${dest.name}</strong></div>
@@ -1121,6 +1129,7 @@ class AdminController {
   async saveFareMatrix() {
     if (!this._fareMatrixRouteId) return;
     const route = window.appState.getRouteById(this._fareMatrixRouteId);
+    if (!route) return;
     
     const select = document.getElementById('fareMatrixBoardingStop');
     const boardStopId = select.value;
@@ -1139,8 +1148,11 @@ class AdminController {
       }
     });
 
-    window.appState.notify();
+    const routeId = this._fareMatrixRouteId;
+    window.appState.notify({ type: 'ROUTES_UPDATED', route });
     await window.appState.saveRoute(route);
+    this.closeTicketPriceModal();
+    this.renderRouteStopList(routeId);
     window.app.showToast('Ticket prices saved successfully!', 'success');
   }
 
@@ -1324,12 +1336,28 @@ class AdminController {
             <p>No stops yet. Click "Add Stop to Route" to pin your first stop on the map.</p>
           </div>`;
       } else {
-        list.innerHTML = route.stops.map((stop, idx) => `
+        const originStop = route.stops[0];
+        const stages = [0, 5, 7, 10, 12, 14, 15, 17, 18, 20, 20, 22, 23, 25, 25];
+        list.innerHTML = route.stops.map((stop, idx) => {
+          let fareBadge = '';
+          if (idx === 0) {
+            fareBadge = `<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:6px;">Start / Origin</span>`;
+          } else {
+            const key = `${originStop.id}_${stop.id}`;
+            const fareVal = (route.fareMatrix && route.fareMatrix[key] !== undefined)
+              ? route.fareMatrix[key]
+              : (stages[Math.min(idx, stages.length - 1)] || (5 + idx * 2));
+            fareBadge = `<span class="badge" style="background:#ecfdf5; color:#065f46; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:6px; border:1px solid #a7f3d0;" title="Fare from Start Stop">₹${fareVal}</span>`;
+          }
+          return `
           <div class="route-stop-row">
             <div style="display: flex; align-items: center; gap: 0.85rem;">
               <div class="stop-seq-num">${stop.sequence || idx + 1}</div>
               <div>
-                <div style="font-weight: 700; color: #0f172a;">${stop.name}</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-weight: 700; color: #0f172a;">${stop.name}</span>
+                  ${fareBadge}
+                </div>
                 <div style="font-size: 0.75rem; color: #64748b;">
                   GPS: ${stop.lat.toFixed(4)}, ${stop.lng.toFixed(4)} • Geofence: 80m
                 </div>
@@ -1350,7 +1378,8 @@ class AdminController {
               </button>
             </div>
           </div>
-        `).join('');
+          `;
+        }).join('');
       }
     }
 
