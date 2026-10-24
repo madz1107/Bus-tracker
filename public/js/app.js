@@ -518,14 +518,15 @@ class AppController {
       tabWimb.style.display = 'none';
     }
 
-    // Gender toggle is ONLY visible in Passenger portal (never in Bus or Admin)
+    // Gender toggle is visible in Passenger portal & Where Is My Bus tracking screen (never in Bus or Admin)
     const genderToggle = document.getElementById('passengerGenderToggle');
     if (genderToggle) {
-      genderToggle.style.display = (portalName === 'passenger') ? 'inline-flex' : 'none';
+      genderToggle.style.display = (portalName === 'passenger' || portalName === 'where-is-my-bus') ? 'inline-flex' : 'none';
     }
 
-    // Apply female-mode theme only while on passenger portal
-    if (portalName !== 'passenger') {
+    // Apply female-mode theme across all passenger screens (Passenger, Where Is My Bus, Nearest Stop Map)
+    // Strictly removed only when in staff portals (Bus or admin)
+    if (portalName === 'Bus' || portalName === 'admin') {
       document.body.classList.remove('female-mode');
     } else {
       const g = localStorage.getItem('citybus_passenger_gender') || 'male';

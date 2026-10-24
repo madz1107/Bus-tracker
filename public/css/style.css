@@ -662,6 +662,138 @@ body.female-mode #portalNearestStopMap .btn-outline i {
 }
 
 /* ========================================================
+   WHERE IS MY BUS (WIMB) LIVE TRACKING SCREEN - FEMALE MODE
+   ======================================================== */
+
+body.female-mode #portalWhereIsMyBus {
+  --primary: #f472b6 !important;
+  --primary-hover: #ec4899 !important;
+  --primary-light: #fdf2f8 !important;
+  --primary-border: #fbcfe8 !important;
+  --transit-blue: #db2777 !important;
+}
+
+/* Header & Nav Tab for WIMB */
+body.female-mode #appHeader #navTabWimb.active {
+  color: #db2777 !important;
+  background: #ffffff !important;
+}
+
+body.female-mode #appHeader #navTabWimb.active i {
+  color: #db2777 !important;
+}
+
+body.female-mode #appHeader .hot-badge {
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  color: #ffffff !important;
+}
+
+/* Vetri Payanam Clean English Banner on WIMB */
+body.female-mode #wimbVetriPayanamBanner {
+  background: #fdf2f8 !important;
+  border: 1px solid #fbcfe8 !important;
+  color: #db2777 !important;
+}
+
+/* Large Bus Number Badge in WIMB HUD */
+body.female-mode #portalWhereIsMyBus .wimb-bus-badge,
+body.female-mode #wimbBusNumberBadge {
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(244, 114, 182, 0.35) !important;
+}
+
+/* Offline Screen "Back to Passenger Portal" Button & All Primary Buttons */
+body.female-mode #portalWhereIsMyBus .btn-primary,
+body.female-mode #portalWhereIsMyBus button.btn-primary,
+body.female-mode #wimbOfflineMessage button.btn-primary {
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 10px rgba(244, 114, 182, 0.35) !important;
+}
+
+body.female-mode #portalWhereIsMyBus .btn-primary:hover,
+body.female-mode #wimbOfflineMessage button.btn-primary:hover {
+  background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+  transform: translateY(-1px);
+}
+
+/* Live Telemetry & Timeline in WIMB */
+body.female-mode #portalWhereIsMyBus .text-blue {
+  color: #db2777 !important;
+}
+
+body.female-mode #portalWhereIsMyBus .wimb-actions .form-control:focus {
+  border-color: #f472b6 !important;
+  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.25) !important;
+}
+
+body.female-mode #portalWhereIsMyBus .btn-outline:hover {
+  border-color: #fbcfe8 !important;
+  color: #db2777 !important;
+  background: #fdf2f8 !important;
+}
+
+body.female-mode #portalWhereIsMyBus .btn-outline:hover i {
+  color: #f472b6 !important;
+}
+
+body.female-mode #portalWhereIsMyBus .route-progress-pct {
+  color: #db2777 !important;
+  background: #fdf2f8 !important;
+}
+
+body.female-mode #portalWhereIsMyBus .wimb-progress-bar-fill {
+  background: linear-gradient(90deg, var(--emerald), #f472b6) !important;
+}
+
+body.female-mode #portalWhereIsMyBus .stop-timeline-node.next-target .stop-indicator-circle {
+  border-color: #f472b6 !important;
+  background: #fdf2f8 !important;
+  color: #db2777 !important;
+  box-shadow: 0 0 0 5px rgba(244, 114, 182, 0.2) !important;
+}
+
+body.female-mode #portalWhereIsMyBus .map-action-icon-btn:hover {
+  background: #fdf2f8 !important;
+  color: #db2777 !important;
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalWhereIsMyBus [style*="#2563eb"],
+body.female-mode #portalWhereIsMyBus [style*="#3b82f6"] {
+  color: #f472b6 !important;
+}
+
+body.female-mode #portalWhereIsMyBus [style*="#eff6ff"] {
+  background: #fdf2f8 !important;
+}
+
+body.female-mode #portalWhereIsMyBus [style*="#bfdbfe"] {
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalWhereIsMyBus [style*="#1e40af"] {
+  color: #db2777 !important;
+}
+
+/* Modals (Save Favorite Commute & Proximity Alarm) in Female Mode */
+body.female-mode #modalAlarm .btn-primary,
+body.female-mode #modalSaveFavorite .btn-primary {
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35) !important;
+}
+
+body.female-mode #modalAlarm .form-control:focus,
+body.female-mode #modalSaveFavorite .form-control:focus {
+  border-color: #f472b6 !important;
+  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.25) !important;
+}
+
+/* ========================================================
    MAIN CONTENT CONTAINER & PORTALS
    ======================================================== */
 .main-container {
