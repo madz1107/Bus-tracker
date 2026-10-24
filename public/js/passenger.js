@@ -252,9 +252,10 @@ class PassengerController {
             }).addTo(this.nearestMap);
 
             // Add User Marker
+            const userMarkerColor = this.gender === 'female' ? '#f472b6' : '#2563eb';
             const userIcon = L.divIcon({
               className: 'custom-div-icon',
-              html: `<div style="background-color: #2563eb; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
+              html: `<div style="background-color: ${userMarkerColor}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
               iconSize: [16, 16],
               iconAnchor: [8, 8]
             });
@@ -513,7 +514,7 @@ class PassengerController {
                 </div>
                 ${this.gender === 'female' && isVetriBus ? `
                   <div style="margin-top: 4px;">
-                    <span class="badge" style="display: inline-block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                    <span class="badge" style="display: inline-block; background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
                       Vetri Payanam • FREE
                     </span>
                   </div>

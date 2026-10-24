@@ -351,53 +351,82 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ========================================================
-   VETRI PAYANAM / FEMALE THEME (MATCHING USER REFERENCE DESIGN)
-   Applies only when Female mode is active in Passenger Portal
+   VETRI PAYANAM / FEMALE THEME (LIGHT PINK PALETTE)
+   Active ONLY when Female mode is selected in Passenger Portal.
+   Transforms all standard blue transit accents into elegant light pink.
+   When Male mode is active, 100% blue colors apply without any changes.
    ======================================================== */
+
+/* Header & Navigation in Female Mode */
 body.female-mode #appHeader .logo-icon-wrap {
-  background: linear-gradient(135deg, #f472b6, #fb7185);
-  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35);
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35) !important;
 }
 
 body.female-mode #appHeader .brand-highlight {
-  color: #f472b6;
+  color: #f472b6 !important;
 }
 
 body.female-mode #appHeader .live-network-badge {
-  background: rgba(244, 114, 182, 0.1);
-  border-color: rgba(244, 114, 182, 0.3);
-  color: #db2777;
+  background: rgba(244, 114, 182, 0.1) !important;
+  border-color: rgba(244, 114, 182, 0.35) !important;
+  color: #db2777 !important;
 }
 
 body.female-mode #appHeader .live-network-badge .pulse-dot {
-  background: #f472b6;
-  box-shadow: 0 0 8px #f472b6;
+  background: #f472b6 !important;
+  box-shadow: 0 0 8px #f472b6 !important;
 }
 
 body.female-mode #appHeader .nav-tab.active {
-  color: #db2777;
-  background: #ffffff;
+  color: #db2777 !important;
+  background: #ffffff !important;
 }
 
 body.female-mode #appHeader .nav-tab.active i {
-  color: #db2777;
+  color: #db2777 !important;
 }
 
 body.female-mode #appHeader .gender-btn#genderBtnFemale.active {
-  background: linear-gradient(135deg, #f472b6, #fb7185);
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(244, 114, 182, 0.35);
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(244, 114, 182, 0.35) !important;
 }
 
 body.female-mode #appHeader .role-tag {
-  background: rgba(244, 114, 182, 0.15);
-  color: #db2777;
+  background: rgba(244, 114, 182, 0.15) !important;
+  color: #db2777 !important;
 }
 
-/* Passenger Portal Elements in Female Theme */
+body.female-mode #appHeader #userAuthPill i {
+  color: #db2777 !important;
+}
+
+/* ========================================================
+   PASSENGER PORTAL - LIGHT PINK THEME (REPLACES ALL BLUE)
+   ======================================================== */
+
+body.female-mode #portalPassenger {
+  --primary: #f472b6 !important;
+  --primary-hover: #ec4899 !important;
+  --primary-light: #fdf2f8 !important;
+  --primary-border: #fbcfe8 !important;
+  --transit-blue: #db2777 !important;
+}
+
+/* Hero Section */
+body.female-mode #portalPassenger .passenger-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #fff1f5 100%) !important;
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalPassenger .passenger-hero::after {
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.14) 0%, transparent 70%) !important;
+}
+
 body.female-mode #portalPassenger .hero-chip {
-  background: rgba(244, 114, 182, 0.09) !important;
-  border-color: rgba(244, 114, 182, 0.35) !important;
+  background: #fdf2f8 !important;
+  border-color: #fbcfe8 !important;
   color: #db2777 !important;
 }
 
@@ -406,17 +435,25 @@ body.female-mode #portalPassenger .hero-chip i {
 }
 
 body.female-mode #portalPassenger .passenger-hero button.btn-outline {
-  border-color: rgba(244, 114, 182, 0.35);
-  color: #db2777;
+  border-color: #fbcfe8 !important;
+  color: #db2777 !important;
+  background: #ffffff !important;
+}
+
+body.female-mode #portalPassenger .passenger-hero button.btn-outline:hover {
+  background: #fdf2f8 !important;
+  border-color: #f472b6 !important;
+  color: #be185d !important;
 }
 
 body.female-mode #portalPassenger .passenger-hero button.btn-outline i {
-  color: #f472b6;
+  color: #f472b6 !important;
 }
 
+/* Search Cards & Deck */
 body.female-mode #portalPassenger .search-card {
-  border: 1px solid rgba(244, 114, 182, 0.28);
-  box-shadow: 0 4px 20px rgba(244, 114, 182, 0.07);
+  border: 1px solid #fbcfe8 !important;
+  box-shadow: 0 4px 20px rgba(244, 114, 182, 0.08) !important;
 }
 
 body.female-mode #portalPassenger .search-card h3 i {
@@ -424,27 +461,35 @@ body.female-mode #portalPassenger .search-card h3 i {
 }
 
 body.female-mode #portalPassenger .search-field label i {
-  color: #f472b6;
+  color: #f472b6 !important;
 }
 
 body.female-mode #portalPassenger .search-field .form-control {
-  border-color: rgba(244, 114, 182, 0.35);
+  border-color: #fbcfe8 !important;
 }
 
 body.female-mode #portalPassenger .search-field .form-control:focus {
-  border-color: #f472b6;
-  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.2);
+  border-color: #f472b6 !important;
+  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.25) !important;
 }
 
 body.female-mode #portalPassenger .star-commute-btn {
-  border-color: rgba(244, 114, 182, 0.35);
-  color: #db2777;
+  border-color: #fbcfe8 !important;
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .star-commute-btn:hover {
+  background: #fdf2f8 !important;
+  border-color: #f472b6 !important;
 }
 
 body.female-mode #portalPassenger .star-commute-btn i {
-  color: #f472b6;
+  color: #f472b6 !important;
 }
 
+/* Buttons (Track Live, Search, etc.) */
+body.female-mode #portalPassenger .btn-primary,
+body.female-mode #portalPassenger button.btn-primary,
 body.female-mode #portalPassenger .btn-search {
   background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%) !important;
   color: #ffffff !important;
@@ -452,54 +497,168 @@ body.female-mode #portalPassenger .btn-search {
   box-shadow: 0 4px 14px rgba(244, 114, 182, 0.35) !important;
 }
 
+body.female-mode #portalPassenger .btn-primary:hover,
+body.female-mode #portalPassenger button.btn-primary:hover,
 body.female-mode #portalPassenger .btn-search:hover {
   background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%) !important;
   box-shadow: 0 6px 18px rgba(244, 114, 182, 0.45) !important;
   transform: translateY(-1px);
 }
 
+/* Section Headers */
 body.female-mode #portalPassenger .section-icon-bubble {
-  background: rgba(244, 114, 182, 0.12);
-  color: #f472b6;
-  border-color: rgba(244, 114, 182, 0.3);
+  background: #fdf2f8 !important;
+  color: #f472b6 !important;
+  border: 1px solid #fbcfe8 !important;
 }
 
 body.female-mode #portalPassenger .section-icon-bubble i {
-  color: #f472b6;
+  color: #f472b6 !important;
 }
 
-body.female-mode #portalPassenger #selectedStopNameDisplay {
+body.female-mode #portalPassenger #selectedStopNameDisplay,
+body.female-mode #portalPassenger .text-primary {
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .text-blue {
   color: #db2777 !important;
 }
 
 body.female-mode #portalPassenger .live-sync-indicator {
-  border-color: rgba(244, 114, 182, 0.35);
-  color: #db2777;
-  background: rgba(244, 114, 182, 0.06);
+  border-color: #fbcfe8 !important;
+  color: #db2777 !important;
+  background: #fdf2f8 !important;
 }
 
 body.female-mode #portalPassenger .live-sync-indicator .ping-circle {
-  background: #f472b6;
-  box-shadow: 0 0 8px #f472b6;
+  background: #f472b6 !important;
+  box-shadow: 0 0 8px #f472b6 !important;
 }
 
+/* Priority Cards */
 body.female-mode #portalPassenger .priority-card {
-  border-color: rgba(244, 114, 182, 0.3);
+  border-color: #fbcfe8 !important;
 }
 
 body.female-mode #portalPassenger .priority-card .bus-num-badge {
-  background: linear-gradient(135deg, #f472b6, #fb7185);
-  color: #ffffff;
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  color: #ffffff !important;
+  border-color: #fbcfe8 !important;
 }
 
-body.female-mode #portalPassenger .priority-card button.btn-primary {
-  background: linear-gradient(135deg, #f472b6, #fb7185);
-  border: none;
-  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.3);
+body.female-mode #portalPassenger .priority-eta-box {
+  background: #fdf2f8 !important;
+  border-color: #fbcfe8 !important;
 }
 
-body.female-mode #portalPassenger .priority-card button.btn-primary:hover {
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
+body.female-mode #portalPassenger .priority-eta-box .eta-label-tag {
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .priority-eta-box .eta-time-val {
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .comfort-recommend-chip {
+  background: #fdf2f8 !important;
+  color: #db2777 !important;
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalPassenger .comfort-recommend-chip i {
+  color: #f472b6 !important;
+}
+
+/* Low Crowd Smart Alert */
+body.female-mode #portalPassenger .smart-crowd-alert {
+  background: #fdf2f8 !important;
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalPassenger .smart-crowd-badge-icon {
+  background: #fce7f3 !important;
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .smart-crowd-btn {
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.3) !important;
+}
+
+/* Daily Commute Section */
+body.female-mode #portalPassenger .fav-add-btn {
+  border-color: #fbcfe8 !important;
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger .fav-add-btn:hover {
+  background: #fdf2f8 !important;
+  border-color: #f472b6 !important;
+}
+
+body.female-mode #portalPassenger .fav-commute-card {
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalPassenger .fav-commute-card:hover {
+  border-color: #f472b6 !important;
+  box-shadow: 0 4px 12px rgba(244, 114, 182, 0.15) !important;
+}
+
+/* Fleet Cards */
+body.female-mode #portalPassenger .fleet-card:hover {
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalPassenger .fleet-card .bus-num-badge {
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  color: #ffffff !important;
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalPassenger .fleet-card [style*="color: #2563eb"],
+body.female-mode #portalPassenger .fleet-card [style*="color:#2563eb"] {
+  color: #db2777 !important;
+}
+
+/* Catch-all for any inline blue styles in passenger portal */
+body.female-mode #portalPassenger [style*="#2563eb"] {
+  color: #f472b6 !important;
+}
+
+body.female-mode #portalPassenger [style*="#eff6ff"] {
+  background: #fdf2f8 !important;
+}
+
+body.female-mode #portalPassenger [style*="#bfdbfe"] {
+  border-color: #fbcfe8 !important;
+}
+
+body.female-mode #portalPassenger [style*="#1e40af"] {
+  color: #db2777 !important;
+}
+
+body.female-mode #portalPassenger [style*="#3b82f6"] {
+  color: #f472b6 !important;
+}
+
+/* Nearest Stop Map Portal (Opened from Passenger Portal) */
+body.female-mode #portalNearestStopMap .btn-primary {
+  background: linear-gradient(135deg, #f472b6, #fb7185) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.3) !important;
+}
+
+body.female-mode #portalNearestStopMap .btn-outline {
+  border-color: #fbcfe8 !important;
+  color: #db2777 !important;
+}
+
+body.female-mode #portalNearestStopMap .btn-outline i {
+  color: #f472b6 !important;
 }
 
 /* ========================================================
