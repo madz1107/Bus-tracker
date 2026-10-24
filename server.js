@@ -403,7 +403,13 @@ app.get('/api/buses', async (req, res) => {
 
 // 4b. Buses: Get Single Bus
 app.get('/api/buses/:id', (req, res) => {
-  const bus = db.buses.find(b => b.id === req.params.id);
+  const busId = req.params.id;
+  const search = String(busId).trim().toLowerCase();
+  const bus = db.buses.find(b => 
+    b.id === busId || 
+    b.id.toLowerCase() === search || 
+    (b.busNumber && b.busNumber.toLowerCase() === search)
+  );
   if (bus) {
     res.json(bus);
   } else {
@@ -552,7 +558,12 @@ app.post('/api/buses', async (req, res) => {
 
   if (supabase) {
     try {
-      await supabase.from('buses').upsert(busToRow(newBus));
+      const row = busToRow(newBus);
+      const res = await supabase.from('buses').upsert(row);
+      if (res && res.error && res.error.code === 'PGRST204') {
+        delete row.is_vetri_payanam;
+        await supabase.from('buses').upsert(row);
+      }
     } catch (e) {}
   }
 

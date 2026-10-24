@@ -261,7 +261,14 @@ class StateManager {
   }
 
   getBusById(busId) {
-    return this.buses.find((b) => b.id === busId);
+    if (!busId) return null;
+    const search = String(busId).trim().toLowerCase();
+    return this.buses.find((b) => 
+      b.id === busId ||
+      b.id.toLowerCase() === search ||
+      (b.busNumber && b.busNumber.toLowerCase() === search) ||
+      (b.busNumber && `bus-${b.busNumber}`.toLowerCase() === search)
+    );
   }
 
   getBusesForRoute(routeId) {
@@ -391,6 +398,7 @@ class StateManager {
             reg_number: busData.regNumber,
             bus_name: busData.BusName || busData.name,
             route_id: busData.routeId,
+            assigned_route_ids: busData.assignedRouteIds || (busData.routeId ? [busData.routeId] : []),
             conductor_id: busData.conductorId,
             conductor_name: busData.conductorName,
             conductor_phone: busData.conductorPhone,
@@ -401,10 +409,18 @@ class StateManager {
             bearing: Number(busData.bearing || 0),
             crowd_level: busData.crowdLevel || 'Moderate',
             is_trip_active: Boolean(busData.isTripActive),
-            is_vetri_payanam: Boolean(busData.isVetriPayanam),
             last_updated: new Date().toISOString()
           };
-          await window.CloudDB.supabase.from('buses').upsert(row);
+
+          // Try upsert with is_vetri_payanam; fallback without it if column is not yet present in Supabase table
+          const res = await window.CloudDB.supabase.from('buses').upsert({
+            ...row,
+            is_vetri_payanam: Boolean(busData.isVetriPayanam)
+          });
+
+          if (res.error && res.error.code === 'PGRST204') {
+            await window.CloudDB.supabase.from('buses').upsert(row);
+          }
         } catch (sErr) {
           console.warn('Direct Supabase saveBus warning:', sErr);
         }
