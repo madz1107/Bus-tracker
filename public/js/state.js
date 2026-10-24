@@ -232,6 +232,9 @@ class StateManager {
         console.error('Listener notification error:', err);
       }
     });
+    if (window.app && typeof window.app.updateActiveBusesBadge === 'function') {
+      window.app.updateActiveBusesBadge();
+    }
   }
 
   getRouteById(routeId) {

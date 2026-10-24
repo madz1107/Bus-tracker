@@ -623,10 +623,8 @@ class PassengerController {
     }
 
     // Update active buses badge in header
-    const activeCountText = document.getElementById('activeBusesCountText');
-    const runningCount = window.appState.buses.filter((b) => b.status === 'Running').length;
-    if (activeCountText) {
-      activeCountText.textContent = `${runningCount} Active Buses Live`;
+    if (window.app && typeof window.app.updateActiveBusesBadge === 'function') {
+      window.app.updateActiveBusesBadge();
     }
 
     if (buses.length === 0) {

@@ -213,6 +213,22 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 6px var(--emerald);
 }
 
+.pulse-dot.green {
+  background: var(--emerald);
+  box-shadow: 0 0 6px var(--emerald);
+}
+
+.pulse-dot.amber {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+}
+
+.live-network-badge.idle {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
 /* Portal Navigation Tabs */
 .portal-nav {
   display: flex;

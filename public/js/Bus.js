@@ -65,6 +65,9 @@ class BusController {
 
     this.updateTripStatusUI(false);
     this.render();
+    if (window.app && typeof window.app.updateActiveBusesBadge === 'function') {
+      window.app.updateActiveBusesBadge();
+    }
     if (window.lucide) {
       setTimeout(() => lucide.createIcons(), 50);
     }
@@ -227,6 +230,9 @@ class BusController {
       bus.status = 'Running';
       window.appState.updateBusLocation(this.busId, { isTripActive: true, status: 'Running' });
     }
+    if (window.app && typeof window.app.updateActiveBusesBadge === 'function') {
+      window.app.updateActiveBusesBadge();
+    }
 
     try {
       fetch(`/api/buses/${this.busId}/location`, {
@@ -319,6 +325,9 @@ class BusController {
       bus.status = 'Offline';
       bus.speed = 0;
       window.appState.updateBusLocation(this.busId, { isTripActive: false, status: 'Offline', speed: 0 });
+    }
+    if (window.app && typeof window.app.updateActiveBusesBadge === 'function') {
+      window.app.updateActiveBusesBadge();
     }
 
     // 5. Direct Supabase real-time cloud broadcast via CloudDB

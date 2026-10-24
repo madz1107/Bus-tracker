@@ -137,7 +137,9 @@ class AdminController {
     const totalRoutes = document.getElementById('kpiTotalRoutes');
     const totalStops = document.getElementById('kpiTotalStops');
 
-    const running = window.appState.buses.filter((b) => b.status === 'Running').length;
+    const running = window.app && typeof window.app.getActiveLiveBusesCount === 'function'
+      ? window.app.getActiveLiveBusesCount()
+      : window.appState.buses.filter((b) => b.isTripActive && b.status === 'Running').length;
     let stopCount = 0;
     window.appState.routes.forEach((r) => { stopCount += (r.stops || []).length; });
 
@@ -145,6 +147,10 @@ class AdminController {
     if (activeBuses) activeBuses.textContent = running;
     if (totalRoutes) totalRoutes.textContent = window.appState.routes.length;
     if (totalStops) totalStops.textContent = stopCount;
+
+    if (window.app && typeof window.app.updateActiveBusesBadge === 'function') {
+      window.app.updateActiveBusesBadge();
+    }
   }
 
   renderFleetMap() {

@@ -53,6 +53,14 @@ class AppController {
       this.applyAppFlavor(this.appFlavor);
     }
 
+    // Auto-update Active Buses Live network badge whenever bus states change
+    if (window.appState && typeof window.appState.subscribe === 'function') {
+      window.appState.subscribe(() => {
+        this.updateActiveBusesBadge();
+      });
+    }
+    this.updateActiveBusesBadge();
+
     if (window.lucide) {
       lucide.createIcons();
     }
@@ -539,8 +547,53 @@ class AppController {
       window.admin.init();
     }
 
+    // Always ensure Active Buses Live count is refreshed upon switching portals
+    this.updateActiveBusesBadge();
+
     if (window.lucide) {
       setTimeout(() => lucide.createIcons(), 50);
+    }
+  }
+
+  /**
+   * Returns exact count of currently online live-tracking buses
+   */
+  getActiveLiveBusesCount() {
+    if (!window.appState || !Array.isArray(window.appState.buses)) return 0;
+    return window.appState.buses.filter(b => {
+      return Boolean(b.isTripActive && b.status === 'Running');
+    }).length;
+  }
+
+  /**
+   * Dynamically updates the global Active Buses Live network badge across all portals (Passenger, Bus, Admin)
+   */
+  updateActiveBusesBadge() {
+    const badgeText = document.getElementById('activeBusesCountText');
+    const badgeWrap = document.getElementById('liveNetworkBadge');
+    const pulseDot = document.getElementById('liveNetworkPulseDot') || document.querySelector('.live-network-badge .pulse-dot');
+    if (!badgeText) return;
+
+    const count = this.getActiveLiveBusesCount();
+    if (badgeWrap) {
+      badgeWrap.classList.toggle('idle', count === 0);
+    }
+
+    if (count === 0) {
+      badgeText.textContent = '0 Active Buses Live';
+      if (pulseDot) {
+        pulseDot.className = 'pulse-dot amber';
+      }
+    } else if (count === 1) {
+      badgeText.textContent = '1 Active Bus Live';
+      if (pulseDot) {
+        pulseDot.className = 'pulse-dot green';
+      }
+    } else {
+      badgeText.textContent = `${count} Active Buses Live`;
+      if (pulseDot) {
+        pulseDot.className = 'pulse-dot green';
+      }
     }
   }
 
