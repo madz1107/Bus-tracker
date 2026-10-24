@@ -193,14 +193,17 @@ class PassengerController {
     }
 
     const stopLabel = window.I18n && window.I18n.getLanguage() === 'ta' ? 'நிறுத்தம்' : 'Stop';
-    const freeWomenText = window.I18n ? window.I18n.t('freeWomenTravelFull') : '₹0 FREE - Women Free Travel';
+    const vetriFreeLabel = window.I18n && window.I18n.getLanguage() === 'ta' ? 'வெற்றிப் பயணம் : இலவசம்' : 'Vetri Payanam : Free';
+
+    const routeBuses = window.appState.getBusesForRoute(route.id) || [];
+    const hasVetri = routeBuses.some(b => b.isVetriPayanam);
 
     destSelect.innerHTML = `<option value="">${anyDestText}</option>` + availableDestinations.map((s) => {
       let priceText = '';
       const price = this.getFare(route, this.selectedStopId, s.id);
       if (price !== undefined) {
-        if (this.gender === 'female') {
-          priceText = ` (₹${price} • Vetri: ₹0 Free)`;
+        if (this.gender === 'female' && hasVetri) {
+          priceText = ` (${vetriFreeLabel})`;
         } else {
           priceText = ` (₹${price})`;
         }
@@ -470,13 +473,13 @@ class PassengerController {
         const ticketTitle = window.I18n ? window.I18n.t('ticketPriceInfo') : 'Ticket Price Info';
         const fromLabel = window.I18n ? window.I18n.t('ticketFrom') : 'From';
         const toLabel = window.I18n ? window.I18n.t('ticketTo') : 'to';
-        const vetriBusesLabel = window.I18n ? window.I18n.t('ticketVetriBusLabel') : 'Vetri Payanam Buses:';
-        const stdBusesLabel = window.I18n ? window.I18n.t('ticketStandardBusLabel') : 'Standard Buses:';
-        const freeWomenFull = window.I18n ? window.I18n.t('freeWomenTravelFull') : '₹0 FREE (Women Free Travel)';
+        const vetriFreeText = window.I18n && window.I18n.getLanguage() === 'ta' ? 'வெற்றிப் பயணம் : இலவசம்' : 'Vetri Payanam : Free';
         const freeTag = window.I18n ? window.I18n.t('freeWomenTravelTag') : '(Women Free Travel)';
-        const freeFareText = window.I18n ? window.I18n.t('ticketFareFreeText') : '₹0 FREE';
 
-        if (this.gender === 'female') {
+        const routeBuses = window.appState.getBusesForRoute(route.id) || [];
+        const hasVetri = routeBuses.some(b => b.isVetriPayanam);
+
+        if (this.gender === 'female' && hasVetri) {
           ticketPriceHtml = `
             <div style="grid-column: 1 / -1; background: #ecfdf5; border: 1px solid #10b981; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px;">
               <div style="display: flex; align-items: center; gap: 12px;">
@@ -487,15 +490,14 @@ class PassengerController {
                     ${fromLabel} <strong>${targetStopName}</strong> ${toLabel} <strong>${destStopName}</strong>
                   </div>
                   <div style="font-size: 0.82rem; color: #047857; margin-top: 4px;">
-                    ${vetriBusesLabel} <strong style="color: #059669;">${freeWomenFull}</strong> • ${stdBusesLabel} <strong>₹${price}</strong>
+                    ${freeTag}
                   </div>
                 </div>
               </div>
               <div style="text-align: right; flex-shrink: 0;">
-                <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
-                  ${freeFareText}
+                <div style="font-size: 1.35rem; font-weight: 800; color: #059669;">
+                  ${vetriFreeText}
                 </div>
-                <div style="font-size: 0.72rem; font-weight: 700; color: #065f46;">${freeTag}</div>
               </div>
             </div>
           `;
@@ -506,9 +508,6 @@ class PassengerController {
                 <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">${ticketTitle}</div>
                 <div style="font-size: 0.85rem; color: #047857; margin-top: 2px;">
                   ${fromLabel} <strong>${targetStopName}</strong> ${toLabel} <strong>${destStopName}</strong>
-                </div>
-                <div style="font-size: 0.82rem; color: #047857; margin-top: 4px;">
-                  ${stdBusesLabel} <strong>₹${price}</strong>
                 </div>
               </div>
               <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
@@ -605,8 +604,9 @@ class PassengerController {
         if (!calcFare) {
           calcFare = 5; // standard base starting fare
         }
+        const vetriFreeText = window.I18n && window.I18n.getLanguage() === 'ta' ? 'வெற்றிப் பயணம் : இலவசம்' : 'Vetri Payanam : Free';
         const fareVal = isFreeForThisPassenger 
-          ? (window.I18n ? window.I18n.t('ticketFareFreeText') : '₹0 FREE')
+          ? vetriFreeText
           : (this.selectedDestId ? `₹${calcFare}` : `From ₹${calcFare}`);
         const wimbBtnText = window.I18n ? window.I18n.t('whereIsMyBusBtn') : 'Where Is My Bus';
         const alarmBtnText = window.I18n ? window.I18n.t('alarmBtn') : 'Alarm';
