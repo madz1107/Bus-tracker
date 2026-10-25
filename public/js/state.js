@@ -135,6 +135,7 @@ class StateManager {
               this.notify({ type: 'FLEET_UPDATED' });
             } else {
               let hasChange = false;
+              let metaChanged = false;
               const changedBusIds = [];
               freshBuses.forEach((freshBus) => {
                 const local = this.getBusById(freshBus.id);
@@ -149,7 +150,14 @@ class StateManager {
                     }
                   }
 
+                  const routesChanged = JSON.stringify(local.assignedRouteIds || []) !== JSON.stringify(freshBus.assignedRouteIds || []);
+                  const vetriChanged = Boolean(local.isVetriPayanam) !== Boolean(freshBus.isVetriPayanam);
+                  const routeChanged = local.routeId !== freshBus.routeId;
+
                   const hasBusChanged = (
+                    routesChanged ||
+                    vetriChanged ||
+                    routeChanged ||
                     local.lat !== freshBus.lat ||
                     local.lng !== freshBus.lng ||
                     local.speed !== freshBus.speed ||
@@ -168,12 +176,18 @@ class StateManager {
                     Object.assign(local, freshBus);
                     changedBusIds.push(freshBus.id);
                     hasChange = true;
+                    if (routesChanged || vetriChanged || routeChanged) {
+                      metaChanged = true;
+                    }
                   }
                 }
               });
 
               if (hasChange) {
                 this.notify({ type: 'BUS_LOCATION_UPDATE', source: 'poll', changedBusIds });
+                if (metaChanged) {
+                  this.notify({ type: 'FLEET_UPDATED' });
+                }
               }
             }
           }
@@ -417,10 +431,7 @@ class StateManager {
             reg_number: busData.regNumber,
             bus_name: busData.BusName || busData.name,
             route_id: busData.routeId,
-            assigned_route_ids: busData.assignedRouteIds || (busData.routeId ? [busData.routeId] : []),
-            conductor_id: busData.conductorId,
-            conductor_name: busData.conductorName,
-            conductor_phone: busData.conductorPhone,
+            assigned_route_ids: Array.isArray(busData.assignedRouteIds) ? busData.assignedRouteIds : (busData.routeId ? [busData.routeId] : []),
             status: busData.status || 'Stopped',
             lat: Number(busData.lat || 8.7139),
             lng: Number(busData.lng || 77.7285),
@@ -430,14 +441,13 @@ class StateManager {
             is_trip_active: Boolean(busData.isTripActive),
             last_updated: new Date().toISOString()
           };
+          if (busData.conductorId) row.conductor_id = busData.conductorId;
+          if (busData.conductorName) row.conductor_name = busData.conductorName;
+          if (busData.conductorPhone) row.conductor_phone = busData.conductorPhone;
 
-          // Try upsert with is_vetri_payanam; fallback without it if column is not yet present in Supabase table
-          const res = await window.CloudDB.supabase.from('buses').upsert({
-            ...row,
-            is_vetri_payanam: Boolean(busData.isVetriPayanam)
-          });
-
-          if (res.error && res.error.code === 'PGRST204') {
+          // Directly update existing bus row in Supabase
+          const upRes = await window.CloudDB.supabase.from('buses').update(row).eq('id', busData.id);
+          if (upRes.error) {
             await window.CloudDB.supabase.from('buses').upsert(row);
           }
         } catch (sErr) {

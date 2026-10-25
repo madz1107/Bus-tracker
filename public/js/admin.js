@@ -429,8 +429,8 @@ class AdminController {
     document.getElementById('busFormId').value = bus.id;
     document.getElementById('busFormNumber').value = bus.busNumber;
     document.getElementById('busFormReg').value = bus.regNumber;
-    document.getElementById('busFormBus').value = bus.BusName || '';
-    document.getElementById('busFormPhone').value = bus.BusPhone || '';
+    document.getElementById('busFormBus').value = bus.BusName || bus.name || '';
+    document.getElementById('busFormPhone').value = bus.BusPhone || bus.conductorPhone || '';
     
     // Find associated user for login email
     const busUser = window.appState.users.find(u => u.busId === bus.id);
@@ -440,7 +440,7 @@ class AdminController {
     const vpCheck = document.getElementById('busFormVetriPayanam');
     if (vpCheck) vpCheck.checked = Boolean(bus.isVetriPayanam);
     
-    const assigned = (Array.isArray(bus.assignedRouteIds) && bus.assignedRouteIds.length > 0)
+    const assigned = Array.isArray(bus.assignedRouteIds)
       ? bus.assignedRouteIds
       : (bus.routeId ? [bus.routeId] : []);
     this.populateRouteFormRoutes(assigned);
@@ -462,15 +462,15 @@ class AdminController {
     let assignedRouteIds = [];
     if (container) {
       assignedRouteIds = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-    }
-    if (assignedRouteIds.length === 0) {
+    } else {
       const routeSelect = document.getElementById('busFormRoute');
       if (routeSelect) {
         assignedRouteIds = Array.from(routeSelect.selectedOptions).map(o => o.value);
       }
     }
-    if (assignedRouteIds.length === 0 && window.appState.routes.length > 0) {
-      assignedRouteIds = [window.appState.routes[0].id];
+    if (assignedRouteIds.length === 0) {
+      window.app.showToast('Please select at least one route for this bus.', 'warning');
+      return;
     }
     
     const BusName = document.getElementById('busFormBus').value.trim();
@@ -500,30 +500,34 @@ class AdminController {
       assignedRouteIds,
       isVetriPayanam,
       BusName,
+      name: BusName,
       BusPhone,
+      conductorPhone: BusPhone,
+      conductorName: BusName,
       loginEmail,
       loginPassword,
-      status,
-      crowdLevel,
-      lat: firstStop ? firstStop.lat : 13.0800,
-      lng: firstStop ? firstStop.lng : 80.2500,
-      speed: status === 'Running' ? 30 : 0,
-      bearing: 90,
-      isTripActive: status === 'Running',
-      currentStopId: firstStop ? firstStop.id : null,
-      currentStopName: firstStop ? firstStop.name : 'Terminal',
-      nextStopId: route && route.stops[1] ? route.stops[1].id : null,
-      nextStopName: route && route.stops[1] ? route.stops[1].name : 'Next Stop',
-      distanceToNextKm: 2.0,
-      etaMinutes: 5,
-      routeProgress: 0,
-      reachedStopIds: firstStop ? [firstStop.id] : []
+      status: existingBus ? existingBus.status : 'Offline',
+      crowdLevel: existingBus ? existingBus.crowdLevel : 'Moderate',
+      lat: (existingBus && existingBus.lat) ? existingBus.lat : (firstStop ? firstStop.lat : 8.7139),
+      lng: (existingBus && existingBus.lng) ? existingBus.lng : (firstStop ? firstStop.lng : 77.7285),
+      speed: existingBus ? existingBus.speed : 0,
+      bearing: existingBus ? existingBus.bearing : 90,
+      isTripActive: existingBus ? Boolean(existingBus.isTripActive) : false,
+      currentStopId: (existingBus && existingBus.currentStopId) ? existingBus.currentStopId : (firstStop ? firstStop.id : null),
+      currentStopName: (existingBus && existingBus.currentStopName) ? existingBus.currentStopName : (firstStop ? firstStop.name : 'Terminal'),
+      nextStopId: (existingBus && existingBus.nextStopId) ? existingBus.nextStopId : (route && route.stops && route.stops[1] ? route.stops[1].id : null),
+      nextStopName: (existingBus && existingBus.nextStopName) ? existingBus.nextStopName : (route && route.stops && route.stops[1] ? route.stops[1].name : 'Next Stop'),
+      distanceToNextKm: (existingBus && existingBus.distanceToNextKm !== undefined) ? existingBus.distanceToNextKm : 2.0,
+      etaMinutes: (existingBus && existingBus.etaMinutes !== undefined) ? existingBus.etaMinutes : 5,
+      routeProgress: (existingBus && existingBus.routeProgress !== undefined) ? existingBus.routeProgress : 0,
+      reachedStopIds: (existingBus && existingBus.reachedStopIds) ? existingBus.reachedStopIds : (firstStop ? [firstStop.id] : [])
     };
 
     await window.appState.saveBus(busPayload);
     this.closeBusModal();
     this.renderBusTable();
     this.renderFleetMap();
+    this.renderKpis();
     window.app.showToast(`Bus ${busNumber} saved successfully!`, 'success');
   }
 

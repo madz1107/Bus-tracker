@@ -474,23 +474,25 @@
       "conductorName": null,
       "conductorPhone": null,
       "status": "Offline",
-      "lat": 8.7314275,
-      "lng": 77.72377,
+      "lat": 8.731296,
+      "lng": 77.708938,
       "speed": 0,
       "bearing": 90,
       "currentStopId": "stop-1-1",
       "currentStopName": "Junction Railway Station",
-      "nextStopId": "stop-1-1",
-      "nextStopName": "Junction Railway Station",
-      "distanceToNextKm": 1.6,
-      "etaMinutes": 3,
+      "nextStopId": "stop-1-2",
+      "nextStopName": "Junction Bus Stand",
+      "distanceToNextKm": 2,
+      "etaMinutes": 5,
       "routeProgress": 0,
-      "reachedStopIds": [],
-      "crowdLevel": "Heavy",
+      "reachedStopIds": [
+        "stop-1-1"
+      ],
+      "crowdLevel": "Moderate",
       "isTripActive": false,
       "isVetriPayanam": true,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-25T11:19:28.746Z"
+      "lastUpdated": "2026-10-25T12:28:01.181Z"
     },
     {
       "id": "BUS-1A",
@@ -510,19 +512,21 @@
       "lng": 77.708938,
       "speed": 0,
       "bearing": 90,
-      "currentStopId": null,
-      "currentStopName": null,
-      "nextStopId": null,
-      "nextStopName": null,
-      "distanceToNextKm": 0,
-      "etaMinutes": 0,
+      "currentStopId": "stop-1-1",
+      "currentStopName": "Junction Railway Station",
+      "nextStopId": "stop-1-2",
+      "nextStopName": "Junction Bus Stand",
+      "distanceToNextKm": 2,
+      "etaMinutes": 5,
       "routeProgress": 0,
-      "reachedStopIds": [],
+      "reachedStopIds": [
+        "stop-1-1"
+      ],
       "crowdLevel": "Moderate",
       "isTripActive": false,
       "isVetriPayanam": false,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-24T16:02:24.384+00:00"
+      "lastUpdated": "2026-10-25T11:42:24.368+00:00"
     },
     {
       "id": "BUS-8",
@@ -530,31 +534,33 @@
       "regNumber": "TN 72 AB 1234",
       "BusName": "ADJ",
       "name": "ADJ",
-      "routeId": "route-8",
+      "routeId": "route-1792857145069",
       "assignedRouteIds": [
-        "route-8"
+        "route-1792857145069"
       ],
       "conductorId": null,
       "conductorName": null,
       "conductorPhone": null,
       "status": "Offline",
-      "lat": 8.7314674,
-      "lng": 77.7237144,
+      "lat": 8.701849,
+      "lng": 77.727928,
       "speed": 0,
-      "bearing": 131,
-      "currentStopId": "stop-8-1",
-      "currentStopName": "Tirunelveli  New Bus Stand",
-      "nextStopId": "stop-8-1",
-      "nextStopName": "Tirunelveli  New Bus Stand",
-      "distanceToNextKm": 3.2,
-      "etaMinutes": 7,
+      "bearing": 90,
+      "currentStopId": "stop-1R-1",
+      "currentStopName": "New Bus Stand",
+      "nextStopId": "stop-1R-2",
+      "nextStopName": "Railway Gate",
+      "distanceToNextKm": 2,
+      "etaMinutes": 5,
       "routeProgress": 0,
-      "reachedStopIds": [],
+      "reachedStopIds": [
+        "stop-1R-1"
+      ],
       "crowdLevel": "Low",
       "isTripActive": false,
       "isVetriPayanam": false,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-24T08:18:08.541+00:00"
+      "lastUpdated": "2026-10-25T11:42:31.994+00:00"
     }
   ],
   "users": [

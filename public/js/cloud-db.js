@@ -146,9 +146,16 @@
                   if (freshRow.is_vetri_payanam === undefined && local.isVetriPayanam !== undefined) {
                     updatedBus.isVetriPayanam = local.isVetriPayanam;
                   }
-                  if ((!freshRow.assigned_route_ids || freshRow.assigned_route_ids.length === 0) && local.assignedRouteIds && local.assignedRouteIds.length > 0) {
+                  if (Array.isArray(freshRow.assigned_route_ids)) {
+                    updatedBus.assignedRouteIds = freshRow.assigned_route_ids;
+                  } else if (Array.isArray(freshRow.assignedRouteIds)) {
+                    updatedBus.assignedRouteIds = freshRow.assignedRouteIds;
+                  } else if (local.assignedRouteIds) {
                     updatedBus.assignedRouteIds = local.assignedRouteIds;
                   }
+                  const routesChanged = JSON.stringify(local.assignedRouteIds || []) !== JSON.stringify(updatedBus.assignedRouteIds || []);
+                  const vetriChanged = Boolean(local.isVetriPayanam) !== Boolean(updatedBus.isVetriPayanam);
+                  
                   Object.assign(local, updatedBus);
                   window.appState.notify({
                     type: 'BUS_LOCATION_UPDATE',
@@ -156,6 +163,9 @@
                     busId: updatedBus.id,
                     locationData: updatedBus
                   });
+                  if (routesChanged || vetriChanged) {
+                    window.appState.notify({ type: 'FLEET_UPDATED' });
+                  }
                 } else {
                   window.appState.buses.push(updatedBus);
                   window.appState.notify({ type: 'FLEET_UPDATED' });

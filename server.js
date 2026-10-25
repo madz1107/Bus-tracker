@@ -49,14 +49,14 @@ function rowToBus(row) {
     name: row.bus_name,
     routeId: row.route_id,
     assignedRouteIds: (() => {
-      if (Array.isArray(row.assigned_route_ids) && row.assigned_route_ids.length > 0) {
+      if (Array.isArray(row.assigned_route_ids)) {
         return row.assigned_route_ids;
       }
-      if (Array.isArray(row.assignedRouteIds) && row.assignedRouteIds.length > 0) {
+      if (Array.isArray(row.assignedRouteIds)) {
         return row.assignedRouteIds;
       }
       const local = (db && Array.isArray(db.buses)) ? db.buses.find(b => b.id === row.id) : null;
-      if (local && Array.isArray(local.assignedRouteIds) && local.assignedRouteIds.length > 0) {
+      if (local && Array.isArray(local.assignedRouteIds)) {
         return local.assignedRouteIds;
       }
       return row.route_id ? [row.route_id] : [];
@@ -669,12 +669,14 @@ app.post('/api/buses', async (req, res) => {
   if (supabase) {
     try {
       const row = busToRow(newBus);
-      const res = await supabase.from('buses').upsert(row);
-      if (res && res.error && res.error.code === 'PGRST204') {
-        delete row.is_vetri_payanam;
+      delete row.is_vetri_payanam; // Supabase table buses does not have is_vetri_payanam column
+      const updateRes = await supabase.from('buses').update(row).eq('id', newBus.id);
+      if (updateRes.error || updateRes.count === 0) {
         await supabase.from('buses').upsert(row);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase bus save warning:', e.message);
+    }
   }
 
   res.json({ success: true, bus: newBus });
