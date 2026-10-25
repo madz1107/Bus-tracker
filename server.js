@@ -48,7 +48,19 @@ function rowToBus(row) {
     BusName: row.bus_name,
     name: row.bus_name,
     routeId: row.route_id,
-    assignedRouteIds: row.assigned_route_ids || [],
+    assignedRouteIds: (() => {
+      if (Array.isArray(row.assigned_route_ids) && row.assigned_route_ids.length > 0) {
+        return row.assigned_route_ids;
+      }
+      if (Array.isArray(row.assignedRouteIds) && row.assignedRouteIds.length > 0) {
+        return row.assignedRouteIds;
+      }
+      const local = (db && Array.isArray(db.buses)) ? db.buses.find(b => b.id === row.id) : null;
+      if (local && Array.isArray(local.assignedRouteIds) && local.assignedRouteIds.length > 0) {
+        return local.assignedRouteIds;
+      }
+      return row.route_id ? [row.route_id] : [];
+    })(),
     conductorId: row.conductor_id,
     conductorName: row.conductor_name,
     conductorPhone: row.conductor_phone,
@@ -67,11 +79,19 @@ function rowToBus(row) {
     reachedStopIds: row.reached_stop_ids || [],
     crowdLevel: row.crowd_level || 'Moderate',
     isTripActive: Boolean(row.is_trip_active),
-    isVetriPayanam: Boolean(
-      row.is_vetri_payanam !== undefined && row.is_vetri_payanam !== null
-        ? row.is_vetri_payanam
-        : (row.isVetriPayanam !== undefined ? row.isVetriPayanam : (row.id === 'BUS-1' || row.bus_number === '1'))
-    ),
+    isVetriPayanam: (() => {
+      if (row.is_vetri_payanam !== undefined && row.is_vetri_payanam !== null) {
+        return Boolean(row.is_vetri_payanam);
+      }
+      if (row.isVetriPayanam !== undefined && row.isVetriPayanam !== null) {
+        return Boolean(row.isVetriPayanam);
+      }
+      const local = (db && Array.isArray(db.buses)) ? db.buses.find(b => b.id === row.id) : null;
+      if (local && local.isVetriPayanam !== undefined) {
+        return Boolean(local.isVetriPayanam);
+      }
+      return false;
+    })(),
     simulatorIndex: Number(row.simulator_index || 0),
     lastUpdated: row.last_updated
   };
@@ -132,10 +152,15 @@ function loadData() {
   return db;
 }
 
-// Helper: Save Data to local JSON (safe for serverless read-only disk)
+// Helper: Save Data to local JSON and public/data.json (safe for serverless read-only disk)
 function saveData() {
   try {
-    fs.writeFileSync(dataFilePath, JSON.stringify(db, null, 2), 'utf8');
+    const jsonStr = JSON.stringify(db, null, 2);
+    fs.writeFileSync(dataFilePath, jsonStr, 'utf8');
+    try {
+      const publicDataFile = path.join(publicDir, 'data.json');
+      fs.writeFileSync(publicDataFile, jsonStr, 'utf8');
+    } catch (_) {}
   } catch (err) {
     // Disk write skipped on read-only environments
   }
@@ -156,6 +181,7 @@ async function syncFromSupabase() {
         const local = db.routes.find(r => r.id === remoteRoute.id);
         return {
           ...remoteRoute,
+          description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
           fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
         };
       });
@@ -198,6 +224,7 @@ app.get('/api/state', async (req, res) => {
           const local = db.routes.find(lr => lr.id === remoteRoute.id);
           return {
             ...remoteRoute,
+            description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
             fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
           };
         });
@@ -307,6 +334,7 @@ app.get('/api/routes', async (req, res) => {
           const local = db.routes.find(lr => lr.id === remoteRoute.id);
           return {
             ...remoteRoute,
+            description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
             fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
           };
         });
@@ -330,6 +358,7 @@ app.post('/api/routes', async (req, res) => {
         name: routeData.name,
         code: routeData.code,
         color: routeData.color || '#2563EB',
+        description: routeData.description || '',
         stops: routeData.stops || [],
         roadway: routeData.roadway || [],
         fare_matrix: routeData.fareMatrix || {}
@@ -547,7 +576,7 @@ app.post('/api/buses/:id/trip', async (req, res) => {
 
 // 4f. Buses: Create / Update Bus (Admin)
 app.post('/api/buses', async (req, res) => {
-  const newBus = req.body;
+  let newBus = req.body;
   if (!newBus.id) {
     newBus.id = 'BUS-' + Math.floor(100 + Math.random() * 900);
   }
@@ -591,7 +620,8 @@ app.post('/api/buses', async (req, res) => {
 
   const existingIdx = db.buses.findIndex(b => b.id === newBus.id);
   if (existingIdx >= 0) {
-    db.buses[existingIdx] = newBus;
+    db.buses[existingIdx] = { ...db.buses[existingIdx], ...newBus };
+    newBus = db.buses[existingIdx];
   } else {
     db.buses.push(newBus);
   }
@@ -616,15 +646,19 @@ app.post('/api/buses', async (req, res) => {
 app.delete('/api/buses/:id', async (req, res) => {
   const busId = req.params.id;
   db.buses = db.buses.filter(b => b.id !== busId);
+  db.users = db.users.filter(u => u.busId !== busId && u.bus_id !== busId);
   saveData();
 
   if (supabase) {
     try {
-      await supabase.from('buses').delete().eq('id', busId);
+      await Promise.all([
+        supabase.from('buses').delete().eq('id', busId),
+        supabase.from('users').delete().eq('bus_id', busId)
+      ]);
     } catch (e) {}
   }
 
-  res.json({ success: true, message: 'Bus removed' });
+  res.json({ success: true, message: 'Bus and associated user account removed' });
 });
 
 // 5. Favorite Commutes API

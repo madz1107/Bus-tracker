@@ -1039,10 +1039,16 @@
             </div>
           </div>
           <div class="form-group mb-3">
-            <label for="busFormRoute">Assigned Routes (Ctrl+Click for multiple)</label>
-            <select id="busFormRoute" class="form-control" required multiple style="height: 100px;">
-              <!-- Dynamic -->
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">
+              <i data-lucide="route"></i> Assigned Routes (Click to Select / Multiple)
+            </label>
+            <div id="busFormRouteCheckboxes" style="max-height: 140px; overflow-y: auto; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+              <!-- Dynamic route checkboxes with code badges -->
+            </div>
+            <select id="busFormRoute" class="form-control" multiple style="display: none;">
+              <!-- Kept in sync for form validity -->
             </select>
+            <small class="text-muted" style="font-size: 0.74rem; margin-top: 4px; display: block;">Tap any route to assign or unassign it for this bus.</small>
           </div>
           <div class="form-row mb-3">
             <div class="form-col">

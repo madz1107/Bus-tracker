@@ -62,7 +62,15 @@
       BusName: row.bus_name,
       name: row.bus_name,
       routeId: row.route_id,
-      assignedRouteIds: row.assigned_route_ids || [],
+      assignedRouteIds: Array.isArray(row.assigned_route_ids)
+        ? row.assigned_route_ids
+        : (Array.isArray(row.assignedRouteIds)
+            ? row.assignedRouteIds
+            : (() => {
+                const local = window.appState && typeof window.appState.getBusById === 'function' ? window.appState.getBusById(row.id) : null;
+                if (local && Array.isArray(local.assignedRouteIds)) return local.assignedRouteIds;
+                return row.route_id ? [row.route_id] : [];
+              })()),
       conductorId: row.conductor_id,
       conductorName: row.conductor_name,
       conductorPhone: row.conductor_phone,
@@ -81,11 +89,19 @@
       reachedStopIds: row.reached_stop_ids || [],
       crowdLevel: row.crowd_level || 'Moderate',
       isTripActive: Boolean(row.is_trip_active),
-      isVetriPayanam: Boolean(
-        row.is_vetri_payanam !== undefined && row.is_vetri_payanam !== null
-          ? row.is_vetri_payanam
-          : (row.isVetriPayanam !== undefined ? row.isVetriPayanam : (row.id === 'BUS-1' || row.bus_number === '1'))
-      ),
+      isVetriPayanam: (() => {
+        if (row.is_vetri_payanam !== undefined && row.is_vetri_payanam !== null) {
+          return Boolean(row.is_vetri_payanam);
+        }
+        if (row.isVetriPayanam !== undefined && row.isVetriPayanam !== null) {
+          return Boolean(row.isVetriPayanam);
+        }
+        const local = window.appState && typeof window.appState.getBusById === 'function' ? window.appState.getBusById(row.id) : null;
+        if (local && local.isVetriPayanam !== undefined) {
+          return Boolean(local.isVetriPayanam);
+        }
+        return false;
+      })(),
       simulatorIndex: Number(row.simulator_index || 0),
       lastUpdated: row.last_updated
     };
@@ -124,9 +140,15 @@
             } else if (payload.eventType === 'UPDATE') {
               const freshRow = payload.new;
               if (freshRow && freshRow.id) {
+                const local = window.appState.getBusById(freshRow.id);
                 const updatedBus = rowToBus(freshRow);
-                const local = window.appState.getBusById(updatedBus.id);
                 if (local) {
+                  if (freshRow.is_vetri_payanam === undefined && local.isVetriPayanam !== undefined) {
+                    updatedBus.isVetriPayanam = local.isVetriPayanam;
+                  }
+                  if ((!freshRow.assigned_route_ids || freshRow.assigned_route_ids.length === 0) && local.assignedRouteIds && local.assignedRouteIds.length > 0) {
+                    updatedBus.assignedRouteIds = local.assignedRouteIds;
+                  }
                   Object.assign(local, updatedBus);
                   window.appState.notify({
                     type: 'BUS_LOCATION_UPDATE',

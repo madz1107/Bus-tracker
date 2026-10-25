@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS public.routes (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     code TEXT NOT NULL,
+    description TEXT,
+    fare_matrix JSONB DEFAULT '{}'::jsonb,
     color TEXT DEFAULT '#2563EB',
     stops JSONB DEFAULT '[]'::jsonb,
     roadway JSONB DEFAULT '[]'::jsonb,
@@ -43,6 +45,7 @@ CREATE TABLE IF NOT EXISTS public.buses (
     reached_stop_ids JSONB DEFAULT '[]'::jsonb,
     crowd_level TEXT DEFAULT 'Moderate',
     is_trip_active BOOLEAN DEFAULT false,
+    is_vetri_payanam BOOLEAN DEFAULT false,
     simulator_index DOUBLE PRECISION DEFAULT 0,
     last_updated TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
@@ -165,3 +168,12 @@ INSERT INTO public.users (id, email, password, name, role, bus_id, phone) VALUES
 ('cond-4', 'conductor4@citybus.com', 'pass123', 'Kandasamy P.', 'Bus', 'BUS-201', '+91 94434 45678'),
 ('user-pass-1', 'passenger@citybus.com', 'pass123', 'Priya Sharma', 'passenger', null, null)
 ON CONFLICT (id) DO NOTHING;
+
+-- =========================================================================
+-- MIGRATION STATEMENTS (Run if tables already exist in your Supabase project)
+-- =========================================================================
+ALTER TABLE public.routes ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.routes ADD COLUMN IF NOT EXISTS fare_matrix JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.buses ADD COLUMN IF NOT EXISTS is_vetri_payanam BOOLEAN DEFAULT false;
+ALTER TABLE public.buses ADD COLUMN IF NOT EXISTS assigned_route_ids JSONB DEFAULT '[]'::jsonb;
+

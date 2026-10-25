@@ -93,13 +93,51 @@ class AdminController {
     }
   }
 
-  populateRouteFormRoutes() {
+  populateRouteFormRoutes(selectedIds = []) {
+    const container = document.getElementById('busFormRouteCheckboxes');
     const select = document.getElementById('busFormRoute');
-    if (!select) return;
+    if (!container && !select) return;
 
-    select.innerHTML = window.appState.routes.map((r) => `
-      <option value="${r.id}">${r.name}</option>
-    `).join('');
+    const routes = window.appState.routes || [];
+
+    if (select) {
+      select.innerHTML = routes.map((r) => `
+        <option value="${r.id}" ${selectedIds.includes(r.id) ? 'selected' : ''}>${r.name}</option>
+      `).join('');
+    }
+
+    if (container) {
+      if (routes.length === 0) {
+        container.innerHTML = '<div style="color: #94a3b8; font-size: 0.85rem; padding: 4px;">No routes available. Create a route first.</div>';
+        return;
+      }
+      container.innerHTML = routes.map((r) => {
+        const isChecked = selectedIds.includes(r.id);
+        return `
+          <label class="route-checkbox-item" style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; background: ${isChecked ? '#eff6ff' : '#ffffff'}; border: 1px solid ${isChecked ? '#3b82f6' : '#e2e8f0'}; cursor: pointer; user-select: none; transition: all 0.15s ease;">
+            <input type="checkbox" value="${r.id}" ${isChecked ? 'checked' : ''} onchange="admin.onRouteCheckboxToggle(this)" style="cursor: pointer; width: 16px; height: 16px; accent-color: #2563eb;">
+            <span class="badge" style="background: ${r.color || '#2563eb'}22; color: ${r.color || '#2563eb'}; font-weight: 700; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">${r.code}</span>
+            <span style="font-size: 0.88rem; font-weight: ${isChecked ? '600' : '400'}; color: #1e293b;">${r.name}</span>
+          </label>
+        `;
+      }).join('');
+    }
+  }
+
+  onRouteCheckboxToggle(checkbox) {
+    const item = checkbox.closest('.route-checkbox-item');
+    if (item) {
+      item.style.background = checkbox.checked ? '#eff6ff' : '#ffffff';
+      item.style.borderColor = checkbox.checked ? '#3b82f6' : '#e2e8f0';
+      const labelText = item.querySelector('span:last-child');
+      if (labelText) labelText.style.fontWeight = checkbox.checked ? '600' : '400';
+    }
+    const select = document.getElementById('busFormRoute');
+    if (select) {
+      Array.from(select.options).forEach(opt => {
+        if (opt.value === checkbox.value) opt.selected = checkbox.checked;
+      });
+    }
   }
 
   onMapFilterChange(val) {
@@ -232,7 +270,7 @@ class AdminController {
             ${(bus.assignedRouteIds && bus.assignedRouteIds.length > 0)
                 ? bus.assignedRouteIds.map(rid => {
                     const r = window.appState.getRouteById(rid);
-                    return r ? `<div style="margin-bottom: 4px;">${r.name}</div>` : '';
+                    return r ? `<div style="margin-bottom: 4px; display: flex; align-items: center; gap: 5px;"><span class="badge" style="background: ${r.color || '#2563eb'}22; color: ${r.color || '#2563eb'}; font-size: 0.72rem; font-weight: 700; padding: 1px 6px; border-radius: 4px;">${r.code}</span> <span>${r.name}</span></div>` : '';
                   }).join('')
                 : (route ? `<div>${route.name}</div>` : '<div style="color: #94a3b8;">Unassigned</div>')
             }
@@ -378,7 +416,8 @@ class AdminController {
     document.getElementById('busFormLoginPassword').value = '';
     const vpCheck = document.getElementById('busFormVetriPayanam');
     if (vpCheck) vpCheck.checked = false;
-    this.populateRouteFormRoutes();
+    const defaultSelected = window.appState.routes.length > 0 ? [window.appState.routes[0].id] : [];
+    this.populateRouteFormRoutes(defaultSelected);
     document.getElementById('busModal').classList.add('active');
   }
 
@@ -401,11 +440,10 @@ class AdminController {
     const vpCheck = document.getElementById('busFormVetriPayanam');
     if (vpCheck) vpCheck.checked = Boolean(bus.isVetriPayanam);
     
-    this.populateRouteFormRoutes();
-    const routeSelect = document.getElementById('busFormRoute');
-    Array.from(routeSelect.options).forEach(opt => {
-      opt.selected = (bus.assignedRouteIds || [bus.routeId]).includes(opt.value);
-    });
+    const assigned = (Array.isArray(bus.assignedRouteIds) && bus.assignedRouteIds.length > 0)
+      ? bus.assignedRouteIds
+      : (bus.routeId ? [bus.routeId] : []);
+    this.populateRouteFormRoutes(assigned);
     document.getElementById('busModal').classList.add('active');
   }
 
@@ -418,8 +456,22 @@ class AdminController {
     const id = document.getElementById('busFormId').value;
     const busNumber = document.getElementById('busFormNumber').value.trim();
     const regNumber = document.getElementById('busFormReg').value.trim();
-    const routeSelect = document.getElementById('busFormRoute');
-    const assignedRouteIds = Array.from(routeSelect.selectedOptions).map(o => o.value);
+    
+    // Retrieve all selected routes from checkboxes or select
+    const container = document.getElementById('busFormRouteCheckboxes');
+    let assignedRouteIds = [];
+    if (container) {
+      assignedRouteIds = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    }
+    if (assignedRouteIds.length === 0) {
+      const routeSelect = document.getElementById('busFormRoute');
+      if (routeSelect) {
+        assignedRouteIds = Array.from(routeSelect.selectedOptions).map(o => o.value);
+      }
+    }
+    if (assignedRouteIds.length === 0 && window.appState.routes.length > 0) {
+      assignedRouteIds = [window.appState.routes[0].id];
+    }
     
     const BusName = document.getElementById('busFormBus').value.trim();
     const BusPhone = document.getElementById('busFormPhone').value.trim();
@@ -470,6 +522,8 @@ class AdminController {
 
     await window.appState.saveBus(busPayload);
     this.closeBusModal();
+    this.renderBusTable();
+    this.renderFleetMap();
     window.app.showToast(`Bus ${busNumber} saved successfully!`, 'success');
   }
 
@@ -480,7 +534,8 @@ class AdminController {
         delete this.markers[busId];
       }
       await window.appState.deleteBus(busId);
-      this.render();
+      this.renderBusTable();
+      this.renderFleetMap();
       window.app.showToast('Bus deleted.', 'info');
     }
   }
@@ -534,6 +589,8 @@ class AdminController {
     await window.appState.saveRoute(route);
     this.closeRouteModal();
     this.renderRouteCards();
+    this.renderStopsSection();
+    this.populateRouteFormRoutes();
   }
 
   openAddStopModal(routeId) {
@@ -674,7 +731,9 @@ class AdminController {
               ${route.code}
             </div>
             <div class="route-card-name">${route.name}</div>
-            ${route.description ? `<div class="route-card-description" style="font-size: 0.85rem; color: #64748b; margin-top: 4px; margin-bottom: 4px;">${route.description}</div>` : ''}
+            <div class="route-card-description" style="font-size: 0.82rem; color: #64748b; margin-top: 4px; margin-bottom: 6px; line-height: 1.35;">
+              ${route.description ? `📝 ${route.description}` : '<em style="color:#94a3b8; font-size: 0.78rem;">No description added yet</em>'}
+            </div>
             <div class="route-card-meta">
               <span><i data-lucide="map-pin" style="width:12px;height:12px;"></i> ${(route.stops || []).length} Stops</span>
               <span><i data-lucide="bus" style="width:12px;height:12px;"></i> ${buses.length} Buses</span>
@@ -1290,6 +1349,7 @@ class AdminController {
               style="border-left: 4px solid ${route.color || '#2563eb'};">
         <div class="route-select-code" style="color: ${route.color || '#2563eb'};">${route.code}</div>
         <div class="route-select-name">${route.name}</div>
+        ${route.description ? `<div class="route-select-desc" style="font-size: 0.76rem; color: #64748b; margin-top: 2px; line-height: 1.25;">${route.description}</div>` : ''}
         <div class="route-select-meta">${(route.stops || []).length} stops</div>
       </button>
     `).join('');
@@ -1324,7 +1384,16 @@ class AdminController {
     const list = document.getElementById('adminInlineStopList');
 
     if (card) card.style.display = 'block';
-    if (title) title.innerHTML = `<i data-lucide="map-pin"></i> ${route.name} — ${(route.stops || []).length} Stops`;
+    if (title) {
+      title.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="map-pin"></i> <span>${route.name} — ${(route.stops || []).length} Stops</span>
+          </div>
+          ${route.description ? `<div style="font-size: 0.85rem; color: #64748b; font-weight: 400; margin-top: 3px;">📝 ${route.description}</div>` : ''}
+        </div>
+      `;
+    }
     if (addBtn) addBtn.setAttribute('onclick', `admin.openAddStopModal('${routeId}')`);
     if (drawBtn) drawBtn.setAttribute('onclick', `admin.openDrawRouteModal('${routeId}')`);
     if (faresBtn) faresBtn.setAttribute('onclick', `admin.openTicketPriceModal('${routeId}')`);

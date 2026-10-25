@@ -64,6 +64,7 @@ class StateManager {
             const local = this.routes.find(r => r.id === remoteRoute.id);
             return {
               ...remoteRoute,
+              description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
               fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
             };
           });
@@ -188,6 +189,7 @@ class StateManager {
                 const local = this.routes.find(r => r.id === remoteRoute.id);
                 return {
                   ...remoteRoute,
+                  description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
                   fareMatrix: (remoteRoute.fareMatrix && Object.keys(remoteRoute.fareMatrix).length > 0)
                     ? remoteRoute.fareMatrix
                     : (remoteRoute.fare_matrix && Object.keys(remoteRoute.fare_matrix).length > 0)
@@ -511,6 +513,7 @@ class StateManager {
           };
           const { error: sErr } = await window.CloudDB.supabase.from('routes').upsert({
             ...rowPayload,
+            description: routeData.description || '',
             fare_matrix: routeData.fareMatrix || {}
           });
           if (sErr) {
