@@ -400,14 +400,42 @@ app.post('/api/routes', async (req, res) => {
 // 3c. Routes: Delete
 app.delete('/api/routes/:id', async (req, res) => {
   const routeId = req.params.id;
+
+  // Delete from Supabase if configured
   if (supabase) {
     try {
       await supabase.from('routes').delete().eq('id', routeId);
     } catch (e) {}
   }
+
+  // Remove the route from the local store
   db.routes = db.routes.filter(r => r.id !== routeId);
+
+  // *** Cascade: Remove this route ID from any bus's assignedRouteIds ***
+  if (Array.isArray(db.buses)) {
+    for (const bus of db.buses) {
+      if (Array.isArray(bus.assignedRouteIds)) {
+        const originalLength = bus.assignedRouteIds.length;
+        bus.assignedRouteIds = bus.assignedRouteIds.filter(id => id !== routeId);
+        // If the bus lost a route, persist the change
+        if (bus.assignedRouteIds.length !== originalLength) {
+          // Ensure we keep at least one route if the array becomes empty (optional fallback)
+          if (bus.assignedRouteIds.length === 0 && bus.routeId) {
+            bus.assignedRouteIds = [bus.routeId];
+          }
+          // Sync the updated bus back to Supabase (if available)
+          if (supabase) {
+            try {
+              await supabase.from('buses').update(busToRow(bus)).eq('id', bus.id);
+            } catch (e) {}
+          }
+        }
+      }
+    }
+  }
+
   saveData();
-  res.json({ success: true, message: 'Route deleted' });
+  res.json({ success: true, message: 'Route deleted and references cleaned up' });
 });
 
 // 3d. Routes: Add Stop
@@ -620,8 +648,18 @@ app.post('/api/buses', async (req, res) => {
 
   const existingIdx = db.buses.findIndex(b => b.id === newBus.id);
   if (existingIdx >= 0) {
-    db.buses[existingIdx] = { ...db.buses[existingIdx], ...newBus };
-    newBus = db.buses[existingIdx];
+    const existingBus = db.buses[existingIdx];
+    // Preserve existing assignedRouteIds if request does not include them
+    if (newBus.assignedRouteIds === undefined) {
+      newBus.assignedRouteIds = existingBus.assignedRouteIds;
+    }
+    // Merge other fields, overriding only provided values
+    for (const key in newBus) {
+      if (newBus[key] !== undefined) {
+        existingBus[key] = newBus[key];
+      }
+    }
+    newBus = existingBus;
   } else {
     db.buses.push(newBus);
   }
