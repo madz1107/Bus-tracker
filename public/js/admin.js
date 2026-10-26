@@ -422,7 +422,7 @@ class AdminController {
         ? 'Vetri Payanam Scheme: Enabled (Free Bus for Women)' 
         : 'Vetri Payanam Scheme: Disabled (Standard Fare Bus)';
     }
-  },
+  }
 
   async toggleVetriPayanam(busId) {
     const bus = window.appState.getBusById(busId);
@@ -441,7 +441,7 @@ class AdminController {
       ? `Vetri Payanam scheme enabled for Bus ${bus.busNumber}! (Free for Women)` 
       : `Vetri Payanam scheme disabled for Bus ${bus.busNumber}. (Normal Fare)`;
     window.app.showToast(msg, newVetriStatus ? 'success' : 'info');
-  },
+  }
 
   // Modals & CRUD
   openAddBusModal() {
