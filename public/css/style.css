@@ -2484,7 +2484,7 @@ body.female-mode #modalSaveFavorite .form-control:focus {
   border: 1px solid var(--slate-200);
   overflow: hidden;
   margin: auto;
-  max-height: calc(100vh - 2.5rem);
+  max-height: min(92vh, 740px);
   display: flex;
   flex-direction: column;
 }
@@ -2493,8 +2493,9 @@ body.female-mode #modalSaveFavorite .form-control:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.1rem 1.4rem;
+  padding: 1rem 1.4rem;
   border-bottom: 1px solid var(--slate-200);
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -2510,6 +2511,9 @@ body.female-mode #modalSaveFavorite .form-control:focus {
   border: none;
   color: var(--slate-400);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-close-btn:hover {
@@ -2517,7 +2521,36 @@ body.female-mode #modalSaveFavorite .form-control:focus {
 }
 
 .modal-body {
-  padding: 1.4rem;
+  padding: 1.25rem 1.4rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-body::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+.modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.modal-footer {
+  padding: 0.85rem 1.4rem;
+  border-top: 1px solid var(--slate-200);
+  background: var(--white);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
 }
 
 .demo-login-grid {

@@ -1023,10 +1023,10 @@
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title" id="busModalTitle"><i data-lucide="bus"></i> Add New Bus</div>
-        <button class="modal-close-btn" onclick="admin.closeBusModal()"><i data-lucide="x"></i></button>
+        <button type="button" class="modal-close-btn" onclick="admin.closeBusModal()"><i data-lucide="x"></i></button>
       </div>
-      <div class="modal-body">
-        <form id="busForm" onsubmit="admin.saveBus(event)">
+      <form id="busForm" onsubmit="admin.saveBus(event)" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin: 0; overflow: hidden;">
+        <div class="modal-body">
           <input type="hidden" id="busFormId">
           <div class="form-row mb-3">
             <div class="form-col">
@@ -1042,7 +1042,7 @@
             <label style="font-weight: 600; display: block; margin-bottom: 6px;">
               <i data-lucide="route"></i> Assigned Routes (Click to Select / Multiple)
             </label>
-            <div id="busFormRouteCheckboxes" style="max-height: 140px; overflow-y: auto; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div id="busFormRouteCheckboxes" style="max-height: 120px; overflow-y: auto; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
               <!-- Dynamic route checkboxes with code badges -->
             </div>
             <select id="busFormRoute" class="form-control" multiple style="display: none;">
@@ -1070,16 +1070,20 @@
               <input type="text" id="busFormLoginPassword" class="form-control" placeholder="Leave blank to keep current">
             </div>
           </div>
-          <div class="form-group mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
+          <div class="form-group mb-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: #0f172a; margin: 0;">
               <input type="checkbox" id="busFormVetriPayanam" onchange="admin.updateVetriPayanamLabel(this.checked)" style="width: 17px; height: 17px; accent-color: #2563eb; cursor: pointer;">
               <span id="busFormVetriPayanamLabel">Enable "Vetri Payanam" Scheme (Free Bus)</span>
             </label>
             <small class="text-muted" style="font-size: 0.74rem; margin-top: 4px; display: block;">Check to enable free travel for women on this bus. Uncheck to un-enable (disable) and charge standard ticket fares.</small>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">Save Bus</button>
-        </form>
-      </div>
+        </div>
+        <div class="modal-footer" style="padding: 0.85rem 1.4rem; background: #ffffff; border-top: 1px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 -4px 12px rgba(0,0,0,0.05);">
+          <button type="submit" class="btn btn-primary btn-block" style="padding: 0.75rem; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i data-lucide="check"></i> Save Bus
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
