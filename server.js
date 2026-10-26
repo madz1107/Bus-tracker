@@ -49,17 +49,20 @@ function rowToBus(row) {
     name: row.bus_name,
     routeId: row.route_id,
     assignedRouteIds: (() => {
+      let ids = [];
       if (Array.isArray(row.assigned_route_ids)) {
-        return row.assigned_route_ids;
+        ids = row.assigned_route_ids;
+      } else if (Array.isArray(row.assignedRouteIds)) {
+        ids = row.assignedRouteIds;
+      } else {
+        const local = (db && Array.isArray(db.buses)) ? db.buses.find(b => b.id === row.id) : null;
+        if (local && Array.isArray(local.assignedRouteIds)) {
+          ids = local.assignedRouteIds;
+        } else {
+          ids = row.route_id ? [row.route_id] : [];
+        }
       }
-      if (Array.isArray(row.assignedRouteIds)) {
-        return row.assignedRouteIds;
-      }
-      const local = (db && Array.isArray(db.buses)) ? db.buses.find(b => b.id === row.id) : null;
-      if (local && Array.isArray(local.assignedRouteIds)) {
-        return local.assignedRouteIds;
-      }
-      return row.route_id ? [row.route_id] : [];
+      return ids.filter(id => id && id !== '__vetri__');
     })(),
     conductorId: row.conductor_id,
     conductorName: row.conductor_name,
@@ -80,11 +83,18 @@ function rowToBus(row) {
     crowdLevel: row.crowd_level || 'Moderate',
     isTripActive: Boolean(row.is_trip_active),
     isVetriPayanam: (() => {
+      const rawAssigned = Array.isArray(row.assigned_route_ids) ? row.assigned_route_ids :
+                          Array.isArray(row.assignedRouteIds) ? row.assignedRouteIds : [];
+      const hasVetriTag = rawAssigned.includes('__vetri__');
+      if (hasVetriTag) return true;
       if (row.is_vetri_payanam !== undefined && row.is_vetri_payanam !== null) {
         return Boolean(row.is_vetri_payanam);
       }
       if (row.isVetriPayanam !== undefined && row.isVetriPayanam !== null) {
         return Boolean(row.isVetriPayanam);
+      }
+      if (Array.isArray(row.assigned_route_ids)) {
+        return false;
       }
       const local = (db && Array.isArray(db.buses)) ? db.buses.find(b => b.id === row.id) : null;
       if (local && local.isVetriPayanam !== undefined) {
@@ -110,7 +120,14 @@ function busToRow(bus) {
     row.route_id = routeExists ? bus.routeId : null;
   }
   
-  if (bus.assignedRouteIds !== undefined) row.assigned_route_ids = bus.assignedRouteIds;
+  if (bus.assignedRouteIds !== undefined || bus.isVetriPayanam !== undefined) {
+    let assigned = Array.isArray(bus.assignedRouteIds) ? [...bus.assignedRouteIds] : [];
+    assigned = assigned.filter(id => id && id !== '__vetri__');
+    if (bus.isVetriPayanam) {
+      assigned.push('__vetri__');
+    }
+    row.assigned_route_ids = assigned;
+  }
   if (bus.conductorId !== undefined) row.conductor_id = bus.conductorId;
   if (bus.conductorName !== undefined) row.conductor_name = bus.conductorName;
   if (bus.conductorPhone !== undefined) row.conductor_phone = bus.conductorPhone;
@@ -646,6 +663,13 @@ app.post('/api/buses', async (req, res) => {
 
   delete newBus.loginPassword;
 
+  if (newBus.isVetriPayanam !== undefined) {
+    newBus.isVetriPayanam = Boolean(newBus.isVetriPayanam);
+  }
+  if (Array.isArray(newBus.assignedRouteIds)) {
+    newBus.assignedRouteIds = newBus.assignedRouteIds.filter(id => id && id !== '__vetri__');
+  }
+
   const existingIdx = db.buses.findIndex(b => b.id === newBus.id);
   if (existingIdx >= 0) {
     const existingBus = db.buses[existingIdx];
@@ -658,6 +682,9 @@ app.post('/api/buses', async (req, res) => {
       if (newBus[key] !== undefined) {
         existingBus[key] = newBus[key];
       }
+    }
+    if (newBus.isVetriPayanam !== undefined) {
+      existingBus.isVetriPayanam = Boolean(newBus.isVetriPayanam);
     }
     newBus = existingBus;
   } else {

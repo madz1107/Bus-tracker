@@ -1072,9 +1072,10 @@
           </div>
           <div class="form-group mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;">
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: #0f172a; margin: 0;">
-              <input type="checkbox" id="busFormVetriPayanam" style="width: 17px; height: 17px; accent-color: #2563eb; cursor: pointer;">
-              <span>Enable "Vetri Payanam" Scheme (Free Bus)</span>
+              <input type="checkbox" id="busFormVetriPayanam" onchange="admin.updateVetriPayanamLabel(this.checked)" style="width: 17px; height: 17px; accent-color: #2563eb; cursor: pointer;">
+              <span id="busFormVetriPayanamLabel">Enable "Vetri Payanam" Scheme (Free Bus)</span>
             </label>
+            <small class="text-muted" style="font-size: 0.74rem; margin-top: 4px; display: block;">Check to enable free travel for women on this bus. Uncheck to un-enable (disable) and charge standard ticket fares.</small>
           </div>
           <button type="submit" class="btn btn-primary btn-block">Save Bus</button>
         </form>

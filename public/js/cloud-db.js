@@ -55,6 +55,39 @@
   // Helper: Convert Postgres snake_case row to App camelCase bus model
   function rowToBus(row) {
     if (!row) return null;
+    const rawAssigned = Array.isArray(row.assigned_route_ids)
+      ? row.assigned_route_ids
+      : (Array.isArray(row.assignedRouteIds)
+          ? row.assignedRouteIds
+          : (() => {
+              const local = window.appState && typeof window.appState.getBusById === 'function' ? window.appState.getBusById(row.id) : null;
+              if (local && Array.isArray(local.assignedRouteIds)) return local.assignedRouteIds;
+              return row.route_id ? [row.route_id] : [];
+            })());
+
+    const hasVetriTag = Array.isArray(rawAssigned) && rawAssigned.includes('__vetri__');
+    const cleanAssigned = Array.isArray(rawAssigned) ? rawAssigned.filter(r => r !== '__vetri__') : [];
+
+    const isVetriPayanam = (() => {
+      if (row.is_vetri_payanam !== undefined && row.is_vetri_payanam !== null) {
+        return Boolean(row.is_vetri_payanam);
+      }
+      if (row.isVetriPayanam !== undefined && row.isVetriPayanam !== null) {
+        return Boolean(row.isVetriPayanam);
+      }
+      if (hasVetriTag) {
+        return true;
+      }
+      if (Array.isArray(row.assigned_route_ids) || Array.isArray(row.assignedRouteIds)) {
+        return false;
+      }
+      const local = window.appState && typeof window.appState.getBusById === 'function' ? window.appState.getBusById(row.id) : null;
+      if (local && local.isVetriPayanam !== undefined) {
+        return Boolean(local.isVetriPayanam);
+      }
+      return false;
+    })();
+
     return {
       id: row.id,
       busNumber: row.bus_number,
@@ -62,15 +95,7 @@
       BusName: row.bus_name,
       name: row.bus_name,
       routeId: row.route_id,
-      assignedRouteIds: Array.isArray(row.assigned_route_ids)
-        ? row.assigned_route_ids
-        : (Array.isArray(row.assignedRouteIds)
-            ? row.assignedRouteIds
-            : (() => {
-                const local = window.appState && typeof window.appState.getBusById === 'function' ? window.appState.getBusById(row.id) : null;
-                if (local && Array.isArray(local.assignedRouteIds)) return local.assignedRouteIds;
-                return row.route_id ? [row.route_id] : [];
-              })()),
+      assignedRouteIds: cleanAssigned,
       conductorId: row.conductor_id,
       conductorName: row.conductor_name,
       conductorPhone: row.conductor_phone,
@@ -89,19 +114,7 @@
       reachedStopIds: row.reached_stop_ids || [],
       crowdLevel: row.crowd_level || 'Moderate',
       isTripActive: Boolean(row.is_trip_active),
-      isVetriPayanam: (() => {
-        if (row.is_vetri_payanam !== undefined && row.is_vetri_payanam !== null) {
-          return Boolean(row.is_vetri_payanam);
-        }
-        if (row.isVetriPayanam !== undefined && row.isVetriPayanam !== null) {
-          return Boolean(row.isVetriPayanam);
-        }
-        const local = window.appState && typeof window.appState.getBusById === 'function' ? window.appState.getBusById(row.id) : null;
-        if (local && local.isVetriPayanam !== undefined) {
-          return Boolean(local.isVetriPayanam);
-        }
-        return false;
-      })(),
+      isVetriPayanam: isVetriPayanam,
       simulatorIndex: Number(row.simulator_index || 0),
       lastUpdated: row.last_updated
     };
@@ -143,15 +156,13 @@
                 const local = window.appState.getBusById(freshRow.id);
                 const updatedBus = rowToBus(freshRow);
                 if (local) {
-                  if (freshRow.is_vetri_payanam === undefined && local.isVetriPayanam !== undefined) {
+                  if (freshRow.is_vetri_payanam === undefined && freshRow.isVetriPayanam === undefined && !Array.isArray(freshRow.assigned_route_ids) && !Array.isArray(freshRow.assignedRouteIds) && local.isVetriPayanam !== undefined) {
                     updatedBus.isVetriPayanam = local.isVetriPayanam;
                   }
-                  if (Array.isArray(freshRow.assigned_route_ids)) {
-                    updatedBus.assignedRouteIds = freshRow.assigned_route_ids;
-                  } else if (Array.isArray(freshRow.assignedRouteIds)) {
-                    updatedBus.assignedRouteIds = freshRow.assignedRouteIds;
-                  } else if (local.assignedRouteIds) {
-                    updatedBus.assignedRouteIds = local.assignedRouteIds;
+                  if (!Array.isArray(updatedBus.assignedRouteIds) || updatedBus.assignedRouteIds.length === 0) {
+                    if (local.assignedRouteIds && local.assignedRouteIds.length > 0) {
+                      updatedBus.assignedRouteIds = local.assignedRouteIds;
+                    }
                   }
                   const routesChanged = JSON.stringify(local.assignedRouteIds || []) !== JSON.stringify(updatedBus.assignedRouteIds || []);
                   const vetriChanged = Boolean(local.isVetriPayanam) !== Boolean(updatedBus.isVetriPayanam);

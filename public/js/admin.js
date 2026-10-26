@@ -262,8 +262,19 @@ class AdminController {
       return `
         <tr>
           <td>
-            <strong style="color: #2563eb;">BUS ${bus.busNumber}</strong>
-            ${bus.isVetriPayanam ? `<div style="margin-top: 3px;"><span class="status-pill blue" style="font-size: 0.65rem; padding: 1px 6px;">Vetri Payanam</span></div>` : ''}
+            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+              <strong style="color: #2563eb; font-size: 0.95rem;">BUS ${bus.busNumber}</strong>
+              <button type="button" 
+                      class="btn-vetri-toggle" 
+                      onclick="admin.toggleVetriPayanam('${bus.id}')" 
+                      title="${bus.isVetriPayanam ? 'Click to un-enable (disable) Vetri Payanam Free Scheme' : 'Click to enable Vetri Payanam Free Scheme'}"
+                      style="${bus.isVetriPayanam 
+                        ? 'background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; padding: 2px 8px; border-radius: 9999px; font-weight: 700; font-size: 0.68rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s;' 
+                        : 'background: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1; padding: 2px 8px; border-radius: 9999px; font-weight: 500; font-size: 0.68rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s;'}">
+                <i data-lucide="${bus.isVetriPayanam ? 'check-circle' : 'circle'}" style="width: 11px; height: 11px;"></i>
+                <span>${bus.isVetriPayanam ? 'Vetri Payanam' : '+ Vetri Payanam'}</span>
+              </button>
+            </div>
           </td>
           <td><code>${bus.regNumber}</code></td>
           <td>
@@ -404,6 +415,34 @@ class AdminController {
     window.app.showToast('Stop removed from route.', 'info');
   }
 
+  updateVetriPayanamLabel(isChecked) {
+    const label = document.getElementById('busFormVetriPayanamLabel');
+    if (label) {
+      label.textContent = isChecked 
+        ? 'Vetri Payanam Scheme: Enabled (Free Bus for Women)' 
+        : 'Vetri Payanam Scheme: Disabled (Standard Fare Bus)';
+    }
+  },
+
+  async toggleVetriPayanam(busId) {
+    const bus = window.appState.getBusById(busId);
+    if (!bus) return;
+
+    const newVetriStatus = !Boolean(bus.isVetriPayanam);
+    bus.isVetriPayanam = newVetriStatus;
+
+    // Immediately persist through AppState & sync channels
+    await window.appState.saveBus({ ...bus, isVetriPayanam: newVetriStatus });
+    this.renderBusTable();
+    this.renderFleetMap();
+    this.renderKpis();
+
+    const msg = newVetriStatus 
+      ? `Vetri Payanam scheme enabled for Bus ${bus.busNumber}! (Free for Women)` 
+      : `Vetri Payanam scheme disabled for Bus ${bus.busNumber}. (Normal Fare)`;
+    window.app.showToast(msg, newVetriStatus ? 'success' : 'info');
+  },
+
   // Modals & CRUD
   openAddBusModal() {
     document.getElementById('busModalTitle').textContent = 'Add New Bus';
@@ -415,7 +454,10 @@ class AdminController {
     document.getElementById('busFormLoginEmail').value = '';
     document.getElementById('busFormLoginPassword').value = '';
     const vpCheck = document.getElementById('busFormVetriPayanam');
-    if (vpCheck) vpCheck.checked = false;
+    if (vpCheck) {
+      vpCheck.checked = false;
+      this.updateVetriPayanamLabel(false);
+    }
     const defaultSelected = window.appState.routes.length > 0 ? [window.appState.routes[0].id] : [];
     this.populateRouteFormRoutes(defaultSelected);
     document.getElementById('busModal').classList.add('active');
@@ -438,7 +480,11 @@ class AdminController {
     document.getElementById('busFormLoginPassword').value = '';
     
     const vpCheck = document.getElementById('busFormVetriPayanam');
-    if (vpCheck) vpCheck.checked = Boolean(bus.isVetriPayanam);
+    const isVetri = Boolean(bus.isVetriPayanam);
+    if (vpCheck) {
+      vpCheck.checked = isVetri;
+      this.updateVetriPayanamLabel(isVetri);
+    }
     
     const assigned = Array.isArray(bus.assignedRouteIds)
       ? bus.assignedRouteIds

@@ -590,6 +590,9 @@ while ($Listener.IsListening) {
                 
                 # Remove sensitive login info from bus payload before saving
                 $newBus.loginPassword = ""
+                if ($null -ne $newBus.isVetriPayanam) {
+                    $newBus.isVetriPayanam = [bool]$newBus.isVetriPayanam
+                }
 
                 if ($existingIdx -ge 0) {
                     $busesList[$existingIdx] = $newBus

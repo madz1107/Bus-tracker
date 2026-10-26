@@ -425,13 +425,18 @@ class StateManager {
       // 2. Direct Supabase save if connected in browser
       if (window.CloudDB && window.CloudDB.supabase) {
         try {
+          const rawAssigned = Array.isArray(busData.assignedRouteIds) ? busData.assignedRouteIds : (busData.routeId ? [busData.routeId] : []);
+          const cleanAssigned = rawAssigned.filter(r => r !== '__vetri__');
+          if (busData.isVetriPayanam) {
+            cleanAssigned.push('__vetri__');
+          }
           const row = {
             id: busData.id,
             bus_number: busData.busNumber,
             reg_number: busData.regNumber,
             bus_name: busData.BusName || busData.name,
             route_id: busData.routeId,
-            assigned_route_ids: Array.isArray(busData.assignedRouteIds) ? busData.assignedRouteIds : (busData.routeId ? [busData.routeId] : []),
+            assigned_route_ids: cleanAssigned,
             status: busData.status || 'Stopped',
             lat: Number(busData.lat || 8.7139),
             lng: Number(busData.lng || 77.7285),
