@@ -1338,6 +1338,21 @@ body.female-mode #modalSaveFavorite .form-control:focus {
   color: #b45309;
 }
 
+.priority-card.bus-card-offline {
+  border: 1px solid #fecaca;
+  background: #ffffff;
+}
+
+.priority-card.bus-card-offline .bus-num-badge {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.fleet-card.fleet-card-offline {
+  border-color: #fecaca;
+}
+
 .priority-metrics-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

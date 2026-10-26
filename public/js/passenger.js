@@ -648,7 +648,7 @@ class PassengerController {
       window.app.showToast('Geolocation is not supported by your browser.', 'error');
       return;
     }
-    
+
     if (!window.GeoEngine) {
       window.app.showToast('GeoEngine is not loaded yet.', 'error');
       return;
@@ -687,7 +687,7 @@ class PassengerController {
               this.nearestMap.remove();
             }
             this.nearestMap = L.map(mapContainer).setView([userLat, userLng], 15);
-            
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               attribution: '© OpenStreetMap contributors'
             }).addTo(this.nearestMap);
@@ -700,7 +700,7 @@ class PassengerController {
               iconSize: [16, 16],
               iconAnchor: [8, 8]
             });
-            L.marker([userLat, userLng], {icon: userIcon}).addTo(this.nearestMap).bindPopup('<b>You are here</b>').openPopup();
+            L.marker([userLat, userLng], { icon: userIcon }).addTo(this.nearestMap).bindPopup('<b>You are here</b>').openPopup();
 
             // Add Stop Marker
             const stopIcon = L.divIcon({
@@ -709,10 +709,10 @@ class PassengerController {
               iconSize: [20, 20],
               iconAnchor: [10, 10]
             });
-            L.marker([nearestStop.lat, nearestStop.lng], {icon: stopIcon}).addTo(this.nearestMap).bindPopup(`<b>${nearestStop.name}</b>`);
+            L.marker([nearestStop.lat, nearestStop.lng], { icon: stopIcon }).addTo(this.nearestMap).bindPopup(`<b>${nearestStop.name}</b>`);
 
             // Draw line between them
-            L.polyline([[userLat, userLng], [nearestStop.lat, nearestStop.lng]], {color: '#94a3b8', dashArray: '5, 10', weight: 3}).addTo(this.nearestMap);
+            L.polyline([[userLat, userLng], [nearestStop.lat, nearestStop.lng]], { color: '#94a3b8', dashArray: '5, 10', weight: 3 }).addTo(this.nearestMap);
 
             // Adjust bounds
             const bounds = L.latLngBounds([[userLat, userLng], [nearestStop.lat, nearestStop.lng]]);
@@ -721,14 +721,14 @@ class PassengerController {
             // Render stop details
             const route = window.appState.getRouteById(nearestRouteId);
             const infoContainer = document.getElementById('nearestStopInfoContainer');
-            
+
             let busesHtml = '<div style="color: #64748b;">No active buses on this route currently.</div>';
             const routeBuses = window.appState.getBusesForRoute(nearestRouteId).filter(b => b.isTripActive);
-            
+
             if (routeBuses.length > 0) {
-               const ranked = window.PriorityEngine ? window.PriorityEngine.rankBusesForStop(route, nearestStop, routeBuses) : [];
-               if (ranked.length > 0) {
-                  busesHtml = ranked.map(item => `
+              const ranked = window.PriorityEngine ? window.PriorityEngine.rankBusesForStop(route, nearestStop, routeBuses) : [];
+              if (ranked.length > 0) {
+                busesHtml = ranked.map(item => `
                     <div style="background: white; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
                       <div>
                         <div style="font-weight: 600; color: #0f172a;">${item.bus.busNumber || 'Bus'}</div>
@@ -740,7 +740,7 @@ class PassengerController {
                       </div>
                     </div>
                   `).join('');
-               }
+              }
             }
 
             infoContainer.innerHTML = `
@@ -782,11 +782,11 @@ class PassengerController {
 
     if (busIdOrMode === 'byBusNumber') {
       if (this.searchQuery) {
-        const matched = window.appState.buses.find(b => 
+        const matched = window.appState.buses.find(b =>
           b.busNumber && b.busNumber.toLowerCase().includes(this.searchQuery)
         );
         if (matched) busId = matched.id;
-        
+
         // Clear the input automatically
         const searchInput = document.getElementById('passengerBusSearch');
         if (searchInput) searchInput.value = '';
@@ -795,17 +795,17 @@ class PassengerController {
       }
     } else if (busIdOrMode === 'byRoute') {
       if (this.selectedRouteId && this.selectedStopId && this.selectedRouteId !== 'all') {
-         const route = window.appState.getRouteById(this.selectedRouteId);
-         const targetStop = route ? route.stops.find(s => s.id === this.selectedStopId) : null;
-         const routeBuses = window.appState.getBusesForRoute(this.selectedRouteId).filter(b => b.isTripActive);
-         if (route && targetStop && routeBuses.length > 0) {
-             const ranked = window.PriorityEngine ? window.PriorityEngine.rankBusesForStop(route, targetStop, routeBuses) : [];
-             if (ranked.length > 0) {
-                 busId = ranked[0].bus.id;
-             }
-         }
+        const route = window.appState.getRouteById(this.selectedRouteId);
+        const targetStop = route ? route.stops.find(s => s.id === this.selectedStopId) : null;
+        const routeBuses = window.appState.getBusesForRoute(this.selectedRouteId).filter(b => b.isTripActive);
+        if (route && targetStop && routeBuses.length > 0) {
+          const ranked = window.PriorityEngine ? window.PriorityEngine.rankBusesForStop(route, targetStop, routeBuses) : [];
+          if (ranked.length > 0) {
+            busId = ranked[0].bus.id;
+          }
+        }
       }
-      
+
       if (!busId && this.selectedRouteId && this.selectedRouteId !== 'all') {
         const activeBuses = window.appState.getBusesForRoute(this.selectedRouteId).filter(b => b.isTripActive);
         if (activeBuses.length > 0) {
@@ -957,6 +957,106 @@ class PassengerController {
   }
 
   /**
+   * Generates a reusable, clean Offline Bus Card HTML string
+   */
+  generateOfflineBusCardHtml(route, targetStop, bus, isTa, customDestName = null, customFare = null) {
+    const isVetriBus = Boolean(bus && bus.isVetriPayanam);
+    const targetStopName = targetStop ? (window.I18n ? window.I18n.getStopName(targetStop.name) : targetStop.name) : '';
+    const statusText = isTa ? 'ஆஃப்லைன்' : 'Offline';
+    const offlineTitle = isTa ? 'சேவை நிலை' : 'Service Status';
+    const offlineSub = isTa ? '🔴 ஆஃப்லைன் (இயக்கத்தில் இல்லை)' : '🔴 Offline / Trip Inactive';
+    const vetriBadgeText = isTa ? 'வெற்றிப் பயணம் • இலவசம்' : 'Vetri Payanam • FREE';
+    const speedLabel = isTa ? 'இயங்கும் வேகம்' : 'Moving Speed';
+    const curStopLabel = isTa ? 'தற்போதைய இடம்' : 'Current Location';
+    const nextStopLabel = isTa ? 'அடுத்த நிறுத்தம்' : 'Next Stop';
+    const ticketFareLabel = isTa ? 'பயணக் கட்டணம்' : 'Ticket Fare';
+    const curStopVal = bus.currentStopName ? (window.I18n ? window.I18n.getStopName(bus.currentStopName) : bus.currentStopName) : (isTa ? 'பணிமனை / டெப்போ' : 'At Terminal / Depot');
+    const wimbBtnText = isTa ? 'என் பேருந்து எங்கே?' : 'Where Is My Bus';
+    const assignedRouteLabel = isTa ? 'ஒதுக்கப்பட்ட வழித்தடம்' : 'Assigned Route';
+
+    const isFreeForThisPassenger = isVetriBus && this.gender === 'female';
+    let fareVal = '';
+    if (isFreeForThisPassenger) {
+      fareVal = isTa ? 'வெற்றிப் பயணம் : இலவசம்' : 'Vetri Payanam : Free';
+    } else if (customFare !== null && customFare !== undefined) {
+      fareVal = `₹${customFare}`;
+    } else if (this.selectedDestId && route) {
+      const calc = this.getFare(route, targetStop ? targetStop.id : null, this.selectedDestId);
+      fareVal = `₹${calc || 5}`;
+    } else {
+      fareVal = isTa ? '₹5 முதல்' : 'From ₹5';
+    }
+
+    const routeDisplayName = route ? (window.I18n ? window.I18n.getRouteName(route.name) : route.name) : (isTa ? 'ஒதுக்கப்படாத வழித்தடம்' : 'Unassigned Route');
+
+    return `
+      <div class="priority-card rank-other bus-card-offline" data-bus-id="${bus.id}" style="border-color: #fecaca; background: #ffffff;">
+        <div>
+          <div class="priority-card-header">
+            <div>
+              <div class="bus-num-badge" style="background: #64748b;">
+                BUS ${bus.busNumber}
+              </div>
+              ${this.gender === 'female' && isVetriBus ? `
+                <div style="margin-top: 4px;">
+                  <span class="badge" style="display: inline-flex; align-items: center; gap: 4px; background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                    <img src="assets/vetri-payanam-logo.png" alt="" style="width: 14px; height: 14px; object-fit: contain;">
+                    ${vetriBadgeText}
+                  </span>
+                </div>
+              ` : ''}
+            </div>
+            <div style="text-align: right;">
+              <span class="status-pill red">
+                <span class="dot" style="background: currentColor;"></span> ${statusText}
+              </span>
+              <div class="bus-meta-title" style="margin-top: 4px;">${bus.regNumber || (route ? route.code : '')}</div>
+            </div>
+          </div>
+
+          <!-- Offline Status Callout -->
+          <div class="priority-eta-box" style="background: #fef2f2; border-color: #fecaca;">
+            <div class="eta-label-tag" style="color: #991b1b;">${offlineTitle}</div>
+            <div class="eta-time-val" style="font-size: 1.15rem; color: #dc2626;">${offlineSub}</div>
+          </div>
+
+          <!-- Telemetry Row -->
+          <div class="priority-metrics-row">
+            <div class="metric-item">
+              <span class="lbl">${assignedRouteLabel}</span>
+              <span class="val">${route ? (route.code ? route.code + ' - ' : '') + routeDisplayName : '-'}</span>
+            </div>
+            <div class="metric-item">
+              <span class="lbl">${speedLabel}</span>
+              <span class="val text-slate">0 km/h</span>
+            </div>
+            <div class="metric-item">
+              <span class="lbl">${curStopLabel}</span>
+              <span class="val">${curStopVal}</span>
+            </div>
+            <div class="metric-item">
+              <span class="lbl">${nextStopLabel}</span>
+              <span class="val text-slate">-</span>
+            </div>
+            <div class="metric-item">
+              <span class="lbl">${ticketFareLabel}</span>
+              <span class="val ${isFreeForThisPassenger ? 'text-emerald' : ''}" style="font-weight: 700; ${isFreeForThisPassenger ? 'color: #10b981;' : 'color: #0f172a;'}">
+                ${fareVal}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 1rem;">
+          <button class="btn btn-primary" style="flex: 1;" onclick="passenger.trackSelectedBus('${bus.id}')">
+            <i data-lucide="navigation"></i> ${wimbBtnText}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Renders the Stop-to-Stop Route-free Leaderboard
    */
   renderStopToStopLeaderboard(container) {
@@ -980,38 +1080,71 @@ class PassengerController {
 
     // If destination is not selected or same as boarding:
     if (!toName || fromName === toName) {
-      const routes = (window.appState.routes || []).filter(r => 
+      const routes = (window.appState.routes || []).filter(r =>
         (r.stops || []).some(s => s.name.trim().toLowerCase() === fromName.trim().toLowerCase())
       );
 
       let activeBuses = [];
+      let offlineBuses = [];
       routes.forEach(r => {
-        const rBuses = window.appState.getBusesForRoute(r.id).filter(b => b.isTripActive);
+        const rBuses = window.appState.getBusesForRoute(r.id);
         const stopObj = r.stops.find(s => s.name.trim().toLowerCase() === fromName.trim().toLowerCase());
-        if (stopObj && rBuses.length > 0 && window.PriorityEngine) {
-          const ranked = window.PriorityEngine.rankBusesForStop(r, stopObj, rBuses);
-          ranked.forEach(item => {
-            activeBuses.push({ ...item, route: r, stopObj });
+        if (stopObj) {
+          const act = rBuses.filter(b => b.isTripActive && (b.status === 'Running' || b.status === 'Stopped'));
+          const off = rBuses.filter(b => !act.some(ab => ab.id === b.id));
+          if (act.length > 0 && window.PriorityEngine) {
+            const ranked = window.PriorityEngine.rankBusesForStop(r, stopObj, act);
+            ranked.forEach(item => {
+              activeBuses.push({ ...item, route: r, stopObj });
+            });
+          }
+          off.forEach(b => {
+            offlineBuses.push({ bus: b, route: r, stopObj });
           });
         }
       });
 
       activeBuses.sort((a, b) => (a.etaMinutes || 0) - (b.etaMinutes || 0));
 
-      if (activeBuses.length === 0) {
-        container.innerHTML = `
-          <div style="grid-column: 1 / -1; padding: 2.5rem; background: #fff; border-radius: 14px; text-align: center; border: 1px solid #e2e8f0;">
-            <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
-              ${isTa ? `"${fromDisp}" நிறுத்தத்திற்கு தற்போது நேரலை பேருந்துகள் எதுவும் வரவில்லை.` : `No active buses currently approaching "${fromDisp}". Select a destination stop to search connecting journeys.`}
-            </p>
-          </div>
-        `;
+      if (activeBuses.length > 0) {
+        let outHtml = activeBuses.map((item, idx) => {
+          return this.generateBusPriorityCardHtml(item.route, item.stopObj, item, idx === 0, isTa);
+        }).join('');
+        if (offlineBuses.length > 0) {
+          const offSecTitle = isTa ? 'தற்போது ஆஃப்லைனில் உள்ள பேருந்துகள்' : 'Currently Offline Buses';
+          outHtml += `
+            <div style="grid-column: 1 / -1; margin-top: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.85rem; font-weight: 700;">
+              <span class="status-pill red" style="font-size: 0.72rem; padding: 2px 8px;"><span class="dot"></span> ${isTa ? 'ஆஃப்லைன்' : 'Offline'}</span>
+              <span>${offSecTitle}</span>
+            </div>
+          ` + offlineBuses.map(item => this.generateOfflineBusCardHtml(item.route, item.stopObj, item.bus, isTa)).join('');
+        }
+        container.innerHTML = outHtml;
+        if (window.lucide) lucide.createIcons();
         return;
       }
 
-      container.innerHTML = activeBuses.map((item, idx) => {
-        return this.generateBusPriorityCardHtml(item.route, item.stopObj, item, idx === 0, isTa);
-      }).join('');
+      if (offlineBuses.length > 0) {
+        const offNotice = isTa
+          ? `"${fromDisp}" நிறுத்தத்திற்கான பேருந்துகள் தற்போது ஆஃப்லைனில் (இயக்கத்தில் இல்லை) உள்ளன:`
+          : `Buses serving "${fromDisp}" are currently Offline (Trip Inactive):`;
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; padding: 10px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; color: #991b1b; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span class="status-pill red" style="font-size: 0.72rem; padding: 2px 8px;"><span class="dot"></span> ${isTa ? 'ஆஃப்லைன்' : 'Offline'}</span>
+            <span>${offNotice}</span>
+          </div>
+        ` + offlineBuses.map(item => this.generateOfflineBusCardHtml(item.route, item.stopObj, item.bus, isTa)).join('');
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 2.5rem; background: #fff; border-radius: 14px; text-align: center; border: 1px solid #e2e8f0;">
+          <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
+            ${isTa ? `"${fromDisp}" நிறுத்தத்திற்கு தற்போது நேரலை பேருந்துகள் எதுவும் வரவில்லை.` : `No active buses currently approaching "${fromDisp}". Select a destination stop to search connecting journeys.`}
+          </p>
+        </div>
+      `;
       if (window.lucide) lucide.createIcons();
       return;
     }
@@ -1026,14 +1159,20 @@ class PassengerController {
 
       const directRouteIds = direct.map(d => d.route.id);
       let allDirectBuses = [];
+      let allDirectOfflineBuses = [];
       direct.forEach(d => {
-        const routeBuses = window.appState.getBusesForRoute(d.route.id).filter(b => b.isTripActive);
-        if (routeBuses.length > 0 && window.PriorityEngine) {
-          const ranked = window.PriorityEngine.rankBusesForStop(d.route, d.fromStop, routeBuses);
+        const routeBuses = window.appState.getBusesForRoute(d.route.id);
+        const act = routeBuses.filter(b => b.isTripActive && (b.status === 'Running' || b.status === 'Stopped'));
+        const off = routeBuses.filter(b => !act.some(ab => ab.id === b.id));
+        if (act.length > 0 && window.PriorityEngine) {
+          const ranked = window.PriorityEngine.rankBusesForStop(d.route, d.fromStop, act);
           ranked.forEach(item => {
             allDirectBuses.push({ ...item, route: d.route, stopObj: d.fromStop });
           });
         }
+        off.forEach(b => {
+          allDirectOfflineBuses.push({ bus: b, route: d.route, stopObj: d.fromStop });
+        });
       });
 
       allDirectBuses.sort((a, b) => (a.etaMinutes || 0) - (b.etaMinutes || 0));
@@ -1091,10 +1230,30 @@ class PassengerController {
         cardsHtml = allDirectBuses.map((item, idx) => {
           return this.generateBusPriorityCardHtml(item.route, item.stopObj, item, idx === 0, isTa, toName, fare);
         }).join('');
+        if (allDirectOfflineBuses.length > 0) {
+          const offSecTitle = isTa ? 'தற்போது ஆஃப்லைனில் உள்ள நேரடிப் பேருந்துகள்' : 'Currently Offline Direct Buses';
+          cardsHtml += `
+            <div style="grid-column: 1 / -1; margin-top: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.85rem; font-weight: 700;">
+              <span class="status-pill red" style="font-size: 0.72rem; padding: 2px 8px;"><span class="dot"></span> ${isTa ? 'ஆஃப்லைன்' : 'Offline'}</span>
+              <span>${offSecTitle}</span>
+            </div>
+          ` + allDirectOfflineBuses.map(item => this.generateOfflineBusCardHtml(item.route, item.stopObj, item.bus, isTa, toName, fare)).join('');
+        }
+      } else if (allDirectOfflineBuses.length > 0) {
+        const noActiveMsg = isTa
+          ? `நேரடி வழித்தடம் (${primaryDirect.route.code}) உள்ளது. ஆனால் பேருந்துகள் தற்போது ஆஃப்லைனில் (இயக்கத்தில் இல்லை) உள்ளன:`
+          : `Direct route exists (${primaryDirect.route.code} - ${primaryDirect.route.name}). Buses are currently Offline:`;
+        const offlineHeader = `
+          <div style="grid-column: 1 / -1; padding: 10px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; color: #991b1b; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span class="status-pill red" style="font-size: 0.72rem; padding: 2px 8px;"><span class="dot"></span> ${isTa ? 'ஆஃப்லைன்' : 'Offline'}</span>
+            <span>${noActiveMsg}</span>
+          </div>
+        `;
+        cardsHtml = offlineHeader + allDirectOfflineBuses.map(item => this.generateOfflineBusCardHtml(item.route, item.stopObj, item.bus, isTa, toName, fare)).join('');
       } else {
         const noActiveMsg = isTa
-          ? `நேரடி வழித்தடம் (${primaryDirect.route.code}) உள்ளது, ஆனால் தற்போது நேரலை பேருந்துகள் எதுவும் இயங்கவில்லை.`
-          : `Direct route exists (${primaryDirect.route.code} - ${primaryDirect.route.name}), but no active buses are currently operating on this segment.`;
+          ? `நேரடி வழித்தடம் (${primaryDirect.route.code}) உள்ளது, ஆனால் தற்போது பேருந்துகள் எதுவும் இயக்கத்தில் இல்லை.`
+          : `Direct route exists (${primaryDirect.route.code} - ${primaryDirect.route.name}), but no buses are currently operating on this segment.`;
         cardsHtml = `
           <div style="grid-column: 1 / -1; padding: 2rem; background: #fff; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
             <p style="color: #64748b; font-size: 0.95rem; margin: 0;">${noActiveMsg}</p>
@@ -1337,16 +1496,18 @@ class PassengerController {
     this._activeBusGraceMap = this._activeBusGraceMap || new Map();
     const now = Date.now();
     allRouteBuses.forEach(b => {
-      if (b.isTripActive) {
+      if (b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')) {
         this._activeBusGraceMap.set(b.id, now);
       }
     });
 
     const activeRouteBuses = allRouteBuses.filter(b => {
-      if (b.isTripActive) return true;
+      if (b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')) return true;
       const lastActive = this._activeBusGraceMap.get(b.id);
       return lastActive && (now - lastActive < 12000);
     });
+
+    const offlineRouteBuses = allRouteBuses.filter(b => !activeRouteBuses.some(ab => ab.id === b.id));
 
     let smartSuggestionHtml = '';
     let cardsHtml = '';
@@ -1388,10 +1549,31 @@ class PassengerController {
         const isLowCrowdRecommended = lowCrowdBus && item.bus.id === lowCrowdBus.bus.id && ranked.length > 1;
         return this.generateBusPriorityCardHtml(route, targetStop, item, isLowCrowdRecommended, isTa);
       }).join('');
+
+      if (offlineRouteBuses.length > 0) {
+        const offlineSecTitle = isTa ? 'தற்போது ஆஃப்லைனில் உள்ள பேருந்துகள்' : 'Offline Buses on this Route';
+        cardsHtml += `
+          <div style="grid-column: 1 / -1; margin-top: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.85rem; font-weight: 700;">
+            <span class="status-pill red" style="font-size: 0.72rem; padding: 2px 8px;"><span class="dot"></span> ${isTa ? 'ஆஃப்லைன்' : 'Offline'}</span>
+            <span>${offlineSecTitle}</span>
+          </div>
+        ` + offlineRouteBuses.map(b => this.generateOfflineBusCardHtml(route, targetStop, b, isTa)).join('');
+      }
+    } else if (allRouteBuses.length > 0) {
+      const offlineNotice = isTa
+        ? 'இந்த வழித்தடப் பேருந்துகள் தற்போது ஆஃப்லைனில் (இயக்கத்தில் இல்லை) உள்ளன:'
+        : 'Buses assigned to this route are currently Offline (Trip Inactive):';
+      const offlineHeader = `
+        <div style="grid-column: 1 / -1; padding: 10px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; color: #991b1b; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span class="status-pill red" style="font-size: 0.72rem; padding: 2px 8px;"><span class="dot"></span> ${isTa ? 'ஆஃப்லைன்' : 'Offline'}</span>
+          <span>${offlineNotice}</span>
+        </div>
+      `;
+      cardsHtml = offlineHeader + allRouteBuses.map(b => this.generateOfflineBusCardHtml(route, targetStop, b, isTa)).join('');
     } else {
       const emptyMsg = isTa
         ? 'இந்த வழித்தடத்தில் தற்போது எந்த பேருந்தும் இயக்கத்தில் இல்லை.'
-        : 'No active buses currently operating on this route segment.';
+        : 'No buses currently operating or assigned to this route segment.';
       cardsHtml = `
         <div style="grid-column: 1 / -1; padding: 2rem; background: #fff; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
           <p style="color: #64748b; font-size: 0.95rem;">${emptyMsg}</p>
@@ -1459,27 +1641,28 @@ class PassengerController {
     this._activeBusGraceMap = this._activeBusGraceMap || new Map();
     const now = Date.now();
     allRouteBuses.forEach(b => {
-      if (b.isTripActive) {
+      if (b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')) {
         this._activeBusGraceMap.set(b.id, now);
       }
     });
 
     const activeRouteBuses = allRouteBuses.filter(b => {
-      if (b.isTripActive) return true;
+      if (b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')) return true;
       const lastActive = this._activeBusGraceMap.get(b.id);
       return lastActive && (now - lastActive < 12000);
     });
 
-    // If no active buses or transition between empty/active, do full render
+    // If active bus count or total bus count changed between online/offline, do full render
     const existingCards = container.querySelectorAll('.priority-card[data-bus-id]');
-    if (activeRouteBuses.length === 0 || existingCards.length === 0) {
+    const existingActiveCards = container.querySelectorAll('.priority-card[data-bus-id]:not(.bus-card-offline)');
+    if (activeRouteBuses.length !== existingActiveCards.length || existingCards.length !== allRouteBuses.length) {
       this.renderPriorityLeaderboard();
       this.renderFleetGrid();
       return;
     }
 
     const ranked = PriorityEngine.rankBusesForStop(route, targetStop, activeRouteBuses);
-    const existingBusIds = Array.from(existingCards).map(el => el.getAttribute('data-bus-id'));
+    const existingBusIds = Array.from(existingActiveCards).map(el => el.getAttribute('data-bus-id'));
     const newBusIds = ranked.map(r => r.bus.id);
 
     // If bus ranking order changed (e.g. Bus 2 overtook Bus 1, or bus arrived at stop), rebuild cards cleanly
@@ -1494,7 +1677,7 @@ class PassengerController {
 
     // Identical ranking order: update dynamic values in-place (Zero Flicker!)
     ranked.forEach((item, index) => {
-      const card = existingCards[index];
+      const card = existingActiveCards[index];
       if (!card) return;
 
       const etaElem = card.querySelector('.eta-time-val');
@@ -1557,7 +1740,7 @@ class PassengerController {
 
     // Filter by search query
     if (this.searchQuery) {
-      buses = buses.filter((b) => 
+      buses = buses.filter((b) =>
         b.busNumber.toLowerCase().includes(this.searchQuery) ||
         (b.regNumber && b.regNumber.toLowerCase().includes(this.searchQuery)) ||
         (b.BusName && b.BusName.toLowerCase().includes(this.searchQuery))
@@ -1569,10 +1752,13 @@ class PassengerController {
       window.app.updateActiveBusesBadge();
     }
 
+    const isTa = window.I18n && window.I18n.getLanguage() === 'ta';
+
     if (buses.length === 0) {
+      const emptyText = isTa ? 'தேடல் நிபந்தனைகளுக்கு ஏற்ற பேருந்துகள் இல்லை.' : 'No buses matching your filter criteria.';
       grid.innerHTML = `
         <div style="grid-column: 1 / -1; padding: 2rem; background: #fff; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
-          <p style="color: #64748b; font-size: 0.95rem;">No buses matching your filter criteria.</p>
+          <p style="color: #64748b; font-size: 0.95rem;">${emptyText}</p>
         </div>
       `;
       return;
@@ -1580,12 +1766,16 @@ class PassengerController {
 
     grid.innerHTML = buses.map((bus) => {
       const route = window.appState.getRouteById(bus.routeId);
-      const isRunning = bus.status === 'Running';
-      const statusClass = isRunning ? 'green' : (bus.status === 'Stopped' ? 'amber' : 'red');
-      
+      const isOnline = Boolean(bus.isTripActive && (bus.status === 'Running' || bus.status === 'Stopped'));
+      const isRunning = isOnline && bus.status === 'Running';
+      const statusClass = isRunning ? 'green' : (isOnline && bus.status === 'Stopped' ? 'amber' : 'red');
+      const statusText = isOnline
+        ? (isRunning ? (isTa ? 'இயங்குகிறது' : 'Running') : (isTa ? 'நிறுத்தப்பட்டுள்ளது' : 'Stopped'))
+        : (isTa ? 'ஆஃப்லைன்' : 'Offline');
+
       let crowdLvl = bus.crowdLevel || 'Moderate';
       let crowdClass = crowdLvl.toLowerCase();
-      
+
       let crowdBadgeHtml = `
                 <span class="crowd-pill ${crowdClass}">
                   ${crowdLvl}
@@ -1594,35 +1784,43 @@ class PassengerController {
       let nextStopHtml = `<span class="val">${bus.nextStopName || 'N/A'}</span>`;
       const isArrivingNext = bus.etaMinutes <= 1 || (bus.distanceToNextKm != null && bus.distanceToNextKm <= 0.45);
       let nextEtaHtml = isArrivingNext
-        ? `<span class="val text-blue" style="font-weight: 800;">⚡ Arriving Now (${bus.distanceToNextKm || 0} km)</span>`
+        ? `<span class="val text-blue" style="font-weight: 800;">⚡ ${isTa ? 'இப்போது வந்து சேரும்' : 'Arriving Now'} (${bus.distanceToNextKm || 0} km)</span>`
         : `<span class="val text-emerald">${bus.etaMinutes || 0} min (${bus.distanceToNextKm || 0} km)</span>`;
       let crowdStatusHtml = `<span class="val text-primary" style="font-weight: 700;">${crowdLvl}</span>`;
 
-      if (!bus.isTripActive) {
-          crowdBadgeHtml = `<span style="color: #94a3b8; font-weight: 600;">-</span>`;
-          liveSpeedHtml = `<span class="val text-slate" style="font-weight: 400;">-</span>`;
-          nextStopHtml = `<span class="val text-slate" style="font-weight: 400;">-</span>`;
-          nextEtaHtml = `<span class="val text-slate" style="font-weight: 400;">-</span>`;
-          crowdStatusHtml = `<span class="val text-slate" style="font-weight: 400;">-</span>`;
+      if (!isOnline) {
+        crowdBadgeHtml = `<span style="color: #94a3b8; font-weight: 600;">-</span>`;
+        liveSpeedHtml = `<span class="val text-slate" style="font-weight: 400;">0 km/h</span>`;
+        nextStopHtml = `<span class="val text-slate" style="font-weight: 400;">-</span>`;
+        nextEtaHtml = `<span class="val text-slate" style="font-weight: 400;">-</span>`;
+        crowdStatusHtml = `<span class="val text-slate" style="font-weight: 400;">-</span>`;
       }
 
+      const routeName = route ? (window.I18n ? window.I18n.getRouteName(route.name) : route.name) : (isTa ? 'ஒதுக்கப்படாத வழித்தடம்' : 'Unassigned Route');
+      const speedLbl = isTa ? 'இயங்கும் வேகம்' : 'Live Speed';
+      const nextStopLbl = isTa ? 'அடுத்த நிறுத்தம்' : 'Next Stop';
+      const nextEtaLbl = isTa ? 'அடுத்த வருகை' : 'Next ETA';
+      const crowdLblText = isTa ? 'கூட்ட நிலை' : 'Crowd Status';
+      const trackRadarText = isTa ? 'நேரடி ரேடாரில் காண்க' : 'Track on Live Radar';
+      const alarmText = isTa ? 'அலாரம்' : 'Alarm';
+
       return `
-        <div class="fleet-card" onclick="passenger.trackSelectedBus('${bus.id}')" style="cursor: pointer;">
+        <div class="fleet-card ${!isOnline ? 'fleet-card-offline' : ''}" onclick="passenger.trackSelectedBus('${bus.id}')" style="cursor: pointer; ${!isOnline ? 'border-color: #fecaca;' : ''}">
           <div>
             <div class="fleet-card-header">
-              <div class="bus-num-badge" style="font-size: 1.1rem; padding: 0.25rem 0.6rem;">
+              <div class="bus-num-badge" style="font-size: 1.1rem; padding: 0.25rem 0.6rem; ${!isOnline ? 'background: #64748b;' : ''}">
                 BUS ${bus.busNumber}
               </div>
               <div style="display: flex; gap: 0.4rem; align-items: center;">
                 ${crowdBadgeHtml}
                 <span class="status-pill ${statusClass}">
-                  <span class="dot" style="background: currentColor;"></span> ${bus.status}
+                  <span class="dot" style="background: currentColor;"></span> ${statusText}
                 </span>
               </div>
             </div>
 
             <div style="font-size: 0.92rem; font-weight: 700; color: #0f172a; margin-bottom: 0.2rem;">
-              ${route ? route.name : 'Unassigned Route'}
+              ${routeName}
             </div>
             <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 0.85rem;">
               Reg: ${bus.regNumber} • Bus: ${bus.BusName}
@@ -1636,30 +1834,30 @@ class PassengerController {
 
             <div class="priority-metrics-row mb-2">
               <div class="metric-item">
-                <span class="lbl">Live Speed</span>
+                <span class="lbl">${speedLbl}</span>
                 ${liveSpeedHtml}
               </div>
               <div class="metric-item">
-                <span class="lbl">Next Stop</span>
+                <span class="lbl">${nextStopLbl}</span>
                 ${nextStopHtml}
               </div>
               <div class="metric-item">
-                <span class="lbl">Next ETA</span>
+                <span class="lbl">${nextEtaLbl}</span>
                 ${nextEtaHtml}
               </div>
               <div class="metric-item">
-                <span class="lbl">Crowd Status</span>
+                <span class="lbl">${crowdLblText}</span>
                 ${crowdStatusHtml}
               </div>
             </div>
           </div>
 
           <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 700;">
-            <span style="color: #2563eb; display: flex; align-items: center; gap: 4px;">
-              Track on Live Radar <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            <span style="color: ${!isOnline ? '#64748b' : '#2563eb'}; display: flex; align-items: center; gap: 4px;">
+              ${trackRadarText} <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
             </span>
             <button class="btn btn-xs btn-warning" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; padding: 3px 8px;" onclick="event.stopPropagation(); window.proximityAlarm.openAlarmModal('${bus.id}')" title="Set Arrival Alarm">
-              <i data-lucide="bell" style="width: 12px; height: 12px;"></i> Alarm
+              <i data-lucide="bell" style="width: 12px; height: 12px;"></i> ${alarmText}
             </button>
           </div>
         </div>
@@ -1808,8 +2006,8 @@ class PassengerController {
     const starBtn = document.getElementById('btnStarCurrentCommute');
     if (!starBtn) return;
 
-    const isStarred = this.favoriteCommutes.some(f => 
-      f.routeId === this.selectedRouteId && 
+    const isStarred = this.favoriteCommutes.some(f =>
+      f.routeId === this.selectedRouteId &&
       f.stopId === this.selectedStopId &&
       (!f.destId || !this.selectedDestId || f.destId === this.selectedDestId)
     );
@@ -1873,9 +2071,9 @@ class PassengerController {
   }
 
   toggleFavoriteCurrentCommute() {
-    const existingIdx = this.favoriteCommutes.findIndex(f => 
-      f.routeId === this.selectedRouteId && 
-      f.stopId === this.selectedStopId && 
+    const existingIdx = this.favoriteCommutes.findIndex(f =>
+      f.routeId === this.selectedRouteId &&
+      f.stopId === this.selectedStopId &&
       (!f.destId || !this.selectedDestId || f.destId === this.selectedDestId)
     );
 
@@ -1936,8 +2134,8 @@ class PassengerController {
       return;
     }
 
-    const preferredStopId = (routeId === this.selectedRouteId && this.selectedStopId) 
-      ? this.selectedStopId 
+    const preferredStopId = (routeId === this.selectedRouteId && this.selectedStopId)
+      ? this.selectedStopId
       : (route.stops[0] ? route.stops[0].id : '');
 
     stopSelect.innerHTML = route.stops.map(s => `
