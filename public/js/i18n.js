@@ -43,6 +43,30 @@
       trackByBusNumber: "2. Track by Bus Number",
       findBusLabel: "Find Bus #",
       findBusPlaceholder: "e.g. 1, 101, 102, 202",
+      tabStopToStop: "Stop-to-Stop Search",
+      tabRoutesTable: "All Routes Directory",
+      tabBusNumber: "Search Bus #",
+      fromBoardingStop: "From (Boarding Stop)",
+      toDestinationStop: "To (Destination Stop)",
+      allRoutesDirectory: "Tirunelveli Bus Routes Directory",
+      routesDirSubtitle: "Click on any route to select it and choose your boarding & deboarding stops.",
+      selectRouteBtn: "Select Route",
+      noBusDirectAvailable: "No direct bus available from",
+      transferRouteFound: "Connecting Route (2 Buses Transfer)",
+      connectingRouteDesc: "No direct bus available between these stops. Take 2 connecting buses via",
+      swapDirection: "Swap Direction",
+      transferAt: "Transfer at",
+      bus1: "Bus 1",
+      bus2: "Bus 2",
+      boardAt: "Board at",
+      deboardAt: "Deboard at",
+      combinedFare: "Combined Fare",
+      totalStops: "Total Stops",
+      noBusAvailableTitle: "No Direct or Connecting Bus Available",
+      noBusAvailableDesc: "There is currently no direct or connecting transit route between these two stops. Try swapping the direction or selecting an alternative stop.",
+      directBusesAvailable: "Direct Bus Available",
+      directRouteSubtitle: "Direct active buses found connecting your selected stops.",
+      stopsCount: "stops",
 
       // Priority Leaderboard & Arrival Cards
       arrivalPriorityFor: "Live Bus Arrival Priority for",
@@ -164,6 +188,30 @@
       trackByBusNumber: "2. பேருந்து எண் மூலம் தேட",
       findBusLabel: "பேருந்து எண் தேட",
       findBusPlaceholder: "எ.கா. 1, 101, 102, 202",
+      tabStopToStop: "நிறுத்தங்கள் வழி தேடல்",
+      tabRoutesTable: "அனைத்து வழித்தடங்கள்",
+      tabBusNumber: "பேருந்து எண் தேடல்",
+      fromBoardingStop: "புறப்படும் நிறுத்தம் (From)",
+      toDestinationStop: "சேரும் இடம் (To)",
+      allRoutesDirectory: "திருநெல்வேலி பேருந்து வழித்தடங்கள்",
+      routesDirSubtitle: "வழித்தடத்தைத் தேர்ந்தெடுத்து ஏறும் மற்றும் இறங்கும் நிறுத்தங்களைத் தேர்வு செய்யவும்.",
+      selectRouteBtn: "தேர்வு செய்",
+      noBusDirectAvailable: "நேரடி பேருந்து இல்லை:",
+      transferRouteFound: "இணைப்புப் பேருந்து வழி (2 பேருந்துகள் மாறிச் செல்லலாம்)",
+      connectingRouteDesc: "நேரடி பேருந்து இல்லை. இந்த இரண்டு பேருந்துகள் மூலம் மாறிச் செல்லலாம்:",
+      swapDirection: "திசையை மாற்றிப் பார்க்க",
+      transferAt: "பேருந்து மாறும் இடம்:",
+      bus1: "பேருந்து 1",
+      bus2: "பேருந்து 2",
+      boardAt: "ஏறும் இடம்:",
+      deboardAt: "இறங்கும் இடம்:",
+      combinedFare: "மொத்தக் கட்டணம்",
+      totalStops: "மொத்த நிறுத்தங்கள்",
+      noBusAvailableTitle: "பேருந்து சேவை இல்லை",
+      noBusAvailableDesc: "இந்த இரண்டு நிறுத்தங்களுக்கும் இடையே நேரடி அல்லது இணைப்பு பேருந்து வழித்தடம் தற்போது இல்லை. திசையை மாற்றிப் பார்க்கவும்.",
+      directBusesAvailable: "நேரடி பேருந்து சேவை உள்ளது",
+      directRouteSubtitle: "தேர்ந்தெடுக்கப்பட்ட நிறுத்தங்களுக்கு இடையே நேரடி பேருந்துகள் இயக்கப்படுகின்றன.",
+      stopsCount: "நிறுத்தங்கள்",
 
       // Priority Leaderboard & Arrival Cards
       arrivalPriorityFor: "பேருந்துகள் வந்து சேரும் வரிசை:",
@@ -330,6 +378,9 @@
 
       // Trigger re-renders across passenger & where-is-my-bus controllers
       if (window.passenger && typeof window.passenger.render === 'function') {
+        if (typeof window.passenger.populateGlobalStops === 'function') window.passenger.populateGlobalStops();
+        if (typeof window.passenger.populateRoutesTable === 'function') window.passenger.populateRoutesTable();
+        if (typeof window.passenger.populateRouteTableStops === 'function') window.passenger.populateRouteTableStops();
         window.passenger.populateRouteDropdown();
         window.passenger.populateStopDropdown();
         window.passenger.populateDestDropdown();

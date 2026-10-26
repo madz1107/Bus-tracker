@@ -465,26 +465,25 @@
       "regNumber": "TN 72 AB 3456",
       "BusName": "1",
       "name": "1",
-      "routeId": "route-1792857145069",
+      "routeId": "route-8",
       "assignedRouteIds": [
-        "route-1",
         "route-8"
       ],
       "conductorId": null,
       "conductorName": "1",
       "conductorPhone": "",
       "status": "Offline",
-      "lat": 8.731296,
-      "lng": 77.708938,
+      "lat": 8.7301751,
+      "lng": 77.711057,
       "speed": 0,
-      "bearing": 90,
-      "currentStopId": "stop-1-1",
-      "currentStopName": "Junction Railway Station",
-      "nextStopId": "stop-1-2",
-      "nextStopName": "Junction Bus Stand",
-      "distanceToNextKm": 2,
-      "etaMinutes": 5,
-      "routeProgress": 0,
+      "bearing": 146,
+      "currentStopId": "stop-8-3",
+      "currentStopName": "Junction  Bus Stand",
+      "nextStopId": "stop-8-4",
+      "nextStopName": "Town Arch",
+      "distanceToNextKm": 1.9,
+      "etaMinutes": 10,
+      "routeProgress": 20,
       "reachedStopIds": [
         "stop-1-1"
       ],
@@ -492,7 +491,7 @@
       "isTripActive": false,
       "isVetriPayanam": false,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-26T02:50:28.972Z"
+      "lastUpdated": "2026-10-26T13:07:21.542+00:00"
     },
     {
       "id": "BUS-1A",

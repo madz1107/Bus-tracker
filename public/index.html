@@ -201,8 +201,8 @@
 
     <!-- User Auth, Language & Gender Controls -->
     <div class="header-right">
-      <!-- Language Switcher (English / தமிழ்) -->
-      <div class="lang-toggle-wrap" id="passengerLangToggle" title="Language / மொழி">
+      <!-- Language Switcher (English / Tamil) -->
+      <div class="lang-toggle-wrap" id="passengerLangToggle" title="Select Language">
         <button type="button" class="lang-btn active" id="langBtnEn" onclick="app.setLanguage('en')">
           English
         </button>
@@ -270,51 +270,126 @@
             </div>
           </div>
 
-          <!-- Search & Filter Deck -->
-          <div class="search-card" style="margin-bottom: 1.5rem;">
-            <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-              <h3 style="margin-bottom: 0; color: #0f172a; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
-                <i data-lucide="route" style="color: #2563eb; width: 18px; height: 18px;"></i> <span data-i18n="trackByRoute">1. Track by Route & Stop</span>
-              </h3>
-              <button id="btnStarCurrentCommute" class="btn btn-xs btn-outline star-commute-btn" onclick="passenger.toggleFavoriteCurrentCommute()" title="Star this route & stop as Daily Commute">
-                <i data-lucide="star" style="width: 14px; height: 14px;"></i> <span data-i18n="starCommute">Star Commute</span>
+          <!-- Passenger Mode Switcher (Stop-to-Stop Search | All Routes Table | Search by Bus #) -->
+          <div class="passenger-mode-nav-wrap">
+            <div class="passenger-mode-tabs" role="tablist">
+              <button type="button" id="tabBtnStopToStop" class="passenger-mode-tab active" onclick="passenger.switchMode('stopToStop')">
+                <i data-lucide="map-pin"></i> <span data-i18n="tabStopToStop">Stop-to-Stop Search</span>
+              </button>
+              <button type="button" id="tabBtnRoutesTable" class="passenger-mode-tab" onclick="passenger.switchMode('routesTable')">
+                <i data-lucide="table"></i> <span data-i18n="tabRoutesTable">All Routes Directory</span>
+              </button>
+              <button type="button" id="tabBtnBusSearch" class="passenger-mode-tab" onclick="passenger.switchMode('busNumber')">
+                <i data-lucide="search"></i> <span data-i18n="tabBusNumber">Search Bus #</span>
               </button>
             </div>
-            <div class="search-field">
-              <label for="passengerRouteSelect"><i data-lucide="route"></i> <span data-i18n="selectRoute">Select Route</span></label>
-              <select id="passengerRouteSelect" class="form-control" onchange="passenger.onRouteChanged()">
-                <!-- Populated dynamically -->
-              </select>
-            </div>
-            
-            <div class="search-field">
-              <label for="passengerStopSelect"><i data-lucide="map-pin"></i> <span data-i18n="yourBoardingStop">Your Boarding Stop</span></label>
-              <select id="passengerStopSelect" class="form-control" onchange="passenger.onStopChanged()">
-                <!-- Populated dynamically -->
-              </select>
+          </div>
+
+          <!-- PANEL 1: Stop-to-Stop Search (Default Mode) -->
+          <div id="panelStopToStop" class="search-card passenger-panel active" style="margin-bottom: 1.5rem;">
+            <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <h3 style="margin: 0; color: #0f172a; font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="compass" style="color: #2563eb; width: 20px; height: 20px;"></i> <span>Plan Journey: Stop to Stop</span>
+              </h3>
+              <span style="font-size: 0.78rem; background: #eff6ff; color: #2563eb; padding: 3px 10px; border-radius: 9999px; font-weight: 700; border: 1px solid #bfdbfe;">
+                ⚡ All Stops Connected
+              </span>
             </div>
 
             <div class="search-field">
-              <label for="passengerDestSelect"><i data-lucide="map-pin"></i> <span data-i18n="destinationStop">Destination Stop</span></label>
-              <select id="passengerDestSelect" class="form-control" onchange="passenger.onDestChanged()">
-                <option value="" data-i18n="anyDestination">Any Destination</option>
-                <!-- Populated dynamically -->
+              <label for="globalBoardingSelect"><i data-lucide="map-pin" style="color: #16a34a;"></i> <span data-i18n="fromBoardingStop">From (Boarding Stop)</span></label>
+              <select id="globalBoardingSelect" class="form-control" onchange="passenger.onGlobalBoardingChanged()">
+                <!-- Populated dynamically with ALL unique stops across entire transit network -->
               </select>
             </div>
 
-            <button class="btn btn-primary btn-search" onclick="passenger.trackSelectedBus('byRoute')">
-              <i data-lucide="navigation"></i> <span data-i18n="trackLive">Track Live</span>
+            <div style="display: flex; align-items: center; justify-content: center; padding-bottom: 2px;">
+              <button type="button" class="btn btn-outline" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.06); background: #fff;" onclick="passenger.swapGlobalStops()" title="Swap From and To">
+                <i data-lucide="arrow-left-right" style="width: 17px; height: 17px; color: #2563eb;"></i>
+              </button>
+            </div>
+
+            <div class="search-field">
+              <label for="globalDestSelect"><i data-lucide="map-pin" style="color: #dc2626;"></i> <span data-i18n="toDestinationStop">To (Destination Stop)</span></label>
+              <select id="globalDestSelect" class="form-control" onchange="passenger.onGlobalDestChanged()">
+                <!-- Populated dynamically with ALL unique stops -->
+              </select>
+            </div>
+
+            <button class="btn btn-primary btn-search" style="grid-column: 1 / -1; height: 46px; font-size: 0.98rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="passenger.executeStopToStopSearch()">
+              <i data-lucide="search"></i> <span>Find Available Buses</span>
             </button>
           </div>
 
-          <div class="search-card">
-            <h3 style="grid-column: 1 / -1; margin-bottom: 0.5rem; color: #0f172a; font-size: 1rem; font-weight: 700;" data-i18n="trackByBusNumber">2. Track by Bus Number</h3>
-            <div class="search-field" style="grid-column: span 3;">
+          <!-- PANEL 2: All Routes Directory Table -->
+          <div id="panelRoutesTable" class="passenger-panel" style="display: none; margin-bottom: 1.5rem;">
+            <div class="routes-directory-card">
+              <div class="routes-dir-header">
+                <h3 class="routes-dir-title">
+                  <i data-lucide="route" style="color: #2563eb;"></i> <span data-i18n="allRoutesDirectory">Tirunelveli Bus Routes Directory</span>
+                </h3>
+                <p class="routes-dir-subtitle" data-i18n="routesDirSubtitle">Click on any route below to select it and choose your boarding & deboarding stops.</p>
+              </div>
+
+              <!-- Interactive Routes Table -->
+              <div class="routes-table-container">
+                <table class="routes-interactive-table" id="passengerRoutesTable">
+                  <thead>
+                    <tr>
+                      <th style="width: 14%;">Route</th>
+                      <th style="width: 44%;">Route Name & Terminals</th>
+                      <th style="width: 14%; text-align: center;">Stops</th>
+                      <th style="width: 14%; text-align: center;">Live Buses</th>
+                      <th style="width: 14%; text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="passengerRoutesTableBody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Route Specific Journey Selector (Revealed when a route row is selected) -->
+              <div id="routeSelectedBox" style="display: none; margin-top: 1.25rem; padding: 1.25rem; background: #f8fafc; border: 2px solid #3b82f6; border-radius: 12px; box-shadow: 0 4px 12px rgba(59,130,246,0.08);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem;">
+                  <h4 id="routeSelectedBoxTitle" style="margin: 0; color: #0f172a; font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <!-- Populated dynamically -->
+                  </h4>
+                  <button id="btnStarCurrentCommute" class="btn btn-xs btn-outline star-commute-btn" onclick="passenger.toggleFavoriteCurrentCommute()" title="Star this route & stop as Daily Commute">
+                    <i data-lucide="star" style="width: 14px; height: 14px;"></i> <span data-i18n="starCommute">Star Commute</span>
+                  </button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: flex-end;">
+                  <div class="search-field">
+                    <label for="routeTableBoardingSelect"><i data-lucide="map-pin"></i> <span data-i18n="yourBoardingStop">Boarding Stop</span></label>
+                    <select id="routeTableBoardingSelect" class="form-control" onchange="passenger.onRouteChangeStopChanged()">
+                      <!-- Populated with this route's stops only -->
+                    </select>
+                  </div>
+                  <div class="search-field">
+                    <label for="routeTableDestSelect"><i data-lucide="map-pin"></i> <span data-i18n="destinationStop">Destination Stop</span></label>
+                    <select id="routeTableDestSelect" class="form-control" onchange="passenger.onRouteChangeDestChanged()">
+                      <!-- Populated with stops after boarding stop on this route -->
+                    </select>
+                  </div>
+                  <button class="btn btn-primary" style="height: 44px; padding: 0 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 6px;" onclick="passenger.trackSelectedBus('byRoute')">
+                    <i data-lucide="navigation"></i> <span data-i18n="trackLive">Track Live</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 3: Track by Bus Number -->
+          <div id="panelBusNumber" class="search-card passenger-panel" style="display: none; margin-bottom: 1.5rem;">
+            <h3 style="grid-column: 1 / -1; margin-bottom: 0.5rem; color: #0f172a; font-size: 1rem; font-weight: 700;" data-i18n="trackByBusNumber">Track by Bus Number</h3>
+            <div class="search-field" style="grid-column: span 2;">
               <label for="passengerBusSearch"><i data-lucide="search"></i> <span data-i18n="findBusLabel">Find Bus #</span></label>
-              <input type="text" id="passengerBusSearch" class="form-control" placeholder="e.g. 101, 102, 202" data-i18n-placeholder="findBusPlaceholder" oninput="passenger.onSearchInput(this.value)">
+              <input type="text" id="passengerBusSearch" class="form-control" placeholder="e.g. 1, 101, 102, 202" data-i18n-placeholder="findBusPlaceholder" oninput="passenger.onSearchInput(this.value)">
             </div>
 
-            <button class="btn btn-primary btn-search" onclick="passenger.trackSelectedBus('byBusNumber')">
+            <button class="btn btn-primary btn-search" style="grid-column: span 1; height: 44px;" onclick="passenger.trackSelectedBus('byBusNumber')">
               <i data-lucide="navigation"></i> <span data-i18n="trackLive">Track Live</span>
             </button>
           </div>
