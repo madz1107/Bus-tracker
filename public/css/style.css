@@ -400,55 +400,102 @@ body.lang-ta {
    When Male mode is active, 100% blue colors apply without any changes.
    ======================================================== */
 
-/* Header & Navigation in Female Mode */
-body.female-mode #appHeader .logo-icon-wrap {
+/* Header & Navigation in Female Mode (Passenger Only - Never in Admin or Bus) */
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .logo-icon-wrap {
   background: linear-gradient(135deg, #f472b6, #fb7185) !important;
   box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35) !important;
 }
 
-body.female-mode #appHeader .brand-highlight {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .brand-highlight {
   color: #f472b6 !important;
 }
 
-body.female-mode #appHeader .live-network-badge {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .live-network-badge {
   background: rgba(244, 114, 182, 0.1) !important;
   border-color: rgba(244, 114, 182, 0.35) !important;
   color: #db2777 !important;
 }
 
-body.female-mode #appHeader .live-network-badge .pulse-dot {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .live-network-badge .pulse-dot {
   background: #f472b6 !important;
   box-shadow: 0 0 8px #f472b6 !important;
 }
 
-body.female-mode #appHeader .nav-tab.active {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .nav-tab.active {
   color: #db2777 !important;
   background: #ffffff !important;
 }
 
-body.female-mode #appHeader .nav-tab.active i {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .nav-tab.active i {
   color: #db2777 !important;
 }
 
-body.female-mode #appHeader .gender-btn#genderBtnFemale.active {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .gender-btn#genderBtnFemale.active {
   background: linear-gradient(135deg, #f472b6, #fb7185) !important;
   color: #ffffff !important;
   box-shadow: 0 2px 6px rgba(244, 114, 182, 0.35) !important;
 }
 
-body.female-mode #appHeader .lang-btn.active {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .lang-btn.active {
   background: linear-gradient(135deg, #f472b6, #fb7185) !important;
   color: #ffffff !important;
   box-shadow: 0 2px 6px rgba(244, 114, 182, 0.35) !important;
 }
 
-body.female-mode #appHeader .role-tag {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader .role-tag {
   background: rgba(244, 114, 182, 0.15) !important;
   color: #db2777 !important;
 }
 
-body.female-mode #appHeader #userAuthPill i {
+body.female-mode:not(.portal-admin):not(.portal-bus) #appHeader #userAuthPill i {
   color: #db2777 !important;
+}
+
+/* STRICT ADMIN PORTAL: 100% BLUE THEME AT ALL TIMES (NEVER PINK) */
+body.portal-admin #appHeader .logo-icon-wrap,
+body:has(#portalAdmin.active) #appHeader .logo-icon-wrap {
+  background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
+}
+
+body.portal-admin #appHeader .brand-highlight,
+body:has(#portalAdmin.active) #appHeader .brand-highlight {
+  color: #2563eb !important;
+}
+
+body.portal-admin #appHeader .live-network-badge,
+body:has(#portalAdmin.active) #appHeader .live-network-badge {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-color: rgba(37, 99, 235, 0.25) !important;
+  color: #2563eb !important;
+}
+
+body.portal-admin #appHeader .live-network-badge .pulse-dot,
+body:has(#portalAdmin.active) #appHeader .live-network-badge .pulse-dot {
+  background: #2563eb !important;
+  box-shadow: 0 0 8px #2563eb !important;
+}
+
+body.portal-admin #appHeader .nav-tab.active,
+body:has(#portalAdmin.active) #appHeader .nav-tab.active {
+  color: #2563eb !important;
+  background: #ffffff !important;
+}
+
+body.portal-admin #appHeader .nav-tab.active i,
+body:has(#portalAdmin.active) #appHeader .nav-tab.active i {
+  color: #2563eb !important;
+}
+
+body.portal-admin #appHeader .role-tag,
+body:has(#portalAdmin.active) #appHeader .role-tag {
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #1d4ed8 !important;
+}
+
+body.portal-admin #appHeader #userAuthPill i,
+body:has(#portalAdmin.active) #appHeader #userAuthPill i {
+  color: #2563eb !important;
 }
 
 /* ========================================================

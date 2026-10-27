@@ -178,6 +178,7 @@ class AppController {
       if (genderToggle) genderToggle.style.display = 'none';
       if (langToggle) langToggle.style.display = 'none';
       document.body.classList.remove('female-mode');
+      document.body.classList.remove('portal-admin');
     } else if (user.role === 'admin') {
       // Admin sees Fleet Admin control center - NO male/female controls
       if (tabPassenger) tabPassenger.style.display = 'none';
@@ -187,6 +188,7 @@ class AppController {
       if (genderToggle) genderToggle.style.display = 'none';
       if (langToggle) langToggle.style.display = 'none';
       document.body.classList.remove('female-mode');
+      document.body.classList.add('portal-admin');
     }
   }
 
@@ -542,7 +544,13 @@ class AppController {
     // Strictly removed only when in staff portals (Bus or admin)
     if (portalName === 'Bus' || portalName === 'admin') {
       document.body.classList.remove('female-mode');
+      if (portalName === 'admin') {
+        document.body.classList.add('portal-admin');
+      } else {
+        document.body.classList.remove('portal-admin');
+      }
     } else {
+      document.body.classList.remove('portal-admin');
       const g = localStorage.getItem('citybus_passenger_gender') || 'male';
       if (g === 'female') {
         document.body.classList.add('female-mode');

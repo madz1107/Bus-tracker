@@ -441,6 +441,12 @@ class PassengerController {
       btnFemale.classList.toggle('active', this.gender === 'female');
     }
 
+    const currentPortal = (window.app && window.app.currentPortal) ? window.app.currentPortal : 'passenger';
+    if (currentPortal === 'admin' || currentPortal === 'Bus') {
+      document.body.classList.remove('female-mode');
+      return;
+    }
+
     if (this.gender === 'female') {
       document.body.classList.add('female-mode');
     } else {
