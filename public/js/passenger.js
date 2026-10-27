@@ -778,47 +778,27 @@ class PassengerController {
   }
 
   trackSelectedBus(busIdOrMode = null) {
-    let busId = null;
+    if (busIdOrMode === 'byRoute') {
+      this.renderPriorityLeaderboard();
+      const target = document.getElementById('priorityBusesContainer') || document.getElementById('priorityLeaderboardSection');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
 
     if (busIdOrMode === 'byBusNumber') {
       if (this.searchQuery) {
-        const matched = window.appState.buses.find(b =>
-          b.busNumber && b.busNumber.toLowerCase().includes(this.searchQuery)
-        );
-        if (matched) busId = matched.id;
-
-        // Clear the input automatically
-        const searchInput = document.getElementById('passengerBusSearch');
-        if (searchInput) searchInput.value = '';
-        this.searchQuery = '';
         this.renderFleetGrid();
-      }
-    } else if (busIdOrMode === 'byRoute') {
-      if (this.selectedRouteId && this.selectedStopId && this.selectedRouteId !== 'all') {
-        const route = window.appState.getRouteById(this.selectedRouteId);
-        const targetStop = route ? route.stops.find(s => s.id === this.selectedStopId) : null;
-        const routeBuses = window.appState.getBusesForRoute(this.selectedRouteId).filter(b => b.isTripActive);
-        if (route && targetStop && routeBuses.length > 0) {
-          const ranked = window.PriorityEngine ? window.PriorityEngine.rankBusesForStop(route, targetStop, routeBuses) : [];
-          if (ranked.length > 0) {
-            busId = ranked[0].bus.id;
-          }
+        const grid = document.getElementById('passengerFleetGrid');
+        if (grid) {
+          grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }
-
-      if (!busId && this.selectedRouteId && this.selectedRouteId !== 'all') {
-        const activeBuses = window.appState.getBusesForRoute(this.selectedRouteId).filter(b => b.isTripActive);
-        if (activeBuses.length > 0) {
-          busId = activeBuses[0].id;
-        } else {
-          const allBuses = window.appState.getBusesForRoute(this.selectedRouteId);
-          if (allBuses.length > 0) busId = allBuses[0].id;
-        }
-      }
-    } else {
-      busId = busIdOrMode;
+      return;
     }
 
+    let busId = busIdOrMode;
     if (busId) {
       window.appState.selectedBusId = busId;
       const wimbTab = document.getElementById('navTabWimb');
@@ -1269,12 +1249,13 @@ class PassengerController {
     // Scenario 2: Connecting Route (2 Buses Transfer)
     if (connecting.length > 0) {
       const best = connecting[0];
+      this.lastConnectingJourney = best;
       const interchangeDisp = window.I18n ? window.I18n.getStopName(best.interchangeName) : best.interchangeName;
       const leg1RouteName = window.I18n ? window.I18n.getRouteName(best.leg1.route.name) : best.leg1.route.name;
       const leg2RouteName = window.I18n ? window.I18n.getRouteName(best.leg2.route.name) : best.leg2.route.name;
 
-      const leg1Buses = window.appState.getBusesForRoute(best.leg1.route.id).filter(b => b.isTripActive);
-      const leg2Buses = window.appState.getBusesForRoute(best.leg2.route.id).filter(b => b.isTripActive);
+      const leg1Buses = window.appState.getBusesForRoute(best.leg1.route.id).filter(b => Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')));
+      const leg2Buses = window.appState.getBusesForRoute(best.leg2.route.id).filter(b => Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')));
 
       const hasVetri1 = window.appState.getBusesForRoute(best.leg1.route.id).some(b => b.isVetriPayanam);
       const hasVetri2 = window.appState.getBusesForRoute(best.leg2.route.id).some(b => b.isVetriPayanam);
@@ -1290,7 +1271,6 @@ class PassengerController {
         ? 'இந்த இரண்டு நிறுத்தங்களுக்கும் இடையே நேரடி பேருந்து இல்லை. 2 பேருந்துகளில் எளிதாகச் செல்லலாம்:'
         : 'No direct bus available between these two stops. You can easily travel with 1 transfer:';
       const totalFareLabel = isTa ? 'மொத்தக் கட்டணம்' : 'Total Fare';
-      const totalStopsLabel = isTa ? 'மொத்த நிறுத்தங்கள்' : 'Total Stops';
       const stopsWord = isTa ? 'நிறுத்தங்கள்' : 'stops';
       const bus1Word = isTa ? 'பேருந்து 1' : 'Bus 1';
       const bus2Word = isTa ? 'பேருந்து 2' : 'Bus 2';
@@ -1298,8 +1278,8 @@ class PassengerController {
       const deboardWord = isTa ? 'இறங்கும் இடம்' : 'Deboard at';
       const fareWord = isTa ? 'கட்டணம்' : 'Fare';
       const liveWord = isTa ? 'செயலில்' : 'live';
-      const trackBus1Btn = isTa ? 'பேருந்து 1-ஐக் காண்க' : 'Track Bus 1';
-      const trackBus2Btn = isTa ? 'பேருந்து 2-ஐக் காண்க' : 'Track Bus 2';
+      const trackBus1Btn = isTa ? 'பேருந்து 1 முன்னுரிமை' : 'Track Bus 1';
+      const trackBus2Btn = isTa ? 'பேருந்து 2 முன்னுரிமை' : 'Track Bus 2';
       const transferPrompt = isTa
         ? `⇄ ${interchangeDisp} நிறுத்தத்தில் இறங்கி பேருந்து 2-க்கு மாறவும்`
         : `⇄ Transfer at ${interchangeDisp} (Switch to Bus 2)`;
@@ -1323,28 +1303,31 @@ class PassengerController {
 
           <div class="transfer-legs-wrap">
             <!-- Leg 1 -->
-            <div class="transfer-leg-box">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="background: #3b82f6; color: white; font-weight: 900; font-size: 0.95rem; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                  ${best.leg1.route.code}
+            <div>
+              <div class="transfer-leg-box">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="background: #3b82f6; color: white; font-weight: 900; font-size: 0.95rem; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    ${best.leg1.route.code}
+                  </div>
+                  <div>
+                    <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">
+                      ${bus1Word}: ${best.leg1.route.code} - ${leg1RouteName}
+                    </div>
+                    <div style="font-size: 0.82rem; color: #475569; margin-top: 2px;">
+                      ${boardWord}: <strong>${fromDisp}</strong> ➔ ${deboardWord}: <strong>${interchangeDisp}</strong>
+                    </div>
+                    <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
+                      ${fareWord}: ${isFemaleFree1 ? (isTa ? 'இலவசம்' : 'Free') : '₹' + (best.leg1.fare || 5)} • ${leg1Buses.length} ${liveWord}
+                    </div>
+                  </div>
                 </div>
                 <div>
-                  <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">
-                    ${bus1Word}: ${best.leg1.route.code} - ${leg1RouteName}
-                  </div>
-                  <div style="font-size: 0.82rem; color: #475569; margin-top: 2px;">
-                    ${boardWord}: <strong>${fromDisp}</strong> ➔ ${deboardWord}: <strong>${interchangeDisp}</strong>
-                  </div>
-                  <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
-                    ${fareWord}: ${isFemaleFree1 ? (isTa ? 'இலவசம்' : 'Free') : '₹' + (best.leg1.fare || 5)} • ${leg1Buses.length} ${liveWord}
-                  </div>
+                  <button class="btn btn-sm btn-primary" onclick="passenger.showConnectingLegPriority(1)">
+                    <i data-lucide="zap"></i> ${trackBus1Btn}
+                  </button>
                 </div>
               </div>
-              <div>
-                <button class="btn btn-sm btn-primary" onclick="passenger.trackSelectedBus('${leg1Buses[0] ? leg1Buses[0].id : best.leg1.route.id}')">
-                  <i data-lucide="navigation"></i> ${trackBus1Btn}
-                </button>
-              </div>
+              <div id="transferLeg1PriorityArea" class="transfer-leg-priority-area" style="display: none; margin-top: 8px;"></div>
             </div>
 
             <!-- Interchange Divider -->
@@ -1354,32 +1337,40 @@ class PassengerController {
             </div>
 
             <!-- Leg 2 -->
-            <div class="transfer-leg-box">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="background: #8b5cf6; color: white; font-weight: 900; font-size: 0.95rem; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                  ${best.leg2.route.code}
+            <div>
+              <div class="transfer-leg-box">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="background: #8b5cf6; color: white; font-weight: 900; font-size: 0.95rem; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    ${best.leg2.route.code}
+                  </div>
+                  <div>
+                    <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">
+                      ${bus2Word}: ${best.leg2.route.code} - ${leg2RouteName}
+                    </div>
+                    <div style="font-size: 0.82rem; color: #475569; margin-top: 2px;">
+                      ${boardWord}: <strong>${interchangeDisp}</strong> ➔ ${deboardWord}: <strong>${toDisp}</strong>
+                    </div>
+                    <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
+                      ${fareWord}: ${isFemaleFree2 ? (isTa ? 'இலவசம்' : 'Free') : '₹' + (best.leg2.fare || 5)} • ${leg2Buses.length} ${liveWord}
+                    </div>
+                  </div>
                 </div>
                 <div>
-                  <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">
-                    ${bus2Word}: ${best.leg2.route.code} - ${leg2RouteName}
-                  </div>
-                  <div style="font-size: 0.82rem; color: #475569; margin-top: 2px;">
-                    ${boardWord}: <strong>${interchangeDisp}</strong> ➔ ${deboardWord}: <strong>${toDisp}</strong>
-                  </div>
-                  <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
-                    ${fareWord}: ${isFemaleFree2 ? (isTa ? 'இலவசம்' : 'Free') : '₹' + (best.leg2.fare || 5)} • ${leg2Buses.length} ${liveWord}
-                  </div>
+                  <button class="btn btn-sm btn-primary" onclick="passenger.showConnectingLegPriority(2)">
+                    <i data-lucide="zap"></i> ${trackBus2Btn}
+                  </button>
                 </div>
               </div>
-              <div>
-                <button class="btn btn-sm btn-primary" onclick="passenger.trackSelectedBus('${leg2Buses[0] ? leg2Buses[0].id : best.leg2.route.id}')">
-                  <i data-lucide="navigation"></i> ${trackBus2Btn}
-                </button>
-              </div>
+              <div id="transferLeg2PriorityArea" class="transfer-leg-priority-area" style="display: none; margin-top: 8px;"></div>
             </div>
           </div>
         </div>
       `;
+      if (this.activeConnectingLeg === 1 || this.activeConnectingLeg === 2) {
+        setTimeout(() => {
+          this.showConnectingLegPriority(this.activeConnectingLeg, false);
+        }, 10);
+      }
       if (window.lucide) lucide.createIcons();
       return;
     }
@@ -1404,6 +1395,137 @@ class PassengerController {
       </div>
     `;
     if (window.lucide) lucide.createIcons();
+  }
+
+  /**
+   * Displays the Priority Cards for a selected connecting leg inline
+   * Strictly differentiates between online (live tracking with priority card) and offline buses.
+   */
+  showConnectingLegPriority(legNum, shouldScroll = true) {
+    if (!this.lastConnectingJourney) return;
+    const isTa = window.I18n && window.I18n.getLanguage() === 'ta';
+    const leg = legNum === 1 ? this.lastConnectingJourney.leg1 : this.lastConnectingJourney.leg2;
+    if (!leg || !leg.route) return;
+
+    const targetArea = document.getElementById(legNum === 1 ? 'transferLeg1PriorityArea' : 'transferLeg2PriorityArea');
+    const otherArea = document.getElementById(legNum === 1 ? 'transferLeg2PriorityArea' : 'transferLeg1PriorityArea');
+
+    if (!targetArea) return;
+
+    // Toggle close if already open and clicked again
+    if (shouldScroll && this.activeConnectingLeg === legNum && targetArea.style.display !== 'none') {
+      targetArea.style.display = 'none';
+      targetArea.innerHTML = '';
+      this.activeConnectingLeg = null;
+      return;
+    }
+
+    if (otherArea) {
+      otherArea.style.display = 'none';
+      otherArea.innerHTML = '';
+    }
+
+    this.activeConnectingLeg = legNum;
+
+    const fromDisp = window.I18n ? window.I18n.getStopName(leg.fromStop.name) : leg.fromStop.name;
+    const toDisp = window.I18n ? window.I18n.getStopName(leg.toStop.name) : leg.toStop.name;
+    const routeDisplayName = window.I18n ? window.I18n.getRouteName(leg.route.name) : leg.route.name;
+
+    const headerTitle = isTa
+      ? `பேருந்து ${legNum} வருகை முன்னுரிமை (${leg.route.code} - ${routeDisplayName})`
+      : `Bus ${legNum} Live Arrival Priority (${leg.route.code} - ${routeDisplayName})`;
+    const segmentSub = isTa
+      ? `புறப்படும் இடம்: <strong>${fromDisp}</strong> ➔ இறங்கும் இடம்: <strong>${toDisp}</strong>`
+      : `Boarding at <strong>${fromDisp}</strong> ➔ Deboarding at <strong>${toDisp}</strong>`;
+    const closeBtnText = isTa ? 'மூடு' : 'Close';
+
+    const routeBuses = window.appState.getBusesForRoute(leg.route.id) || [];
+    const activeBuses = routeBuses.filter(b => Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')));
+    const offlineBuses = routeBuses.filter(b => !activeBuses.some(ab => ab.id === b.id));
+
+    let cardsHtml = '';
+    if (activeBuses.length > 0) {
+      const ranked = window.PriorityEngine
+        ? window.PriorityEngine.rankBusesForStop(leg.route, leg.fromStop, activeBuses)
+        : activeBuses.map((b, i) => ({ bus: b, busNumber: b.busNumber, etaText: `${b.etaMinutes || 0} min`, distanceKm: b.distanceToNextKm || 0, speed: b.speed || 0, rankClass: i === 0 ? 'rank-1' : 'rank-other', crowdLevel: b.crowdLevel }));
+
+      const lowCrowdBus = ranked.find((item) => (item.crowdLevel || 'Moderate').toLowerCase() === 'low');
+
+      cardsHtml = ranked.map((item, idx) => {
+        const isLowCrowdRecommended = lowCrowdBus && item.bus.id === lowCrowdBus.bus.id && ranked.length > 1;
+        return this.generateBusPriorityCardHtml(leg.route, leg.fromStop, item, isLowCrowdRecommended, isTa, leg.toStop.name, leg.fare);
+      }).join('');
+
+      if (offlineBuses.length > 0) {
+        const offSecTitle = isTa ? 'தற்போது ஆஃப்லைனில் உள்ள பேருந்துகள்' : 'Currently Offline Buses on this Leg';
+        cardsHtml += `
+          <div style="grid-column: 1 / -1; margin-top: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.85rem; font-weight: 700;">
+            <span class="status-pill red" style="font-size: 0.72rem; padding: 2px 8px;"><span class="dot"></span> ${isTa ? 'ஆஃப்லைன்' : 'Offline'}</span>
+            <span>${offSecTitle}</span>
+          </div>
+        ` + offlineBuses.map(b => this.generateOfflineBusCardHtml(leg.route, leg.fromStop, b, isTa, leg.toStop.name, leg.fare)).join('');
+      }
+    } else if (offlineBuses.length > 0) {
+      const offNotice = isTa
+        ? `இந்த இணைப்பு வழித்தடப் பேருந்துகள் (${leg.route.code}) தற்போது ஆஃப்லைனில் (இயக்கத்தில் இல்லை) உள்ளன:`
+        : `Buses on this route (${leg.route.code} - ${leg.route.name}) are currently Offline (Trip Inactive):`;
+      cardsHtml = `
+        <div style="grid-column: 1 / -1; padding: 10px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; color: #991b1b; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span class="status-pill red" style="font-size: 0.72rem; padding: 2px 8px;"><span class="dot"></span> ${isTa ? 'ஆஃப்லைன்' : 'Offline'}</span>
+          <span>${offNotice}</span>
+        </div>
+      ` + offlineBuses.map(b => this.generateOfflineBusCardHtml(leg.route, leg.fromStop, b, isTa, leg.toStop.name, leg.fare)).join('');
+    } else {
+      const emptyMsg = isTa
+        ? 'இந்த இணைப்பு வழித்தடத்தில் தற்போது பேருந்துகள் இயக்கத்தில் இல்லை.'
+        : 'No buses currently operating on this route segment.';
+      cardsHtml = `
+        <div style="grid-column: 1 / -1; padding: 1.5rem; background: #fff; border-radius: 10px; text-align: center; border: 1px solid #e2e8f0;">
+          <p style="color: #64748b; font-size: 0.9rem; margin: 0;">${emptyMsg}</p>
+        </div>
+      `;
+    }
+
+    targetArea.innerHTML = `
+      <div style="background: #f8fafc; border: 1.5px solid ${legNum === 1 ? '#bfdbfe' : '#ddd6fe'}; border-radius: 14px; padding: 16px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="badge" style="background: ${legNum === 1 ? '#3b82f6' : '#8b5cf6'}; color: white; font-weight: 800; font-size: 0.78rem; padding: 3px 10px; border-radius: 6px;">
+                ${isTa ? `பேருந்து ${legNum}` : `BUS ${legNum}`}
+              </span>
+              <strong style="color: #0f172a; font-size: 1rem;">${headerTitle}</strong>
+            </div>
+            <div style="font-size: 0.84rem; color: #475569; margin-top: 4px;">
+              ${segmentSub}
+            </div>
+          </div>
+          <button class="btn btn-xs btn-outline" onclick="passenger.hideConnectingLegPriority(${legNum})" style="padding: 4px 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-lucide="x" style="width: 14px; height: 14px;"></i> ${closeBtnText}
+          </button>
+        </div>
+        <div class="priority-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+          ${cardsHtml}
+        </div>
+      </div>
+    `;
+
+    targetArea.style.display = 'block';
+    if (window.lucide) lucide.createIcons();
+    if (shouldScroll) {
+      targetArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  hideConnectingLegPriority(legNum) {
+    const targetArea = document.getElementById(legNum === 1 ? 'transferLeg1PriorityArea' : 'transferLeg2PriorityArea');
+    if (targetArea) {
+      targetArea.style.display = 'none';
+      targetArea.innerHTML = '';
+    }
+    if (this.activeConnectingLeg === legNum) {
+      this.activeConnectingLeg = null;
+    }
   }
 
   /**
@@ -1493,20 +1615,7 @@ class PassengerController {
 
     // 2. Bus Cards Generation
     const allRouteBuses = window.appState.getBusesForRoute(this.selectedRouteId);
-    this._activeBusGraceMap = this._activeBusGraceMap || new Map();
-    const now = Date.now();
-    allRouteBuses.forEach(b => {
-      if (b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')) {
-        this._activeBusGraceMap.set(b.id, now);
-      }
-    });
-
-    const activeRouteBuses = allRouteBuses.filter(b => {
-      if (b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')) return true;
-      const lastActive = this._activeBusGraceMap.get(b.id);
-      return lastActive && (now - lastActive < 12000);
-    });
-
+    const activeRouteBuses = allRouteBuses.filter(b => Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')));
     const offlineRouteBuses = allRouteBuses.filter(b => !activeRouteBuses.some(ab => ab.id === b.id));
 
     let smartSuggestionHtml = '';
@@ -1638,19 +1747,7 @@ class PassengerController {
     if (!targetStop) return;
 
     const allRouteBuses = window.appState.getBusesForRoute(this.selectedRouteId);
-    this._activeBusGraceMap = this._activeBusGraceMap || new Map();
-    const now = Date.now();
-    allRouteBuses.forEach(b => {
-      if (b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')) {
-        this._activeBusGraceMap.set(b.id, now);
-      }
-    });
-
-    const activeRouteBuses = allRouteBuses.filter(b => {
-      if (b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')) return true;
-      const lastActive = this._activeBusGraceMap.get(b.id);
-      return lastActive && (now - lastActive < 12000);
-    });
+    const activeRouteBuses = allRouteBuses.filter(b => Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')));
 
     // If active bus count or total bus count changed between online/offline, do full render
     const existingCards = container.querySelectorAll('.priority-card[data-bus-id]');

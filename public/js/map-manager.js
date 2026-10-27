@@ -46,8 +46,8 @@ class MapManager {
   updateBusMarker(bus, isHighlight = false, isRank1 = false) {
     if (!this.map || !bus || bus.lat == null || bus.lng == null) return;
 
-    // Do not show bus icon on map if conductor GPS is off (Trip not active)
-    if (!bus.isTripActive) {
+    // Do not show bus icon on map if conductor GPS is off (Trip not active or Offline)
+    if (!bus.isTripActive || bus.status === 'Offline') {
       if (this.busMarkers.has(bus.id)) {
         this.busMarkers.get(bus.id).remove();
         this.busMarkers.delete(bus.id);

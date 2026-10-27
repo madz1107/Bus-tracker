@@ -140,14 +140,22 @@ class StateManager {
               freshBuses.forEach((freshBus) => {
                 const local = this.getBusById(freshBus.id);
                 if (local) {
-                  // Trip State Protection: Prevent background poll from clearing active trip if local bus has fresh live heartbeat
+                  // Trip State Protection: Only retain active trip if THIS client device is actively running conductor session
                   if (local.isTripActive && !freshBus.isTripActive) {
-                    const localTime = new Date(local.lastUpdated || 0).getTime();
                     const isConductorActive = localStorage.getItem('citybus_active_trip_' + local.id) === 'true';
-                    if (isConductorActive || (Date.now() - localTime < 45000)) {
+                    if (isConductorActive) {
                       freshBus.isTripActive = true;
                       freshBus.status = local.status || 'Running';
+                    } else {
+                      freshBus.isTripActive = false;
+                      freshBus.status = 'Offline';
+                      freshBus.speed = 0;
                     }
+                  }
+                  if (!freshBus.isTripActive || freshBus.status === 'Offline') {
+                    freshBus.isTripActive = false;
+                    freshBus.status = 'Offline';
+                    freshBus.speed = 0;
                   }
 
                   const routesChanged = JSON.stringify(local.assignedRouteIds || []) !== JSON.stringify(freshBus.assignedRouteIds || []);
@@ -240,12 +248,20 @@ class StateManager {
             const local = this.getBusById(freshBus.id);
             if (local) {
               if (local.isTripActive && !freshBus.isTripActive) {
-                const localTime = new Date(local.lastUpdated || 0).getTime();
                 const isConductorActive = localStorage.getItem('citybus_active_trip_' + local.id) === 'true';
-                if (isConductorActive || (Date.now() - localTime < 45000)) {
+                if (isConductorActive) {
                   freshBus.isTripActive = true;
                   freshBus.status = local.status || 'Running';
+                } else {
+                  freshBus.isTripActive = false;
+                  freshBus.status = 'Offline';
+                  freshBus.speed = 0;
                 }
+              }
+              if (!freshBus.isTripActive || freshBus.status === 'Offline') {
+                freshBus.isTripActive = false;
+                freshBus.status = 'Offline';
+                freshBus.speed = 0;
               }
 
               const changed = (

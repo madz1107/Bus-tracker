@@ -84,11 +84,15 @@ class AdminController {
       }
       busSelect.innerHTML = `
         <option value="all">Show All Buses</option>
-        ${filteredBuses.map((b) => `
-          <option value="${b.id}" ${b.id === this.activeBusFilter ? 'selected' : ''}>
-            ${b.name || b.id}
-          </option>
-        `).join('')}
+        ${filteredBuses.map((b) => {
+          const isOnline = Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped'));
+          const statusIcon = isOnline ? '🟢 Live' : '🔴 Offline';
+          return `
+            <option value="${b.id}" ${b.id === this.activeBusFilter ? 'selected' : ''}>
+              BUS ${b.busNumber || b.name || b.id} (${statusIcon})
+            </option>
+          `;
+        }).join('')}
       `;
     }
   }
@@ -175,9 +179,7 @@ class AdminController {
     const totalRoutes = document.getElementById('kpiTotalRoutes');
     const totalStops = document.getElementById('kpiTotalStops');
 
-    const running = window.app && typeof window.app.getActiveLiveBusesCount === 'function'
-      ? window.app.getActiveLiveBusesCount()
-      : window.appState.buses.filter((b) => b.isTripActive && b.status === 'Running').length;
+    const running = window.appState.buses.filter((b) => Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped'))).length;
     let stopCount = 0;
     window.appState.routes.forEach((r) => { stopCount += (r.stops || []).length; });
 
@@ -223,14 +225,16 @@ class AdminController {
       busesToRender = busesToRender.filter((b) => b.id === this.activeBusFilter);
     }
 
-    const renderIds = new Set(busesToRender.map(b => b.id));
+    // Strictly online buses only for map tracking
+    const onlineBuses = busesToRender.filter((b) => Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')));
+    const renderIds = new Set(onlineBuses.map(b => b.id));
 
-    // Update or add valid buses
-    busesToRender.forEach((bus) => {
+    // Update or add valid online buses
+    onlineBuses.forEach((bus) => {
       this.fleetMap.updateBusMarker(bus, false, false);
     });
 
-    // Remove buses not in the current filter
+    // Remove offline buses or buses not in current filter from map
     window.appState.buses.forEach((bus) => {
       if (!renderIds.has(bus.id) && this.fleetMap.busMarkers && this.fleetMap.busMarkers.has(bus.id)) {
         this.fleetMap.busMarkers.get(bus.id).remove();
@@ -254,16 +258,18 @@ class AdminController {
 
     tbody.innerHTML = buses.map((bus) => {
       const route = window.appState.getRouteById(bus.routeId);
-      const isRunning = bus.status === 'Running';
-      const statusClass = isRunning ? 'green' : (bus.status === 'Stopped' ? 'amber' : 'red');
+      const isOnline = Boolean(bus.isTripActive && (bus.status === 'Running' || bus.status === 'Stopped'));
+      const isRunning = isOnline && bus.status === 'Running';
+      const statusClass = isRunning ? 'green' : (isOnline && bus.status === 'Stopped' ? 'amber' : 'red');
+      const displayStatus = isOnline ? (isRunning ? 'Running' : 'Stopped') : 'Offline';
       const crowdLvl = bus.crowdLevel || 'Moderate';
       const crowdClass = crowdLvl.toLowerCase();
 
       return `
-        <tr>
+        <tr class="${!isOnline ? 'admin-bus-row-offline' : ''}">
           <td>
             <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
-              <strong style="color: #2563eb; font-size: 0.95rem;">BUS ${bus.busNumber}</strong>
+              <strong style="color: ${isOnline ? '#2563eb' : '#64748b'}; font-size: 0.95rem;">BUS ${bus.busNumber}</strong>
               <button type="button" 
                       class="btn-vetri-toggle" 
                       onclick="admin.toggleVetriPayanam('${bus.id}')" 
@@ -288,7 +294,7 @@ class AdminController {
           </td>
           <td>${bus.BusName || 'N/A'}</td>
           <td>
-            ${bus.status !== 'Offline' ? `
+            ${isOnline ? `
             <span class="crowd-pill ${crowdClass}">
               ${crowdLvl}
             </span>
@@ -296,15 +302,28 @@ class AdminController {
           </td>
           <td>
             <span class="status-pill ${statusClass}">
-              ${bus.status}
+              <span class="dot" style="background: currentColor;"></span> ${displayStatus}
             </span>
           </td>
-          <td>${bus.status !== 'Offline' ? `<strong class="text-blue">${bus.speed || 0} km/h</strong>` : `<span style="color: #94a3b8;">-</span>`}</td>
-          <td>${bus.status !== 'Offline' ? (bus.currentStopName || 'On Route') : `<span style="color: #94a3b8;">-</span>`}</td>
-          <td>${bus.status !== 'Offline' ? (bus.nextStopName || 'N/A') : `<span style="color: #94a3b8;">-</span>`}</td>
-          <td>${bus.status !== 'Offline' ? `<strong class="text-emerald">${bus.etaMinutes || 0} min</strong>` : `<span style="color: #94a3b8;">-</span>`}</td>
-          <td>${bus.status !== 'Offline' ? `${bus.routeProgress || 0}%` : `<span style="color: #94a3b8;">-</span>`}</td>
-          <td>${bus.status !== 'Offline' ? `<small class="text-muted">${bus.lastUpdated ? 'Live' : 'Cached'}</small>` : `<span style="color: #94a3b8;">-</span>`}</td>
+          <td>${isOnline ? `<strong class="text-blue">${bus.speed || 0} km/h</strong>` : `<span style="color: #94a3b8;">0 km/h</span>`}</td>
+          <td>${isOnline ? (bus.currentStopName || 'On Route') : `<span style="color: #94a3b8;">At Depot / Terminal</span>`}</td>
+          <td>${isOnline ? (bus.nextStopName || 'N/A') : `<span style="color: #94a3b8;">-</span>`}</td>
+          <td>${isOnline ? `<strong class="text-emerald">${bus.etaMinutes || 0} min</strong>` : `<span style="color: #94a3b8;">-</span>`}</td>
+          <td>${isOnline ? `${bus.routeProgress || 0}%` : `<span style="color: #94a3b8;">-</span>`}</td>
+          <td>${isOnline ? `<span class="status-pill green" style="font-size: 0.68rem; padding: 1px 6px;"><span class="dot"></span> Live</span>` : `<span class="status-pill red" style="font-size: 0.68rem; padding: 1px 6px;"><span class="dot"></span> Offline</span>`}</td>
+          <td>
+            <div style="display: flex; gap: 0.4rem;">
+              <button class="btn btn-xs btn-outline" onclick="admin.editBus('${bus.id}')" title="Edit Bus">
+                <i data-lucide="edit"></i>
+              </button>
+              <button class="btn btn-xs btn-danger" onclick="admin.deleteBusPrompt('${bus.id}')" title="Delete Bus">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
           <td>
             <div style="display: flex; gap: 0.4rem;">
               <button class="btn btn-xs btn-outline" onclick="admin.editBus('${bus.id}')" title="Edit Bus">

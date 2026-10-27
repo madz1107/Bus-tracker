@@ -109,8 +109,10 @@ class WhereIsMyBusController {
     const wimbOfflineMessage = document.getElementById('wimbOfflineMessage');
     const wimbHudStats = document.getElementById('wimbHudStats');
 
+    const isOnline = Boolean(bus.isTripActive && (bus.status === 'Running' || bus.status === 'Stopped'));
+
     if (wimbLiveContent && wimbOfflineMessage) {
-      if (bus.isTripActive) {
+      if (isOnline) {
         wimbLiveContent.style.display = 'grid';
         wimbOfflineMessage.style.display = 'none';
         if (wimbHudStats) wimbHudStats.style.display = 'flex';
@@ -123,12 +125,14 @@ class WhereIsMyBusController {
 
     // Render Map Route & Stops
     if (this.mapManager) {
-      const activeBusesOnRoute = window.appState.getBusesForRoute(route.id);
+      const activeBusesOnRoute = window.appState.getBusesForRoute(route.id).filter(b => Boolean(b.isTripActive && (b.status === 'Running' || b.status === 'Stopped')));
       this.mapManager.clearStops();
       this.mapManager.renderRouteStops(route, activeBusesOnRoute);
-      this.mapManager.updateBusMarker(bus, true, true);
+      if (isOnline) {
+        this.mapManager.updateBusMarker(bus, true, true);
+      }
       
-      if (this.isFollowing) {
+      if (this.isFollowing && isOnline) {
         this.mapManager.setFollowBus(bus.id);
         this.mapManager.centerOnLocation(bus.lat, bus.lng, 14);
       } else {
