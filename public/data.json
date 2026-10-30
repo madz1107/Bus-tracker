@@ -71,9 +71,9 @@
         },
         {
           "id": "stop-1R-10",
-          "lat": 8.728215,
-          "lng": 77.72196,
-          "name": "Vannerpettai",
+          "lat": 8.728742081375374,
+          "lng": 77.72204869384682,
+          "name": "Vannarpettai",
           "sequence": 10
         },
         {
@@ -87,7 +87,7 @@
           "id": "stop-1R-12",
           "lat": 8.729663,
           "lng": 77.713809,
-          "name": "Aravind  Eye Hospital",
+          "name": "Aravind Eye Hospital",
           "sequence": 12
         },
         {
@@ -134,7 +134,7 @@
           "id": "stop-1-3",
           "lat": 8.729663,
           "lng": 77.713809,
-          "name": "Aravind  Eye Hospital",
+          "name": "Aravind Eye Hospital",
           "sequence": 3
         },
         {
@@ -322,7 +322,7 @@
           "id": "stop-8-1",
           "lat": 8.702713,
           "lng": 77.727187,
-          "name": "Tirunelveli  New Bus Stand",
+          "name": "Tirunelveli New Bus Stand",
           "sequence": 1
         },
         {
@@ -336,7 +336,7 @@
           "id": "stop-8-3",
           "lat": 8.73025,
           "lng": 77.710845,
-          "name": "Junction  Bus Stand",
+          "name": "Junction Bus Stand",
           "sequence": 3
         },
         {
@@ -465,20 +465,21 @@
       "regNumber": "TN 72 AB 3456",
       "BusName": "1",
       "name": "1",
-      "routeId": "route-8",
+      "routeId": "route-1792857145069",
       "assignedRouteIds": [
-        "route-8"
+        "route-1792857145069",
+        "route-1"
       ],
       "conductorId": null,
       "conductorName": "1",
       "conductorPhone": "",
-      "status": "Offline",
+      "status": "Running",
       "lat": 8.7301751,
       "lng": 77.711057,
       "speed": 0,
       "bearing": 146,
       "currentStopId": "stop-8-3",
-      "currentStopName": "Junction  Bus Stand",
+      "currentStopName": "Junction Bus Stand",
       "nextStopId": "stop-8-4",
       "nextStopName": "Town Arch",
       "distanceToNextKm": 1.9,
@@ -491,7 +492,7 @@
       "isTripActive": false,
       "isVetriPayanam": false,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-26T13:07:21.542+00:00"
+      "lastUpdated": "2026-10-30T10:55:25.968+00:00"
     },
     {
       "id": "BUS-1A",
@@ -501,6 +502,7 @@
       "name": "1A",
       "routeId": "route-1",
       "assignedRouteIds": [
+        "route-1792857145069",
         "route-1"
       ],
       "conductorId": null,
@@ -525,7 +527,7 @@
       "isTripActive": false,
       "isVetriPayanam": false,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-26T02:24:07.788+00:00"
+      "lastUpdated": "2026-10-28T05:23:32.176+00:00"
     },
     {
       "id": "BUS-8",
@@ -533,9 +535,9 @@
       "regNumber": "TN 72 AB 1234",
       "BusName": "ADJ",
       "name": "ADJ",
-      "routeId": "route-1792857145069",
+      "routeId": "route-8",
       "assignedRouteIds": [
-        "route-1792857145069"
+        "route-8"
       ],
       "conductorId": null,
       "conductorName": "ADJ",
@@ -559,7 +561,7 @@
       "isTripActive": false,
       "isVetriPayanam": false,
       "simulatorIndex": 0,
-      "lastUpdated": "2026-10-25T13:26:26.07+00:00"
+      "lastUpdated": "2026-10-27T15:26:19.25+00:00"
     }
   ],
   "users": [

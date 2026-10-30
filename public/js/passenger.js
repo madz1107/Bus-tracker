@@ -73,16 +73,17 @@ class PassengerController {
     (window.appState.routes || []).forEach(route => {
       (route.stops || []).forEach(stop => {
         if (!stop || !stop.name) return;
-        const cleanName = stop.name.trim();
-        if (!stopMap.has(cleanName)) {
-          stopMap.set(cleanName, {
+        const cleanName = stop.name.trim().replace(/\s+/g, ' ');
+        const key = cleanName.toLowerCase();
+        if (!stopMap.has(key)) {
+          stopMap.set(key, {
             name: cleanName,
             lat: stop.lat,
             lng: stop.lng,
             routes: [route]
           });
         } else {
-          const entry = stopMap.get(cleanName);
+          const entry = stopMap.get(key);
           if (!entry.routes.some(r => r.id === route.id)) {
             entry.routes.push(route);
           }
@@ -1067,14 +1068,14 @@ class PassengerController {
     // If destination is not selected or same as boarding:
     if (!toName || fromName === toName) {
       const routes = (window.appState.routes || []).filter(r =>
-        (r.stops || []).some(s => s.name.trim().toLowerCase() === fromName.trim().toLowerCase())
+        (r.stops || []).some(s => this.normalizeStopName(s.name) === this.normalizeStopName(fromName))
       );
 
       let activeBuses = [];
       let offlineBuses = [];
       routes.forEach(r => {
         const rBuses = window.appState.getBusesForRoute(r.id);
-        const stopObj = r.stops.find(s => s.name.trim().toLowerCase() === fromName.trim().toLowerCase());
+        const stopObj = r.stops.find(s => this.normalizeStopName(s.name) === this.normalizeStopName(fromName));
         if (stopObj) {
           const act = rBuses.filter(b => b.isTripActive && (b.status === 'Running' || b.status === 'Stopped'));
           const off = rBuses.filter(b => !act.some(ab => ab.id === b.id));

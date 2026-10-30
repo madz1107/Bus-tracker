@@ -415,8 +415,8 @@
     getStopName(name) {
       if (!name) return '';
       if (this.currentLang === 'ta') {
-        const clean = name.trim();
-        return stopTranslations[clean] || name;
+        const clean = name.trim().replace(/\s+/g, ' ');
+        return stopTranslations[clean] || stopTranslations[name.trim()] || name;
       }
       return name;
     }
