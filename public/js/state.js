@@ -60,11 +60,22 @@ class StateManager {
           this.buses = busesRes.data.map(r => window.CloudDB ? window.CloudDB.rowToBus(r) : r);
         }
         if (routesRes.data && routesRes.data.length > 0) {
+          let localDescs = {};
+          try { localDescs = JSON.parse(localStorage.getItem('nellai_route_descriptions') || '{}'); } catch (_) {}
           this.routes = routesRes.data.map(remoteRoute => {
             const local = this.routes.find(r => r.id === remoteRoute.id);
+            const descFromStops = (remoteRoute.stops && remoteRoute.stops[0] && remoteRoute.stops[0]._routeDescription !== undefined)
+              ? remoteRoute.stops[0]._routeDescription
+              : null;
+            const storedDesc = localDescs[remoteRoute.id];
+            const resolvedDesc = descFromStops !== null
+              ? descFromStops
+              : (storedDesc !== undefined
+                  ? storedDesc
+                  : (remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : '')));
             return {
               ...remoteRoute,
-              description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
+              description: resolvedDesc,
               fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
             };
           });
@@ -207,11 +218,22 @@ class StateManager {
           if (rRes.ok) {
             const freshRoutes = await rRes.json();
             if (Array.isArray(freshRoutes)) {
+              let localDescs = {};
+              try { localDescs = JSON.parse(localStorage.getItem('nellai_route_descriptions') || '{}'); } catch (_) {}
               const mergedRoutes = freshRoutes.map(remoteRoute => {
                 const local = this.routes.find(r => r.id === remoteRoute.id);
+                const descFromStops = (remoteRoute.stops && remoteRoute.stops[0] && remoteRoute.stops[0]._routeDescription !== undefined)
+                  ? remoteRoute.stops[0]._routeDescription
+                  : null;
+                const storedDesc = localDescs[remoteRoute.id];
+                const resolvedDesc = descFromStops !== null
+                  ? descFromStops
+                  : (storedDesc !== undefined
+                      ? storedDesc
+                      : (remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : '')));
                 return {
                   ...remoteRoute,
-                  description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
+                  description: resolvedDesc,
                   fareMatrix: (remoteRoute.fareMatrix && Object.keys(remoteRoute.fareMatrix).length > 0)
                     ? remoteRoute.fareMatrix
                     : (remoteRoute.fare_matrix && Object.keys(remoteRoute.fare_matrix).length > 0)
@@ -530,6 +552,19 @@ class StateManager {
         this.routes.push(routeData);
       }
       this.notify({ type: 'ROUTES_UPDATED', route: routeData });
+
+      // Persist description to localStorage so it never reverts to bundled defaults
+      if (routeData.id && routeData.description !== undefined) {
+        try {
+          const stored = JSON.parse(localStorage.getItem('nellai_route_descriptions') || '{}');
+          stored[routeData.id] = routeData.description;
+          localStorage.setItem('nellai_route_descriptions', JSON.stringify(stored));
+        } catch (_) {}
+      }
+      // Ensure first stop stores _routeDescription into Supabase JSONB
+      if (Array.isArray(routeData.stops) && routeData.stops.length > 0) {
+        routeData.stops[0]._routeDescription = routeData.description || '';
+      }
 
       // 2. Direct Supabase save if connected in browser
       if (window.CloudDB && window.CloudDB.supabase) {

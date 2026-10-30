@@ -198,7 +198,9 @@ async function syncFromSupabase() {
         const local = db.routes.find(r => r.id === remoteRoute.id);
         return {
           ...remoteRoute,
-          description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
+          description: (remoteRoute.stops && remoteRoute.stops[0] && remoteRoute.stops[0]._routeDescription !== undefined)
+            ? remoteRoute.stops[0]._routeDescription
+            : (remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : '')),
           fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
         };
       });
@@ -241,7 +243,9 @@ app.get('/api/state', async (req, res) => {
           const local = db.routes.find(lr => lr.id === remoteRoute.id);
           return {
             ...remoteRoute,
-            description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
+            description: (remoteRoute.stops && remoteRoute.stops[0] && remoteRoute.stops[0]._routeDescription !== undefined)
+            ? remoteRoute.stops[0]._routeDescription
+            : (remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : '')),
             fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
           };
         });
@@ -351,7 +355,9 @@ app.get('/api/routes', async (req, res) => {
           const local = db.routes.find(lr => lr.id === remoteRoute.id);
           return {
             ...remoteRoute,
-            description: remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : ''),
+            description: (remoteRoute.stops && remoteRoute.stops[0] && remoteRoute.stops[0]._routeDescription !== undefined)
+            ? remoteRoute.stops[0]._routeDescription
+            : (remoteRoute.description !== undefined ? remoteRoute.description : (local ? local.description : '')),
             fareMatrix: remoteRoute.fareMatrix || remoteRoute.fare_matrix || (local ? local.fareMatrix : null) || {}
           };
         });
@@ -366,6 +372,9 @@ app.post('/api/routes', async (req, res) => {
   const routeData = req.body;
   if (!routeData.id) {
     routeData.id = 'route-' + Math.floor(10 + Math.random() * 90);
+  }
+  if (Array.isArray(routeData.stops) && routeData.stops.length > 0 && routeData.description !== undefined) {
+    routeData.stops[0]._routeDescription = routeData.description;
   }
 
   if (supabase) {

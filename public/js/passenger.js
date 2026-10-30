@@ -314,7 +314,7 @@ class PassengerController {
           <td>
             <div style="font-weight: 700; color: #0f172a; font-size: 0.92rem;">${routeDisplayName}</div>
             <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
-              ${firstStopName} ➔ ${lastStopName}
+              ${r.description ? r.description : `${firstStopName} ➔ ${lastStopName}`}
             </div>
           </td>
           <td style="text-align: center; font-weight: 600; color: #475569;">
@@ -348,8 +348,13 @@ class PassengerController {
     if (title) {
       const routeDisplayName = window.I18n ? window.I18n.getRouteName(route.name) : route.name;
       title.innerHTML = `
-        <span style="background: ${route.color || '#3b82f6'}; color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 800;">${route.code}</span>
-        <span>${routeDisplayName}</span>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="background: ${route.color || '#3b82f6'}; color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 800;">${route.code}</span>
+            <span>${routeDisplayName}</span>
+          </div>
+          ${route.description ? `<div style="font-size: 0.82rem; font-weight: 500; color: #64748b;">📝 ${route.description}</div>` : ''}
+        </div>
       `;
     }
 

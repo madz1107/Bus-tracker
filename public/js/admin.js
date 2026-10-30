@@ -636,18 +636,21 @@ class AdminController {
       route.name = name;
       route.description = description;
       route.color = color;
-      window.app.showToast(`Route ${ name } updated!`, 'success');
+      if (Array.isArray(route.stops) && route.stops.length > 0) {
+        route.stops[0]._routeDescription = description;
+      }
+      window.app.showToast(`Route ${name} updated!`, 'success');
     } else {
       // Create new
       route = {
-        id: `route - ${ code } `,
+        id: `route-${code.replace(/\s+/g, '')}`,
         code,
         name,
         description,
         color,
         stops: []
       };
-      window.app.showToast(`Route ${ name } created! Add stops now.`, 'success');
+      window.app.showToast(`Route ${name} created! Add stops now.`, 'success');
     }
 
     await window.appState.saveRoute(route);
@@ -761,6 +764,9 @@ closeAddStopModal() {
   };
 
   route.stops.push(newStop);
+  if (route.stops[0] && route.description) {
+    route.stops[0]._routeDescription = route.description;
+  }
   await window.appState.saveRoute(route);
   this.closeAddStopModal();
   window.app.showToast(`Stop "${name}" added to ${route.name}!`, 'success');
@@ -1287,6 +1293,9 @@ onFareBoardingStopChanged() {
     route.stops.splice(idx, 1);
     // Re-sequence
     route.stops.forEach((s, i) => s.sequence = i + 1);
+    if (route.stops[0] && route.description) {
+      route.stops[0]._routeDescription = route.description;
+    }
     this.selectRouteForStops(routeId);
     window.app.showToast('Stop removed from route', 'info');
     await window.appState.saveRoute(route);

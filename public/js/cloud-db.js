@@ -210,6 +210,19 @@
               const freshRoute = payload.new;
               if (freshRoute && freshRoute.id) {
                 const idx = window.appState.routes.findIndex(r => r.id === freshRoute.id);
+                let storedDescs = {};
+                try { storedDescs = JSON.parse(localStorage.getItem('nellai_route_descriptions') || '{}'); } catch (_) {}
+                const existingDesc = idx >= 0 ? window.appState.routes[idx].description : '';
+                const descFromStops = (freshRoute.stops && freshRoute.stops[0] && freshRoute.stops[0]._routeDescription !== undefined)
+                  ? freshRoute.stops[0]._routeDescription
+                  : null;
+                const resolvedDesc = descFromStops !== null
+                  ? descFromStops
+                  : (storedDescs[freshRoute.id] !== undefined
+                      ? storedDescs[freshRoute.id]
+                      : (freshRoute.description !== undefined ? freshRoute.description : existingDesc));
+                freshRoute.description = resolvedDesc;
+
                 if (idx >= 0) {
                   const existingMatrix = window.appState.routes[idx].fareMatrix;
                   if (!freshRoute.fareMatrix && !freshRoute.fare_matrix && existingMatrix) {
